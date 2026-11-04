@@ -5,22 +5,25 @@ document:
   title: "Personal PiG distribution"
   description: "Fork identity, upstream synchronization, versioning, release, update trust and agent-steering ownership of furbyhaxx/pig"
   status: "published"
-  revision: 1
+  revision: 2
   created_at: "2026-11-04T12:30:29+01:00"
-  updated_at: "2026-11-04T12:30:29+01:00"
+  updated_at: "2026-11-04T14:21:06+01:00"
   created_by: "orchestrator"
   updated_by: "orchestrator"
   changelog:
     - revision: 1
       reason: "document creation"
       changes: ["record the decisions behind the fork setup and the AGENTS.md rewrite"]
+    - revision: 2
+      reason: "Owner: the fork is a base for a fast, well-engineered personal coding agent; Pi and PiG compatibility is not a requirement"
+      changes: ["Context no longer requires a drop-in replacement", "D7 goal and compatibility", "D8 merge cost", "D9 recording fork behavior changes", "D10 inherited parity gates"]
 ---
 
 # SPEC-0001 Personal PiG distribution
 
 ## Context
 
-`furbyhaxx/pig` is a personal distribution of `MichaelKinsy/PiG`. It does not contribute upstream. It must track upstream continuously, build and publish its own releases, update installed binaries from its own releases, and stay a drop-in replacement that reuses the user's existing PiG configuration.
+`furbyhaxx/pig` is a personal distribution of `MichaelKinsy/PiG`. It does not contribute upstream. It tracks upstream continuously, builds and publishes its own releases, and updates installed binaries from its own releases. It is the base for the owner's own coding agent (D7); reusing the existing PiG configuration is kept while it costs nothing.
 
 ## Decisions
 
@@ -61,6 +64,30 @@ document:
 - No test or gate reads `AGENTS.md` content. Upstream couplings were removed: `TestGoVersionPolicy` no longer pins a sentence in `AGENTS.md`; `TestAgentsDocRendersTheTierTable` was deleted with the upstream CI tier table it checked. Reason: with `merge=ours`, such a test fails as soon as upstream moves the data it compares against.
 - `changelog.d/` has no `AGENTS.md`: the fragment checker accepts only fragments there; fragment rules live in the root file.
 - Upstream-owned artifact directories (`docs/plan/`, `docs/specs/`, `docs/findings/`, `plans/`, `research/`, `handoffs/`) stay in place to keep merges clean.
+
+### D7 Goal and compatibility
+
+- Goal: a base for a coding agent that is fast, performant, well-engineered and built to the owner's needs, wishes and requirements.
+- Compatibility with Pi and with upstream PiG (behavior, extension API and wire, configuration, session format, CLI) is kept while it does not limit that goal. It is not a requirement and never a reason to keep a defect or a weaker design.
+- A change that breaks compatibility is decided in a spec under `.project/specs/` and documented for users with a migration note.
+- D1 still holds: executable, config root, module path and formats keep their names until a spec decides otherwise.
+
+### D8 Merge cost
+
+- The hourly upstream sync (D2) stays: upstream is a source of fixes and features.
+- Merge cost is weighed against design quality, not used as a veto. With equal design quality, fork code goes into new files behind a narrow seam in the upstream file. When upstream structure blocks a good design, the fork changes it.
+
+### D9 Recording fork behavior changes
+
+- A deliberate change of inherited behavior is recorded as a decision in a fork spec, in user docs at the point of use and in a `changelog.d/` fragment.
+- Upstream's ledgers (`docs/parity/divergences/D<N>.md`, `docs/parity/DIVERGENCES.md`, `docs/additive-features.md`, `// pig divergence (D<N>)` markers) are not used for fork changes. They stay as upstream maintains them.
+
+### D10 Inherited parity gates
+
+- Upstream's Pi-comparison machinery (parity scenarios, Pi oracle tests, interface inventories, PORT_MAP drift, `divergence-guard` markers, `port-lint`) keeps running.
+- A fork change that intentionally changes behavior one of them pins rewrites or deletes the affected test or scenario in the same change and cites the spec.
+- `divergence-guard` patterns are kept as engineering checks. Fork code fixes the smell; an intentional hit needs a fork marker that cites a spec, which the guard does not support yet (`.project/plans/0001-host-gap-resolution/plan.md` S0).
+- Root `AGENTS.md` states this policy; child `AGENTS.md` files of the parity machinery apply only to maintaining it.
 
 ## Consequences
 

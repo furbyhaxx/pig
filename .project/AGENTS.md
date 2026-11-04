@@ -14,7 +14,7 @@ Development artifacts of the `furbyhaxx/pig` fork. Committed. Never in `docs/`. 
 | `references/` | curated maintained facts |
 | `user-uploaded-assets/` | user-provided files; read-only |
 
-- Only `specs/` and `backlog/` exist. Missing type → copy its dir + `AGENTS.md` from the skill template.
+- Existing: `specs/`, `plans/`, `analyses/`, `backlog/`. Missing type → copy its dir + `AGENTS.md` from the skill template.
 - One artifact = one file or one `<slug>/` dir. Evidence in `<slug>/evidence/`, credentials redacted.
 - Every Markdown artifact (except `user-uploaded-assets/`) starts with `document:` frontmatter: type, id, title, description, status (sketch|draft|published|archived), revision, created_at, updated_at, created_by, updated_by, changelog. Timestamps `date -Iseconds`.
 - Revise: bump revision, update updated_*, append changelog entry.
