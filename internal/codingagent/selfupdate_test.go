@@ -123,6 +123,10 @@ func TestIsNewerPackageVersion(t *testing.T) {
 		candidate, current string
 		want               bool
 	}{
+		{"0.5.3-c.10", "0.5.3-c.9", true},
+		{"0.5.3-c.9", "0.5.3-c.10", false},
+		{"0.5.4-c.1", "0.5.3-c.10", true},
+		{"0.5.3-c.1", "0.5.3-c.1", false},
 		{"0.70.5", "0.70.5", false},
 		{"0.70.6", "0.70.5", true},
 		{"0.70.4", "0.70.5", false},

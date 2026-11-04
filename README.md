@@ -6,7 +6,9 @@ SPDX-License-Identifier: MIT
   <img src="docs/assets/pig-project-banner.png" alt="PiG project banner: There are many agent harnesses, but this one is yours. Meet Pi-in-Go.">
 </p>
 
-# PiG
+# PiG — furbyhaxx personal fork
+
+This is a personal distribution of [Michael Kinsy's PiG](https://github.com/MichaelKinsy/PiG), not an upstream contribution branch. It keeps the `pig` executable and existing configuration paths. Hourly upstream merges and signed GitHub releases are managed by the [personal-fork workflow](.github/workflows/personal-fork.yml). See [fork installation and release policy](docs/personal-fork.md).
 
 [![CI](https://github.com/MichaelKinsy/PiG/actions/workflows/ci.yml/badge.svg)](https://github.com/MichaelKinsy/PiG/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/MichaelKinsy/PiG/actions/workflows/security.yml/badge.svg)](https://github.com/MichaelKinsy/PiG/actions/workflows/security.yml)
@@ -33,34 +35,14 @@ If PiG behaves differently from Pi, that is either a bug or a documented diverge
 On macOS, Linux, or Android with [Termux](docs/site/docs/termux.md) (arm64):
 
 ```bash
-curl -fsSL https://pi-in-go.dev/install.sh | sh
+curl -fsSL https://github.com/furbyhaxx/pig/releases/latest/download/install.sh | sh
 ```
 
-On Windows, in PowerShell:
+On Windows, download the matching ZIP from [this fork's GitHub Releases](https://github.com/furbyhaxx/pig/releases) and replace `pig.exe` while PiG is stopped. Windows in-place self-update remains unsupported, as upstream.
 
-```powershell
-irm https://pi-in-go.dev/install.ps1 | iex
-```
+Run `pig update` after a script installation. To replace an existing installation, set `PIG_INSTALL_DIR` to the directory containing your current `pig`; configuration, sessions, and credentials remain in their existing locations. The installer replaces the update-source, trust-key, and installation-receipt sidecars to select this fork.
 
-With npm, on any supported platform:
-
-```bash
-npm install -g @pi-in-go/pig
-```
-
-With Go:
-
-```bash
-go install github.com/MichaelKinsy/PiG/cmd/pig@latest
-```
-
-With Nix:
-
-```bash
-nix run github:MichaelKinsy/PiG
-```
-
-You can also download an archive from [GitHub Releases](https://github.com/MichaelKinsy/PiG/releases) or [build from source](#build-from-source). [pi-in-go.dev/install](https://pi-in-go.dev/install) covers every method, including updates and uninstalling.
+Upstream npm packages, `go install github.com/MichaelKinsy/PiG/...`, and upstream installers install **upstream**, not this fork. Use this fork's GitHub installer or [build from this checkout](#build-from-source).
 
 ## Quick start
 

@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: MIT
+name: Personal fork
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: personal-fork
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'furbyhaxx/pig'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: write
+    outputs:
+      sha: ${{ steps.sync.outputs.sha }}
+    steps:
+      - name: Merge upstream without overwriting custom changes
+        id: sync
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          upstream=$(gh api repos/MichaelKinsy/PiG/commits/main --jq .sha)
+          gh api --method POST "repos/$REPOSITORY/merges" \
+            -f base=main -f head="$upstream" \
+            -f commit_message=$'chore: merge PiG upstream\n\nSigned-off-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+          gh api "repos/$REPOSITORY/actions/workflows" --paginate \
+            --jq '.workflows[] | select(.path != ".github/workflows/personal-fork.yml") | .id' |
+            while read -r workflow; do
+              gh api --method PUT "repos/$REPOSITORY/actions/workflows/$workflow/disable"
+            done
+          sha=$(gh api "repos/$REPOSITORY/commits/main" --jq .sha)
+          printf 'sha=%s\n' "$sha" >> "$GITHUB_OUTPUT"
+  release:
+    needs: sync
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ needs.sync.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: .go-version
+      - name: Build and publish only changed source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PIG_UPDATE_SIGNING_KEY: ${{ secrets.PIG_UPDATE_SIGNING_KEY }}
+          REPOSITORY: ${{ github.repository }}
+        run: bash automation/release/personal-fork.sh

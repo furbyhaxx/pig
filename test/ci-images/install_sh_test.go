@@ -29,7 +29,7 @@ import (
 
 const (
 	installVersion  = "0.2.0"
-	installDownload = "https://github.com/MichaelKinsy/PiG/releases/download"
+	installDownload = "https://github.com/furbyhaxx/pig/releases/download"
 )
 
 // fakeCurl answers downloads and redirect metadata from $FIXTURES/<url without scheme>, exiting 22 when no fixture exists. Redirect lookups must not follow the release page.
@@ -106,6 +106,16 @@ func releaseArchive(t *testing.T, name string) []byte {
 	if _, err := tw.Write(pig); err != nil {
 		t.Fatal(err)
 	}
+	trust, err := os.ReadFile(filepath.Join(repoRoot(t), "automation", "release", "personal-update-trust.pem"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := tw.WriteHeader(&tar.Header{Name: name + "/update-trust.pem", Typeflag: tar.TypeReg, Mode: 0o644, Size: int64(len(trust))}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tw.Write(trust); err != nil {
+		t.Fatal(err)
+	}
 	if err := tw.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -177,6 +187,7 @@ func (f installFixture) run(t *testing.T, extraEnv ...string) installResult {
 		"HOME=" + f.home,
 		"FIXTURES=" + filepath.Join(f.root, "fixtures"),
 		"PIG_INSTALL_DIR=" + f.installDir,
+		"PIG_API_BASE=https://pi-in-go.dev/api",
 	}, extraEnv...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
@@ -204,6 +215,39 @@ func assertFailure(t *testing.T, got installResult, want string) {
 	}
 	if !strings.Contains(got.stderr, want) {
 		t.Fatalf("stderr does not report %q:\n%s", want, got.stderr)
+	}
+}
+
+func TestInstallShUsesForkAndPreservesConfiguration(t *testing.T) {
+	f := newInstallFixture(t)
+	root := filepath.Join(f.home, ".pig")
+	writeFile(t, filepath.Join(root, "agent", "settings.json"), []byte(`{"theme":"dark"}`), 0o600)
+	writeFile(t, filepath.Join(root, "update-url"), []byte("https://github.com/MichaelKinsy/PiG/releases/latest/download/update.json\n"), 0o600)
+	writeFile(t, filepath.Join(root, "update-trust.pem"), []byte("old upstream key"), 0o600)
+	f.writeRedirect(t, installLatest, "https://github.com/furbyhaxx/pig/releases/tag/v"+installVersion)
+	got := f.run(t, "PIG_API_BASE=")
+	if got.status != 0 {
+		t.Fatalf("install = %+v", got)
+	}
+	if strings.Contains(f.requested(t), "pi-in-go.dev") || strings.Contains(f.requested(t), "MichaelKinsy") {
+		t.Fatalf("installer contacted upstream: %s", f.requested(t))
+	}
+	for path, want := range map[string]string{
+		"agent/settings.json": `{"theme":"dark"}`,
+		"update-url":          "https://github.com/furbyhaxx/pig/releases/latest/download/update.json\n",
+	} {
+		data, err := os.ReadFile(filepath.Join(root, path))
+		if err != nil || string(data) != want {
+			t.Fatalf("%s = %q, %v; want %q", path, data, err, want)
+		}
+	}
+	want, err := os.ReadFile(filepath.Join(repoRoot(t), "automation", "release", "personal-update-trust.pem"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotKey, err := os.ReadFile(filepath.Join(root, "update-trust.pem"))
+	if err != nil || !bytes.Equal(gotKey, want) {
+		t.Fatalf("fork update trust was not installed: %v", err)
 	}
 }
 
@@ -318,7 +362,7 @@ func TestInstallShRecordsAnOwnerOnlyReceiptForPigUpdate(t *testing.T) {
 				t.Fatal(err)
 			}
 			sum := sha256.Sum256(installed)
-			source := "https://github.com/MichaelKinsy/PiG/releases/latest/download/update.json"
+			source := "https://github.com/furbyhaxx/pig/releases/latest/download/update.json"
 			if name == "PIG_UPDATE_URL" {
 				source = "https://updates.example/pig/update.json"
 			}

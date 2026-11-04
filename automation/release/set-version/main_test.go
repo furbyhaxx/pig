@@ -142,6 +142,24 @@ func assertPins(t *testing.T, root string) {
 	}
 }
 
+func TestCustomRevision(t *testing.T) {
+	root := fixture(t)
+	check := func(string, io.Writer) error { return nil }
+	for _, version := range []string{"0.2.1-c.1", "0.2.1-c.2", "0.2.1-c.10", "0.2.2-c.1"} {
+		if err := run(root, options{version: version, date: "2026-09-27"}, io.Discard, check); err != nil {
+			t.Fatalf("%s: %v", version, err)
+		}
+		if !strings.Contains(get(t, root, "internal/coding/pigversion/pigversion.go"), `const PigVersion = "`+version+`"`) {
+			t.Fatalf("release pin does not match %s", version)
+		}
+	}
+	for _, version := range []string{"0.2.1-c.11", "0.2.2-c.0", "0.2.2-c.01", "0.2.2-c.-1"} {
+		if err := run(root, options{version: version}, io.Discard, check); err == nil {
+			t.Fatalf("accepted invalid or older version %s", version)
+		}
+	}
+}
+
 func TestSetVersionPreservesDependencyPinsAndChecksums(t *testing.T) {
 	root := fixture(t)
 	before := snapshot(t, root)

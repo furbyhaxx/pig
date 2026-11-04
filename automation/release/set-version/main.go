@@ -125,8 +125,8 @@ func (p *plan) read(path string) ([]byte, error) {
 }
 
 func prepare(root string, opt options) (*plan, error) {
-	if !regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`).MatchString(opt.version) {
-		return nil, fmt.Errorf("version must be x.y.z without a v prefix, prerelease, or build metadata: %q", opt.version)
+	if !regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-c\.[1-9][0-9]*)?$`).MatchString(opt.version) {
+		return nil, fmt.Errorf("version must be x.y.z or x.y.z-c.N (N > 0), without a v prefix or build metadata: %q", opt.version)
 	}
 	p := &plan{root: root, before: map[string][]byte{}, after: map[string][]byte{}, modules: map[string]*localModule{}, version: "v" + opt.version}
 	const pin = "internal/coding/pigversion/pigversion.go"
@@ -140,7 +140,8 @@ func prepare(root string, opt options) (*plan, error) {
 		return nil, errors.New("cannot read PigVersion")
 	}
 	current := string(match[1])
-	if semver.Compare(p.version, "v"+current) < 0 {
+	customFromBase := strings.HasPrefix(opt.version, current+"-c.")
+	if semver.Compare(p.version, "v"+current) < 0 && !customFromBase {
 		return nil, fmt.Errorf("refusing lower version %s (current %s)", opt.version, current)
 	}
 	p.after[pin] = re.ReplaceAll(data, []byte(`const PigVersion = "`+opt.version+`"`))

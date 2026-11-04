@@ -11,7 +11,7 @@ import (
 	"github.com/MichaelKinsy/PiG/internal/testenv"
 )
 
-const installLatest = "https://github.com/MichaelKinsy/PiG/releases/latest"
+const installLatest = "https://github.com/furbyhaxx/pig/releases/latest"
 
 // GNU wget reports the Location header but exits nonzero when --max-redirect=0 stops a redirect.
 const fakeWget = `#!/bin/sh

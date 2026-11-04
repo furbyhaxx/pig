@@ -3,7 +3,7 @@
 #
 # PiG installer for macOS, Linux and Android (Termux).
 #
-#   curl -fsSL https://pi-in-go.dev/install.sh | sh
+#   curl -fsSL https://github.com/furbyhaxx/pig/releases/latest/download/install.sh | sh
 #
 # Downloads the PiG release archive for this machine from GitHub Releases,
 # verifies it against the release's SHA256SUMS, and installs the pig binary.
@@ -14,9 +14,9 @@
 # Environment:
 #   PIG_VERSION        install this version (for example 0.2.0) instead of the latest
 #   PIG_INSTALL_DIR    install directory (default: $HOME/.local/bin, or $PREFIX/bin in Termux)
-#   PIG_API_BASE       API that names the latest release (default: https://pi-in-go.dev/api)
-#   PIG_LATEST_RELEASE_URL  page that redirects to the latest release, used when the API does not answer (default: https://github.com/MichaelKinsy/PiG/releases/latest)
-#   PIG_DOWNLOAD_BASE  release download root (default: https://github.com/MichaelKinsy/PiG/releases/download)
+#   PIG_API_BASE       optional API that names the latest release (unset by default)
+#   PIG_LATEST_RELEASE_URL  page that redirects to the latest release (default: https://github.com/furbyhaxx/pig/releases/latest)
+#   PIG_DOWNLOAD_BASE  release download root (default: https://github.com/furbyhaxx/pig/releases/download)
 #   PIG_UPDATE_URL     update manifest `pig update` should use (default: the latest release's update.json)
 #   PIG_HOME           PiG's settings directory, where the install receipt goes (default: ~/.pig)
 #
@@ -33,9 +33,9 @@
 set -eu
 
 main() {
-  api_base=${PIG_API_BASE:-https://pi-in-go.dev/api}
-  latest_release_url=${PIG_LATEST_RELEASE_URL:-https://github.com/MichaelKinsy/PiG/releases/latest}
-  download_base=${PIG_DOWNLOAD_BASE:-https://github.com/MichaelKinsy/PiG/releases/download}
+  api_base=${PIG_API_BASE:-}
+  latest_release_url=${PIG_LATEST_RELEASE_URL:-https://github.com/furbyhaxx/pig/releases/latest}
+  download_base=${PIG_DOWNLOAD_BASE:-https://github.com/furbyhaxx/pig/releases/download}
 
   need uname
   need tar
@@ -79,6 +79,9 @@ main() {
     fail "${archive} does not contain ${name}/pig"
   fi
 
+  [ -f "$work/extract/${name}/update-trust.pem" ] ||
+    fail "${archive} has no fork update trust root"
+
   # Stage beside the destination (a noexec /tmp cannot run the smoke test),
   # then replace any existing pig in one rename.
   mkdir -p "$install_dir"
@@ -90,6 +93,8 @@ main() {
   mv -f "$staged" "${install_dir}/pig"
 
   say "Installed $("${install_dir}/pig" --version 2>/dev/null || printf 'pig %s' "$version") to ${install_dir}/pig"
+  write_update_source "$work/extract/${name}/update-trust.pem" ||
+    fail "could not configure the fork update source; rerun the installer"
   write_receipt "$install_dir" "$version" ||
     say "Could not record the install receipt; to update later, run this installer again"
   case ":${PATH:-}:" in
@@ -98,12 +103,30 @@ main() {
   esac
 }
 
+write_update_source() {
+  [ -f "$1" ] || return 1
+  root=${PIG_HOME:-${XDG_CONFIG_HOME:+$XDG_CONFIG_HOME/pig}}
+  root=${root:-$HOME/.pig}
+  case "$root" in
+    \~) root=$HOME ;;
+    \~/*) root="$HOME/${root#\~/}" ;;
+  esac
+  (
+    umask 077
+    mkdir -p "$root" &&
+      cp "$1" "$root/.update-trust.pem.$$" &&
+      printf '%s\n' "${PIG_UPDATE_URL:-https://github.com/furbyhaxx/pig/releases/latest/download/update.json}" > "$root/.update-url.$$" &&
+      mv -f "$root/.update-trust.pem.$$" "$root/update-trust.pem" &&
+      mv -f "$root/.update-url.$$" "$root/update-url"
+  )
+}
+
 # write_receipt DIR VERSION records the standalone install for `pig update`,
 # in the format internal/codingagent/selfupdate_receipt.go reads: owner-only,
 # one key=value per line.
 write_receipt() {
   exe="$(cd "$1" && pwd -P)/pig"
-  source_url=${PIG_UPDATE_URL:-https://github.com/MichaelKinsy/PiG/releases/latest/download/update.json}
+  source_url=${PIG_UPDATE_URL:-https://github.com/furbyhaxx/pig/releases/latest/download/update.json}
   if [ -n "${PIG_HOME:-}" ]; then
     case "$PIG_HOME" in
       \~) root=$HOME ;;
@@ -211,7 +234,7 @@ detect_platform() {
 # latest_version DOWNLOADER API_BASE LATEST_RELEASE_URL asks the site API, then GitHub's latest-release redirect, which is not subject to the API's rate limit. The archive is verified against SHA256SUMS either way.
 latest_version() {
   latest=
-  if response=$(fetch_stdout "$1" "${2%/}/latest-version"); then
+  if [ -n "$2" ] && response=$(fetch_stdout "$1" "${2%/}/latest-version"); then
     latest=$(printf '%s' "$response" | tr -d '\n\r' | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
   fi
   if [ -z "$latest" ]; then

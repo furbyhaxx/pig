@@ -38,7 +38,7 @@ make set-version VERSION=0.3.0
 make set-version VERSION=0.3.0 SET_VERSION_ARGS=--move-unreleased
 ```
 
-The default adds a dated release heading below the Unreleased entries without moving them. `--move-unreleased` moves those entries into the selected release. The date is today in UTC. Repeating the same command preserves the date and produces no diff. Lower versions and non-`x.y.z` inputs are rejected.
+The default adds a dated release heading below the Unreleased entries without moving them. `--move-unreleased` moves those entries into the selected release. The date is today in UTC. Repeating the same command preserves the date and produces no diff. Lower versions and inputs other than `x.y.z` or the personal fork's `x.y.z-c.N` (positive N) are rejected. The first custom revision may replace its same-base stable pin in a disposable build tree. See [the personal distribution policy](../personal-fork.md) for fork releases.
 
 Use `SET_VERSION_ARGS=--release-modules` only to prepare an unpublished release on a protected release branch. This option also advances requirements on local modules in every tracked `go.mod` and computes nested-module entries in every existing `go.sum` from tracked files with working-tree contents. Stage new module files before running it. The hash implementation is `automation/release/modulehash`. Repeat this option after SDK edits only while that module version remains unpublished. Never replace a published version's checksums with hashes of developing source. Do not merge this candidate to `main` until its nested tags are published and `make module-publication` passes.
 
