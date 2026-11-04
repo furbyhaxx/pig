@@ -58,6 +58,8 @@ document:
 
 - All `AGENTS.md` files follow skill `agents-md`; artifacts follow skill `dot-project` under `.project/`.
 - Root `AGENTS.md` carries no generated status: the parity coverage block was removed and `automation/ci/check-public-claims.py` reads `test/parity/coverage.md` instead.
+- No test or gate reads `AGENTS.md` content. Upstream couplings were removed: `TestGoVersionPolicy` no longer pins a sentence in `AGENTS.md`; `TestAgentsDocRendersTheTierTable` was deleted with the upstream CI tier table it checked. Reason: with `merge=ours`, such a test fails as soon as upstream moves the data it compares against.
+- `changelog.d/` has no `AGENTS.md`: the fragment checker accepts only fragments there; fragment rules live in the root file.
 - Upstream-owned artifact directories (`docs/plan/`, `docs/specs/`, `docs/findings/`, `plans/`, `research/`, `handoffs/`) stay in place to keep merges clean.
 
 ## Consequences

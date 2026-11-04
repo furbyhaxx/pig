@@ -1,33 +1,40 @@
-# AI runtime reliability
+# AGENTS.md — ai
 
-## Read first
+Port of Pi `packages/ai`: Transcript and message types, Providers (one file family per API), model catalogs, auth storage, Event Stream.
 
-- `../docs/project/CONTEXT.md`
-- `../docs/typescript-to-go-porting.md`
-- `../.upstream/current/packages/ai/src/types.ts`
-- `../.upstream/current/packages/ai/src/utils/event-stream.ts`
-- the matching provider under `../.upstream/current/packages/ai/src/api/`
+## Layout
+- Providers: `anthropic*.go`, `openai.go` (openai-completions), `openai_responses.go` (openai-responses), `azure*.go`, `bedrock*.go`, `google*.go`, `cloudflare*.go`, ... Upstream: `.upstream/current/packages/ai/src/api/`.
+- `*_generated.go` — model/provider catalogs generated from the exact published Pi package pinned by `extensions/sdk-ts`. Pin change → `make model-catalogs`. Never hand-edit.
+- `event_stream*.go`, `events.go` — Event Stream (`.upstream/current/packages/ai/src/utils/event-stream.ts`). `sse.go` — the only SSE parser.
+- `faux*.go`, `test_faux.go` — hermetic faux provider for tests and parity.
+- Request contract checks: `internal/requestvalidity` (rules cited in `wire.go`).
 
 ## Contract
-
-A Provider receives a normalized Transcript. Public Message, content, Usage, and event shapes match pinned Pi. An Event Stream preserves event order and has one terminal result. Provider setup can return an immediate error. Runtime, provider, authentication, and cancellation failures after stream creation terminate the stream.
+- A Provider receives a normalized Transcript. Public Message, content, Usage and event shapes match pinned Pi.
+- Event Stream: preserves event order, exactly one terminal result. Setup may return an immediate error; provider, auth, runtime and cancellation failures after creation terminate the stream.
+- Providers read the transcript via `TranscriptContext.borrowed` and never modify the slice, a message or anything it references. `Messages` is the copying accessor for callers that keep or change the result.
 
 ## Failure modes
-
 | Failure | Detection | Required result |
 |---|---|---|
-| Invalid JSON enters trusted provider code | Supply a non-JSON value or non-finite number | Reject it at the public boundary |
-| Result depends on event consumption | Request Result without iteration after more than the former queue bound | Result completes |
-| Iteration stops while waiting | Cancel the iterator context | No waiter or goroutine remains |
-| Cancellation races with termination | Run concurrent Push, iteration, and Result under the race detector | One terminal result |
-| A goroutine that drives a coroutine turn takes the executor's lock only after the body switched back to it, while another turn's body or reaction runs | `TestContinuationLateDriverDoesNotContinueAnotherTurnsDrain` holds the first body between its switch and its driver, runs a second turn into a reaction that does not return, then releases the driver | The late driver continues only a drain its own body holds; no body runs beside a reaction; every turn finishes and the executor is never left draining with no loop |
-| A provider emits an invalid sequence | Exercise setup, start, block, delta, end, and terminal paths | Match Pi event order |
-| Replay metadata crosses provider or model identity | Replay signed content through another model | Drop or transform it as Pi does |
-| Consumed events remain retained | Drain a long stream | Release consumed queue entries |
-| A transport consumer stalls | Stop reading subprocess frames | Apply bounded transport backpressure and cancellation |
-| A provider receives a Transcript its API rejects (a tool result without its tool call, anything between a call and its results, a duplicate call id, a role order the API refuses) | Run any test, or any binary built with `-tags requestvalidity` | `internal/requestvalidity` panics at the send seam: the wire body of each JSON API, the Converse input, and the transcript every provider and faux provider receives. `PIG_REQUEST_VALIDITY_REPORT=<file>` records violations without panicking. A test that sends an invalid request on purpose uses `invalidRequest(t)` and states why |
-| A request build copies the whole transcript (cost grows with every turn) | Convert a 100-turn and an 800-turn history for every API and compare the allocations per turn | A provider reads the transcript through `TranscriptContext.borrowed` and never modifies the slice, a message or anything a message references; `Messages` stays the copying accessor for callers that keep or change what they get. `TestRequestBuildLeavesTheTranscriptUnchanged` compares the transcript before and after the request build of one catalog model of every request shape, `TestRequestBuildDoesNotCopyWhatItDoesNotSend` fails when a build copies tool-result details it never sends, and `TestRequestBuildAllocationsAreLinearInTheHistory` bounds the cost per turn |
+| Invalid JSON enters trusted provider code | non-JSON value or non-finite number | reject at the public boundary |
+| Result depends on event consumption | request Result without iterating past the former queue bound | Result completes |
+| Iteration stops while waiting | cancel the iterator context | no waiter or goroutine remains |
+| Cancellation races termination | concurrent Push, iteration, Result under `-race` | one terminal result |
+| Late coroutine driver continues another turn's drain | `TestContinuationLateDriverDoesNotContinueAnotherTurnsDrain` | driver continues only its own body's drain; no body runs beside a reaction; executor never left draining without a loop |
+| Invalid provider event sequence | setup, start, block, delta, end, terminal paths | Pi event order |
+| Replay metadata crosses provider/model identity | replay signed content through another model | drop or transform as Pi does |
+| Consumed events retained | drain a long stream | consumed queue entries released |
+| Transport consumer stalls | stop reading subprocess frames | bounded backpressure + cancellation |
+| Provider gets a Transcript its API rejects (orphan tool result, content between call and results, duplicate call id, refused role order) | every test; any binary built with `-tags requestvalidity` | `internal/requestvalidity` panics at the send seam. `PIG_REQUEST_VALIDITY_REPORT=<file>` records instead. Intentionally invalid test requests use `invalidRequest(t)` and state why |
+| Request build copies the whole transcript | convert 100- vs 800-turn histories per API | linear cost per turn; `TestRequestBuildLeavesTheTranscriptUnchanged`, `TestRequestBuildDoesNotCopyWhatItDoesNotSend`, `TestRequestBuildAllocationsAreLinearInTheHistory` |
 
 ## Evidence
+- Write failure cases before provider code. Isolated tests for normalization, JSON, payload conversion, event order, cancellation; a real Model Runtime path for `complete`, `stream`, `streamSimple`. Cover every provider family.
+- Assert the serialized request shape (table-driven), not just a successful return.
+- `go test -race ./ai`. Mutation-check one event discriminator and one provider content field.
+- `test/pipeline-diff` sends seeded random histories through Pi's and PiG's convertToLlm → transformMessages → API converters and compares wire requests; contract rules come from provider docs and Pi's `transform-messages.ts`.
 
-Write failure cases before provider code. Use isolated tests for normalization, JSON, payload conversion, event order, and cancellation. Use a real Model Runtime path for `complete`, `stream`, and `streamSimple`. Cover every provider family. Run `go test -race ./ai`. Retain payload and event-sequence evidence. Mutation-check one event discriminator and one provider content field. `test/pipeline-diff` sends seeded random histories through Pi's convertToLlm, transformMessages and API converters and through PiG's, and compares the requests on the wire; every contract rule comes from the provider's documentation and Pi's `transform-messages.ts`, cited in `internal/requestvalidity/wire.go`.
+## Traps
+- Don't parse SSE outside `sse.go`; don't classify errors by status-code substrings; don't map unknown/missing stop reasons to success (divergence-guard).
+- Don't special-case one provider in shared code; see root "Faithful, general implementations".

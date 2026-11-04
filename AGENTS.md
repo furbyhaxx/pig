@@ -1,672 +1,204 @@
-# AGENTS.md
+# AGENTS.md — pig (furbyhaxx fork)
 
-Operating rules for AI agents maintaining `pig`, the Go port of upstream `pi`. This file is context, not human marketing. Keep it small, current, and enforceable.
+Go port of Pi (`earendil-works/pi`): coding-agent CLI, TUI, SDK and providers. This repo is a personal distribution forked from `MichaelKinsy/PiG`. Target: Pi's observable behavior, except numbered divergences in `docs/parity/DIVERGENCES.md`. Go module path stays `github.com/MichaelKinsy/PiG`.
 
-## Mission
+## Fork
 
-`pig` must match upstream `pi` observable behavior unless `docs/parity/DIVERGENCES.md` records a numbered, scrutinized exception. Treat the port as a compiler from upstream TypeScript behavior to Go behavior: `docs/parity/PORT_MAP.md` defines the file map, parity scenarios define behavior, `test/parity/coverage.md` reports proof, and gates keep the claims honest.
+- Decisions: `.project/specs/0001-personal-distribution.md`. User guide: `docs/personal-fork.md`.
+- Hourly sync merges `MichaelKinsy/PiG:main` (`automation/release/personal-fork-sync.sh`). Each new source commit on `main` releases `x.y.z-c.N` (`automation/release/personal-fork.sh`).
+- Every fork edit to an upstream file is a future merge conflict. Prefer new files. Keep fork logic in `automation/release/personal-fork*`, `.github/workflows/personal-fork.yml`, `docs/personal-fork.md`, `.project/`.
+- All `AGENTS.md` outside `testdata/` are fork-owned; merges keep ours (`.gitattributes` `merge=ours`). The sync lists upstream changes to them in the merge commit → port applicable rules here; read upstream's with `git show upstream/main:<path>`. Local merges: `git config merge.ours.driver true` once.
+- Upstream tests or gates that read `AGENTS.md` content break after syncs (ours is kept, their data moves on). Decouple them from `AGENTS.md`; don't mirror upstream text into ours.
+- Don't commit `-c.N` versions or run `make set-version` on `main`; the release script sets the version in its build tree. Upstream owns `PigVersion` bumps.
+- Don't edit inherited upstream workflows; GitHub runs only `personal-fork.yml`.
+- Upstream-owned artifact dirs: `docs/plan/`, `docs/specs/`, `docs/findings/`, `plans/`, `research/`, `handoffs/`. Read; never add fork artifacts there.
+- `.project/` — development artifacts; never in `docs/`; committed. Load skill `dot-project` before writing one. Every Markdown artifact needs `document:` frontmatter (`.project/AGENTS.md`). Open work: `BACKLOG.md` pointers + `.project/backlog/`; live claims: project-scope `tasks`. Never put drift/TODOs in AGENTS.md.
 
-Source of truth:
-- `.upstream/current/` is the upstream mirror.
-- `.upstream/pin` is the one upstream pin: a Pi release tag, or a pinned pi-mono commit (`ref`, `commit`, `package_version`, display `version` such as `1.1.0+42a3497d`). `internal/coding/pigversion/pigversion.go` is generated from it (re-exported by `coding/upstream.go` as `coding.UpstreamVersion`, `coding.UpstreamPackageVersion`, `coding.UpstreamCommit`). `PI_UPSTREAM_REF=<tag|commit>` overrides the pin for one run, and `make pin-bump PI_UPSTREAM_REF=<tag|commit>` moves it and regenerates what derives from it (`docs/parity/upstream-pin.md`).
-- `docs/parity/PORT_MAP.md` maps upstream files to Go files, deferred entries, or designed-out entries.
-- `test/parity/scenarios/<family>/*.toml` define observed behavior.
-- `test/parity/interfaces/upstream-v<version>.json` is the compiler-derived public
-  package interface denominator; observable adapter inventories such as
-  `cli-v<version>.json` extend it for non-package user contracts;
-  `mapping-v<version>.json` records each Pig disposition and closure evidence. Generated inventory drift and strict mapping
-  are Foundation gates. PORT_MAP remains the file navigation roll-up until
-  Foundation I finishes generating its statuses from these ledgers.
-- `test/parity/upstream-sync/v<version>.toml` accounts for every changed tracked source file in a version leap.
-- `test/parity/async-contracts.toml` accounts for Promise/async semantics across the complete pinned upstream source tree.
-- `test/parity/coverage.md` and the generated block below report verification.
-- `docs/parity/DIVERGENCES.md` records intentional differences.
+## Sources of truth
 
-No prose status claim overrides those files.
+No prose claim overrides these. Never hand-edit generated files. After changing exported Go API, CLI flags, settings, scenarios or docs mirrors: `make generate`, commit the result.
 
-If you change exported Go API, CLI flags, settings, parity scenarios, or docs mirrors, run `make generate` and commit the result. CI's drift gates compare these files. Never hand-edit generated files; regenerate.
+| What | Where |
+|---|---|
+| Upstream source (read-only, generated) | `.upstream/current/`; missing → `make upstream-mirror` |
+| Upstream pin | `.upstream/pin`; move only with `make pin-bump PI_UPSTREAM_REF=<tag\|commit>` (`docs/parity/upstream-pin.md`); generates `internal/coding/pigversion/pigversion.go` |
+| Upstream file → Go file | `docs/parity/PORT_MAP.md` |
+| Observed behavior | `test/parity/scenarios/<family>/*.toml` |
+| Verification report (generated) | `test/parity/coverage.md` (`make coverage`) |
+| Intentional differences | `docs/parity/DIVERGENCES.md`, generated from `docs/parity/divergences/D<N>.md` |
+| Additive (non-Pi) capabilities | `docs/additive-features.md` |
+| Public interface denominator, mapping | `test/parity/interfaces/upstream-v<ver>.json`, `mapping-v<ver>.json` |
+| Version leap accounting | `test/parity/upstream-sync/v<ver>.toml` |
+| Promise/async contracts | `test/parity/async-contracts.toml` |
+| Glossary (Session, Provider, Model Runtime, Main Screen, Piglet, ...) | `docs/project/CONTEXT.md`; use its terms, never redefine |
+| TS → Go semantics | `docs/typescript-to-go-porting.md` |
+| Which doc to read for a task | `docs/README.md` |
 
-When landing a new port, record its full upstream source path in a production
-`// Ports packages/.../file.ts` comment and update PORT_MAP in the same change.
-The drift gate rejects explicit port claims left not-started, deferred, or n/a.
-Use partial until behavioral closure is reviewed; source existence is not proof.
+## Layout
 
-## Product-extension boundary
+Own `AGENTS.md` in each dir marked ●. Read it before working there.
 
-Stock PiG contains upstream-parity behavior and the inert, product-neutral mechanisms needed to discover, validate, select, build, verify, load, isolate, and run Packages, Resources, extensions, Piglets, and Piglet Binaries. A Piglet selects and activates product behavior. PiG Standard owns branded presentation, opinionated defaults, selected extensions, onboarding, games, and other optional product workflows.
+| Path | What |
+|---|---|
+| `agent/` ● | agent loop, message types (Pi `packages/agent`) |
+| `ai/` ● | providers, model catalogs, Event Stream (Pi `packages/ai`) |
+| `coding/` ● | coding-agent SDK: Session, Model Runtime, modes, CLI (`coding/cli/`) |
+| `coding/extension/` ● | extension API, host, subprocess wire, runtime cells |
+| `tui/` ● | terminal rendering, editor, components (Pi `packages/tui`) |
+| `internal/` ● | shared helpers incl. JS/Node semantics; interactive app in `internal/codingagent/` |
+| `chord/` `durable/` `env/` `telemetry/` `codemode/` `mcp/` ● | ports of the other Pi monorepo packages |
+| `extensions/` ● | extension SDKs: Go, Rust, Python, TypeScript declarations |
+| `piglets/` ● | PiG Standard, Porter, aot Piglets |
+| `examples/` ● | example extensions and SDK programs (product surface) |
+| `test/` ● | cross-package suites; `test/parity/` ●, `test/extension-conformance/` ● |
+| `docs/` ● | maintainer refs + user docs; `docs/parity/` ● |
+| `automation/` ● | every non-Go script; `Makefile` is the interface |
+| `changelog.d/` | changelog fragments; every file there must be a fragment (no AGENTS.md); rules under Git |
+| `.github/` ● | fork release workflow, inherited upstream CI |
+| `cmd/pig/` | binary entry; calls `coding/cli.Main`. Other `cmd/*`: generators |
+| `schemas/` | generated JSON Schemas (`make generate-schemas`) |
+| `third_party/` | vendored forks of external modules; each has its own notes (e.g. `FORK.md`) |
+| `bench/` | benchmarks and eval harnesses |
+| `nix/` | flake package; `vendorHash` in `nix/package.nix` |
 
-Classify every proposed additive capability before implementation:
+Cross-updates:
+- `go.mod`, `go.sum`, `go.work*` or a new module import in `cmd/pig` → `nix/vendor-hash.sh update` (or set the hash it prints).
+- New package/module/area → its `AGENTS.md` in the same change (skill `agents-md`).
 
-1. `required substrate` remains in Stock PiG.
-2. `inert capability` remains in Stock PiG only when an extension or Piglet must select it.
-3. Composition, presentation, policy, and branded behavior belong in PiG Standard or another explicit Piglet or Package.
-4. Caller-free or unneeded behavior is deleted.
-5. Behavior that overlaps Pi but differs observably is fixed or recorded in `docs/parity/DIVERGENCES.md` after explicit approval.
+## Stock PiG vs product
 
-Use `product-neutral diagnostics` for generic reports that describe Stock mechanisms. Use `explicit unsafe opt-in` only for a capability that stays off by default, is visible at configuration boundaries, and must not be selected by PiG Standard.
+Stock PiG = upstream-parity behavior + inert, product-neutral mechanisms to discover, validate, select, build, verify, load, isolate and run Packages, Resources, extensions, Piglets, Piglet Binaries. Classify every additive capability before implementing:
 
-A Piglet cannot supply the parser, resolver, verifier, SDK bridge, isolation boundary, or build machinery needed to load itself. Do not move those bootstrap mechanisms into PiG Standard. Do not activate Standard behavior in Stock PiG. Do not put product UI, Piglet-specific recommendations, workflow-specific logic, or linked extension products under `internal/` or `cmd/` except for the minimum generic host capability.
+1. Required substrate → Stock.
+2. Inert capability that an extension or Piglet must select → Stock.
+3. Composition, presentation, policy, branding → PiG Standard (`piglets/standard/`) or another Piglet/Package.
+4. Caller-free or unneeded → delete.
+5. Overlaps Pi but differs observably → fix, or numbered divergence after explicit user approval.
 
-Additive records use `docs/additive-features.md`. Observable Stock PiG differences use `docs/parity/DIVERGENCES.md`. Place one short typed source marker at each production decision point. Tests do not satisfy the source-marker requirement.
+- Don't activate Standard behavior in Stock. Don't put product UI, Piglet-specific recommendations, workflow logic or linked extension products under `internal/` or `cmd/` beyond the minimum generic host capability.
+- A Piglet cannot supply its own parser, resolver, verifier, SDK bridge, isolation boundary or build machinery; keep those bootstrap mechanisms in Stock.
+- Additive records: `docs/additive-features.md`. Observable differences: `docs/parity/DIVERGENCES.md`. One short typed source marker at each production decision point; tests don't count as markers.
+- `explicit unsafe opt-in`: off by default, visible at configuration boundaries, never selected by PiG Standard. `product-neutral diagnostics`: generic reports about Stock mechanisms.
 
-Change the version only with `make set-version VERSION=x.y.z`.
+## Porting rules
 
-## Pig-owned format and update policy
+- Port semantics, not syntax: omitted/undefined/null, closed unions, insertion order, UTF-16/code-point/terminal-cell units, numeric conversion, exceptions, callback ownership, Node path/URL/regex/JSON behavior, every state or wire effect callers observe. Reuse `internal/js*` and `internal/node*` (`internal/AGENTS.md`).
+- Mirror upstream names and structure 1:1 (camelCase → exported PascalCase, same literal union values, same field names). Rename only when Go forces it (no `Symbol.for`, no field-bearing interfaces, discriminated union → sealed interface); record each case. A needless rename inflates the next sync.
+- TS `interface` ≠ Go interface: struct for data; small consumer-owned interface only for a real behavioral contract. Constructors return concrete types.
+- New port: production comment `// Ports packages/<pkg>/src/<file>.ts` + PORT_MAP row in the same change. Status `partial` until behavioral closure is reviewed; the drift gate rejects port claims left not-started, deferred or n/a.
+- A production file is `ported` only when every upstream test covering it is ported with the same inputs and expectations, or designed out with a numbered reason (`test/parity/AGENTS.md`).
+- Choose the option that makes the next upstream sync smaller. No pig-specific behavior in mirrored code unless it is a numbered divergence.
+- Don't change a public extension or TUI contract for presumed speed; profile first, prove allocations and byte-faithful output before and after.
+- Unsure → read upstream source and tests, probe upstream, match it. Still unsure → ask the user.
 
-Pig-owned source, manifest, record, graph/plan, builder, Marketplace,
-publication, and subprocess formats have one strict current unversioned shape
-while Pig and its clients upgrade atomically. Release/content identity, exact
-upstream-owned schema versions, and external-standard versions remain. Do not
-add a Pig-owned format discriminator, negotiation, compatibility reader,
-migration, redirect, or dual write unless exact upstream regularly versions the
-equivalent schema or the user explicitly approves independently deployed
-compatibility.
+### Promise/async
 
-Self-update preserves Pi's command routing but uses one proven native ownership
-tier per operation. Standalone download, package-manager, immutable
-Piglet Binary, OCI/Image, and unsupported/read-only paths must
-not substitute for one another after work starts. Downloads require complete
-checksum and overflow-safe size verification; startup checks remain bounded and
-best-effort, while explicit update failures remain actionable.
+| Upstream | Go |
+|---|---|
+| awaited Promise | blocking call returning value/error; no `go func()` just because TS says `async` |
+| `Promise.all`/`allSettled` | owned, joined concurrency with deterministic result/error order |
+| intentionally unawaited Promise | owned background task with cancellation, error reporting, shutdown drain; never a naked goroutine |
+| rejection | error on the same operation unless upstream handles it |
+| `AbortSignal`, request/session lifetime | `context.Context` or equivalent cancellation |
+| async TUI/event handler | slow work off the UI loop; UI mutation via the loop's run-on-main path |
 
-## Extension API porting rules
-
-The pig extension system is a **port** of the upstream pi extension API,
-not a replacement for it. Two downstream-only constructs exist so we can
-stay subprocess-only without giving up the pi extension API:
-
-- **Multi-language SDK bridges** (`extensions/sdk`, `extensions/sdk-rs`,
-  `extensions/sdk-py`): see `docs/additive-features.md` D19 and
-  `docs/extension-api-parity.md` “Parity boundary”. All three SDKs target the
-  **same current wire contract** in
-  `coding/extension/host/subprocess/protocol.go` and the same
-  registration/host-call/tool-result shapes. The wire has no independent
-  version or compatibility negotiation. The conformance suite in
-  `test/extension-conformance/` is the
-  authority: a new SDK feature is only “done” when it matches the
-  in-process Go reference there.
-
-  Every SDK exposes the same extension API. Separate the three axes:
-
-  - **Interface**: the set of capabilities and their parameters and return
-    meaning. Identical across SDKs, modulo the naming convention.
-  - **Behavior**: what a call returns for a given host state, including
-    error and edge cases. Identical across SDKs.
-  - **Implementation**: how an SDK produces that answer: host call versus
-    replicated state, sync versus async internals, threading, allocation,
-    borrowing, error representation. Free to differ per language.
-
-  Implementation variance is expected and needs no record. Interface or
-  behavior variance is drift. Returning a constant where another SDK
-  returns host data is a behavior divergence even though the interface
-  matches, and it is worse than a missing method: a missing method fails
-  loudly at the call site, while a plausible constant is silently believed.
-  A stub is therefore not an acceptable resting state, and "the host call
-  is async but this API is sync" is a reason to replicate the value into
-  state, not a reason to fabricate one.
-
-  An extension is portable between SDKs by rewriting it, not by
-  rearchitecting it or dropping a feature. A capability landing in one SDK
-  is unfinished until it lands in all of them with a conformance row that
-  fails when any one is broken. Bind that row to a value distinguishable
-  from each SDK's fallback, or an SDK that never makes the call passes by
-  defaulting.
-- **Packed runtime cells** (`coding/extension/host/subprocess/cell_plan.go`,
-  `coding/extension/host/runtimecell/`): see `docs/additive-features.md` D20. These
-  are a host-side optimization. Each contained extension keeps its own
-  socket and its own `register` handshake. Packed mode must
-  be observationally identical to isolated mode from the extension’s
-  point of view; if a difference appears, fix the host or add a numbered
-  divergence: do not change the SDK API to paper over it.
-
-Do not, without an explicit approved spec:
-- add a WASM or embedded-JS extension runtime,
-- add a dynamic Go plugin / `plugin.Open` extension loader,
-- add a linked/in-process production extension runtime, except the compiled-in extension factory form of `docs/specs/extension-factory-trust.md`: an `extension.ExtensionFactory` that the source of the binary's own `main` package passes to the loader by value (Stock PiG's built-in rows, or an embedding program's own factories). A Piglet member, including a D31 fused extension, never uses it. Settings and `-e builtin:<name>` may select or disable a registered built-in by name, as Pi does; no user, project, Package, file, settings entry, Piglet, or wire peer can supply or add factory code,
-- introduce multi-register (`RegisterPayload.Extensions`,
-  `RequestPayload.TargetExtension`): packed cells deliberately stay on
-  one socket and one registration per extension,
-- diverge SDK semantics from the in-process Go reference without first
-  numbering the divergence and citing a failing conformance test.
-
-When adding a host-side feature, first read `docs/extension-authoring.md`.
-The implementation order is: upstream pi behavior → protocol shape in
-`protocol.go` → host wiring in `coding/extension/host/subprocess/` → SDK
-ergonomics in each `extensions/sdk*/` → conformance test row → parity
-matrix row in `docs/extension-api-parity.md` → numbered divergence if
-needed.
-
-`extensions/sdk-ts` is a declaration-only adapter. It re-exports the exact
-pinned Pi extension declarations and augments them with PiG-only types. The
-Node subprocess runtime remains the implementation, so do not duplicate Pi's
-TypeScript runtime in this package. Keep its Pi dependency equal to
-`coding.UpstreamVersion` and verify it with `make test-sdk-ts`.
-
-Extension authoring has two source forms. A conventional factory uses the one
-standard symbol for its language; an exact standalone is always isolated. Pig
-derives wire, SDK, runner, placement, and registration details. Runtime
-registration owns identity and capabilities. Do not add an authored extension
-manifest or another global extension configuration plane. Isolated, packed, and
-fused realizations of one factory must pass the same conformance behavior.
-
-## TypeScript-to-Go semantic translation
-
-Read `docs/typescript-to-go-porting.md` before translating a new behavior
-family or changing a parity-facing Go representation. Port observed semantics,
-not TypeScript syntax: account explicitly for omitted/undefined/null state,
-closed unions, insertion order, UTF-16/code-point/terminal-cell units, numeric
-conversion, exceptions, callback ownership, Node path/URL/regex/JSON behavior,
-and every state or wire effect that callers observe. A TypeScript `interface`
-does not imply a Go interface; use a struct for data and a small consumer-owned
-Go interface only for a real behavioral contract. Constructors normally return
-concrete types. "Port semantics, not syntax" governs behavior, not naming: it is
-not license to rename. Mirror upstream identifiers and structure 1:1 (camelCase →
-exported PascalCase, same literal union values, same field names), and diverge
-only where a Go language mechanic forces it (no `Symbol.for`, no field-bearing
-interfaces, discriminated union → sealed interface), recording each forced case.
-A needless rename is drift that inflates the next upstream sync and obscures
-correspondence. Do not change a public extension or TUI contract for presumed
-speed: profile the representative path and prove allocations/inlining and
-byte-faithful behavior before and after.
+- Probe call sites, not declared types: an `async` function without `await` still adds a microtask boundary; a Promise-returning callback may be awaited by its host.
+- Evidence must prove completion order, cancellation and error propagation; happy-path output is not async proof.
 
 ## Faithful, general implementations
 
-Port Pi's design, not one case's output. Use Pi's shared data (model catalog, `defaultModelPerProvider`, auth metadata) and one shared function where Pi has one. Never hard-code a provider or model in shared code; cite the Pi line when Pi itself special-cases one. Test shared paths with several provider shapes, never only Copilot or `test-faux`, and fix a special case's siblings together.
+- Port Pi's design, not one case's output. Use Pi's shared data (model catalog, `defaultModelPerProvider`, auth metadata) and one shared function where Pi has one.
+- Never hard-code a provider or model in shared code; when Pi itself special-cases one, cite the Pi line.
+- Test shared paths with several provider shapes, never only Copilot or `test-faux`. Fix a special case's siblings together.
 
-## TypeScript async/Promise parity
+Shared provider/model/auth/tool regression matrix (explain inapplicable rows from the upstream contract, not from available credentials; `--list-models` is not stream/payload proof):
 
-Treat every upstream `async`, `Promise`, `.then`, `Promise.all`, `Promise.race`, and intentionally unawaited call as control-flow behavior, not syntax to erase. Before porting it, record whether the caller waits, what ordering is guaranteed, how cancellation and errors propagate, whether work is concurrent, and which executor/event loop owns callbacks. Then preserve that contract in Go:
-
-- an awaited Promise normally maps to a blocking Go call that returns its value/error; do not add `go func()` merely because TypeScript says `async`;
-- `Promise.all`/`allSettled` maps to owned, joined concurrency with deterministic result/error handling, not detached goroutines;
-- an intentionally unawaited Promise maps only to an owned background task with cancellation, error reporting, and shutdown draining; naked fire-and-forget goroutines are not equivalent;
-- Promise rejection maps to a surfaced Go error on the same operation unless upstream explicitly handles it;
-- `AbortSignal` and request/session lifetime map to `context.Context` or an equivalent cancellation channel;
-- async TUI/event handlers perform slow work off the UI loop and marshal UI mutation back through the loop's approved run-on-main path.
-
-Probe upstream call sites, not only the declared return type: an `async` function with no `await` may still create a microtask boundary, while a Promise-returning callback may be awaited by its host. Regression evidence must prove completion ordering, cancellation, and error propagation; output-only happy-path tests do not prove async parity. When adding or changing an extension API, record the async contract in `docs/extension-api-parity.md` and exercise isolated and packed subprocess modes where applicable.
-
-## Reward function
-
-Highest-value work, in order:
-1. Find a pig-vs-pi behavior difference and fix it at the source, or number it in `docs/parity/DIVERGENCES.md`.
-2. Tighten an existing scenario comparator: `wait_contains` → `output_normalized_equal` → `output_equal` → `escaped_output_equal`, or increase `runs` where flake risk matters.
-3. Promote silent drift to a numbered divergence with call-site markers, remove condition, and parity coverage or explicit allowance.
-4. Add honest file coverage where the asserted output actually exercises the claimed `covers` paths.
-
-Low-value or misleading work: green check counts, scenario counts, `covers` entries not exercised by the assertion, normalized output hiding a real rendering difference, `runs = 1` for non-trivial behavior, renderer band-aids when the bug is upstream-source logic, and stopping because `make check` is green.
-
-## Loop smells
-
-Stop and report instead of claiming success when:
-- Everything passed on the first try.
-- A scenario passed before and after the supposed fix.
-- The loop produced zero bugs, zero comparator tightenings, and zero numbered divergences.
-- A scenario claims coverage but asserts only banner, prompt, or ready text.
-- ANSI or whitespace was normalized to hide a real difference.
-- `family-gaps` is green only because one broad scenario claims many files.
-- A comment explains a rendering difference but no divergence number exists.
-
-Investigation is the work. Green is necessary, not sufficient.
-
-## Loop self-report
-
-Before `signal_loop_success`, include this block in the final assistant message and fill it honestly:
-
-```md
-### Loop self-report
-
-Family: <name>
-
-Bugs found and fixed at the source (count: N):
-  - <cause> → <fix> @ <file:line>
-
-Comparators tightened (count: N):
-  - <scenario>: <before> → <after>
-
-Divergences numbered in docs/parity/DIVERGENCES.md (count: N):
-  - D<N> <one-line>
-
-Lint suppressions added or changed (count: N):
-  - <rule> @ <file/config>: <why source fix would be less faithful/correct>
-
-New file coverage (count: N PORT_MAP entries newly ✅):
-  - <upstream path>
-
-Band-aids consciously chosen (count: N, should be 0):
-  - <site>: <symptom>: <why root fix deferred>: <follow-up>
-
-Scope expansion (count: N files outside nominal family):
-  - <file>: <reason>: <call sites audited>
-
-Cross-family scenarios re-probed/tightened (count: N):
-  - <family>/<scenario>: <what changed and why>
-
-Smells investigated (count: N):
-  - <smell> → <finding>
-
-Smells deferred to user (count: N, should be 0 unless blocked):
-  - <smell>: <blocker>
-```
-
-A report with all zero counts is a failed loop unless the user explicitly accepts that outcome.
-
-## Coverage
-
-The block below is generated by `make coverage
-make foundation-check
-make interface-inventory
-make interface-inventory-test
-make interface-inventory-drift
-make interface-go-drift
-make interface-recommendations-drift
-make interface-recommendations
-make interface-mapping-quality
-make interface-mapping-strict
-make upstream-delta
-make async-contracts` or `make verify` from `docs/parity/PORT_MAP.md` and `test/parity/scenarios/**/*.toml`. Do not hand-edit between the markers. Fix `test/parity/cmd/coverage/main.go` if the math is wrong.
-
-<!-- BEGIN COVERAGE -->
-<!--
-  Machine-generated by `make coverage`. Do not hand-edit.
-  This block is the ONLY status claim AGENTS.md makes about the
-  port. Everything else is invariant rule, not progress narrative.
--->
-
-**Porting:** 636 / 638 intended-portable entries ✅ (99.7%); **Verification:** 632 behavioral (99.4%), 4 untested.
-Raw PORT_MAP rows: 713. Breakdown: 75 n/a (designed out) · 2 🟡 partial. See docs/parity/DIVERGENCES.md for the documented exceptions.
-
-| package | src files | n/a | intended | ✅ | 🟡 | ⬜ | ported | behavioral |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `agent` | 6 | 1 | 5 | 5 | 0 | 0 | 100.0% | 100.0% |
-| `ai` | 210 | 22 | 188 | 187 | 1 | 0 | 99.5% | 98.9% |
-| `chord` | 41 | 5 | 36 | 36 | 0 | 0 | 100.0% | 97.2% |
-| `codemode` | 17 | 4 | 13 | 13 | 0 | 0 | 100.0% | 100.0% |
-| `coding-agent` | 254 | 27 | 227 | 227 | 0 | 0 | 100.0% | 100.0% |
-| `durable` | 85 | 9 | 76 | 76 | 0 | 0 | 100.0% | 98.7% |
-| `env` | 23 | 3 | 20 | 19 | 1 | 0 | 95.0% | 100.0% |
-| `evals` | 5 | 0 | 5 | 5 | 0 | 0 | 100.0% | 100.0% |
-| `mcp` | 18 | 3 | 15 | 15 | 0 | 0 | 100.0% | 100.0% |
-| `telemetry` | 8 | 1 | 7 | 7 | 0 | 0 | 100.0% | 100.0% |
-| `tui` | 46 | 0 | 46 | 46 | 0 | 0 | 100.0% | 100.0% |
-
-- **Four core packages (agent, ai, coding-agent, tui):** 465 / 466 intended-portable files ✅ (99.8%) from 516 rows; 463 behavioral (99.6%), 0 weak-only, 2 untested.
-- **Shipped surface (agent, ai, codemode, coding-agent, mcp, telemetry, tui; coding-agent without ):** 500 / 501 intended-portable files ✅ (99.8%) from 559 rows; 498 behavioral (99.6%), 0 weak-only, 2 untested.
-- **Whole monorepo (11 packages):** 636 / 638 intended-portable files ✅ (99.7%) from 713 rows; 632 behavioral (99.4%), 0 weak-only, 4 untested.
-- **Interface closure:** 13447 of 13450 semantic interface IDs closed (226 designed-out, 3 pending, 13221 ported). A file-level ✅ does not close an interface ID.
-
-Behavioral evidence includes paired scenarios and reviewed mutation-proven unit tests; the family table below counts paired scenarios only.
-Weak scenarios not counted as behavioral verification: 4 boot-only, 4 registration-only, 1 smoke-only.
-
-| family | scenarios | behavioral | boot-only | weak | deferred | upstream behavioral covered | last run |
-|---|---:|---:|---:|---:|---:|---:|---|
-| `_top` | 1 | 1 | 0 | 0 | 0 | 1 | not run |
-| `ai-sdk` | 3 | 3 | 0 | 0 | 0 | 90 | not run |
-| `autocomplete` | 14 | 14 | 0 | 0 | 0 | 5 | not run |
-| `cli-utils` | 33 | 33 | 0 | 0 | 0 | 15 | not run |
-| `clipboard-images` | 7 | 7 | 0 | 0 | 2 | 11 | not run |
-| `compaction` | 15 | 15 | 0 | 0 | 0 | 10 | not run |
-| `export-html` | 7 | 7 | 0 | 0 | 0 | 2 | not run |
-| `extension-host` | 1 | 1 | 0 | 0 | 0 | 2 | not run |
-| `extensions-runtime` | 143 | 142 | 0 | 1 | 0 | 63 | not run |
-| `footer` | 12 | 12 | 0 | 0 | 0 | 9 | not run |
-| `fullscreen` | 13 | 13 | 0 | 0 | 0 | 10 | not run |
-| `interactive-rendering` | 68 | 67 | 1 | 0 | 0 | 37 | not run |
-| `json` | 14 | 14 | 0 | 0 | 0 | 10 | not run |
-| `model-resolver-selector` | 27 | 27 | 0 | 0 | 0 | 16 | not run |
-| `model-runtime-store-catalog` | 25 | 25 | 0 | 0 | 0 | 24 | not run |
-| `oauth` | 32 | 32 | 0 | 0 | 0 | 19 | not run |
-| `print` | 13 | 13 | 0 | 0 | 0 | 9 | not run |
-| `project-trust` | 26 | 26 | 0 | 0 | 0 | 19 | not run |
-| `providers-faux-streaming` | 66 | 65 | 0 | 1 | 0 | 49 | not run |
-| `providers-registry` | 9 | 6 | 0 | 3 | 0 | 27 | not run |
-| `rpc` | 93 | 93 | 0 | 0 | 0 | 32 | not run |
-| `selectors` | 14 | 14 | 0 | 0 | 1 | 15 | not run |
-| `session` | 43 | 43 | 0 | 0 | 0 | 19 | not run |
-| `settings` | 16 | 16 | 0 | 0 | 0 | 21 | not run |
-| `slash-commands` | 28 | 27 | 1 | 0 | 0 | 20 | not run |
-| `startup` | 19 | 18 | 1 | 0 | 0 | 10 | not run |
-| `tools` | 32 | 32 | 0 | 0 | 0 | 35 | not run |
-| `tree` | 9 | 8 | 1 | 0 | 0 | 9 | not run |
-| `tui-components` | 39 | 39 | 0 | 0 | 0 | 36 | not run |
-
-Full per-file detail: `test/parity/coverage.md`.
-
-<!-- END COVERAGE -->
-
-## Reliability contexts
-
-Define the upstream contract, complete user path, and material failure modes before implementation. Follow the verification sequence below. Use the complete PiG path as the primary proof for behavior that crosses a Provider, Session, mode, Extension Host, process, or terminal boundary. Retain repeatable evidence.
-
-Test empty, ordinary, boundary, and representative stress inputs. Verify ordering, cancellation, replacement, cleanup, and retained state. Measure latency, memory, allocation, and backpressure on critical paths. A small-input pass does not prove bounded behavior.
-
-Use a term from `docs/project/CONTEXT.md` when that file defines it. Do not redefine ratified terms in a module instruction. Read the nearest module `AGENTS.md` before work in a known reliability context. The root owns shared invariants. The module owns its contract, failure model, and evidence. Store each rule once.
-
-| Context | Instructions |
+| Axis | Minimum cases |
 |---|---|
-| Transcript, Provider, Event Stream | `ai/AGENTS.md` |
-| Main Screen, terminal rendering, input editing | `tui/AGENTS.md` |
-| Session, Model Runtime, execution mode | `coding/AGENTS.md` |
-| Extension Host, SDK, topology, lifecycle | `coding/extension/AGENTS.md` |
-| upstream oracle, scenario, comparator, evidence | `test/parity/AGENTS.md` |
-| Stock PiG artifact, PiG Standard Piglet release, provenance, publication | `.github/AGENTS.md` |
-
-Apply these rules to new work. Do not delete or weaken accepted tests to conform. Coordinate with the lane owner before changing evidence. Brief or restart active agents after an instruction change.
-
-## Upstream test parity
-
-A production file is `ported` only when every upstream test file covering it is ported with the same inputs and expected results, or designed out with a numbered, reviewed reason. Record test locations and current upstream hashes in `test/parity/interfaces/test-mapping-v<version>.json`. A `partial` disposition enumerates the missing cases; file-name similarity, existing code, and a passing smoke test do not close them. Port the covering upstream tests in the same change whenever you port or change a production file. Preserve ordering, cancellation, errors, retained state, and caller effects, not only happy-path output.
-
-No release may treat a pending or partial upstream test tagged `hot-path` as closed. `make ci-contracts` enforces the reviewed path tags in `test/parity/interfaces/test-porting-policy-v<version>.json` and rejects a decrease in the total ported-file count against the committed baseline. The owner-approved 0.3.x exception records explicit `deferred-0.3.x` rows without changing their partial/pending mappings, hot-path tags, assertions or baseline; [the release-policy procedure](test/parity/README.md#approved-03x-test-porting-gaps) defines the required approval, missing-case reference and follow-up. All unlisted pending/partial hot paths remain release blockers. Keep tag review and the ported baseline current in the same change; never remove a hot-path tag or lower the baseline to pass the gate. A credential or toolchain requirement is not a scope exclusion. Dispatch test-file ownership through `docs/parity/pending-tests-batches.md`; coordinate production files and shared evidence separately.
-
-## Verification-driven development
-
-For core parity surfaces (agent loop, message normalization, provider payload conversion, session persistence, auth, tool execution, interactive rendering), use a red → green → refactor loop. Apply [Faithful, general implementations](#faithful-general-implementations).
-
-Bug fixes require a regression guard in the same PR. Add a new unit test, integration test, or parity scenario that would fail on the observed bug, or name the existing failing test that already proves it. If no automated guard is practical, say why in the PR and file a follow-up before merge. Do not rely on manual repro alone for a fixed bug.
-
-1. **Reproduce first.** Add or identify a test/scenario that fails on the current code before changing behavior. If you already patched before writing the test, prove the test is meaningful by describing the exact pre-fix failure it would have caught.
-2. **Compare to upstream.** Read the upstream TypeScript implementation and encode the observable rule in the test name/comment. For provider/message conversion, prefer table-driven tests that assert the serialized request shape, not just successful return. For interactive rendering, assert the runtime event path, not only the leaf component.
-3. **Fix at the source.** Patch the lowest shared layer that matches upstream semantics. Avoid UI/provider band-aids when message normalization or session conversion is the source.
-4. **Harden both boundaries.** For cross-layer bugs, add at least one unit test at the pure conversion layer and one regression at the nearest caller boundary when practical (e.g. NormalizeMessages + OpenAI converter; session loop + print/interactive error surfacing).
-5. **Verify poisoned history.** When a bug involves bad persisted sessions, test with historical/poisoned messages: errored assistant turns, aborted assistant turns, empty text blocks, nil content, orphaned tool calls, and model/provider switches.
-6. **No accepted flake.** Do not document “rerun standalone” as success. Fix root causes instead of hiding failures with longer time budgets, retries, sleeps, env overrides, skips, or normalization. Use timeouts and retries only for faults outside our control, and surface those faults. An unavailable external dependency is a blocker, not passing evidence.
-7. **Report the red/green evidence.** Final summaries for fixes to core parity must state: failing symptom, new regression test names, upstream rule mirrored, and commands run. If a test was added after the fix, say it was not red-proven.
-8. **Production path required.** A new production API/method used to fix behavior must have at least one production call site or a test that drives the production path. Test-only call sites do not prove the product behavior changed.
-9. **Coverage quality over coverage quantity.** A PORT_MAP entry is not accepted as verified by a weak scenario. Boot-only, smoke-only, and deferred scenarios may stay in the report, but they do not count as behavioral verification. Registration-only scenarios count only for registry/catalog/auth-wiring paths, never for provider stream/payload conversion files.
-
-Use this acceptance matrix for shared provider, model, auth, and tool regressions. Explain inapplicable shapes from the upstream contract, not available credentials. Do not use `--list-models` as stream/payload proof.
-
-Cover both OpenAI-compatible API paths when the change reaches both:
-
-```text
-ai/openai.go             # openai-completions
-ai/openai_responses.go   # openai-responses
-agent/transform.go       # upstream transform-messages parity before provider conversion
-```
-
-Shared-path acceptance matrix for regressions:
-
-| required axis | minimum cases |
-|---|---|
-| provider shape | OAuth, API key, OpenAI-compatible with a custom base URL, and no default model, as the path allows |
-| API path | each API kind reached by the shared behavior, including `openai-completions` and `openai-responses` when both can apply |
-| mode | pure shared-function/converter unit test plus nearest caller (`print`, interactive, or RPC, as applicable) |
-| history | fresh plus poisoned persisted history when relevant |
-| assistant prior turn | error, aborted, empty text, tool-call/orphaned tool-call when relevant |
-| auth/network | hermetic success and hermetic failure when touching auth refresh/error display |
-
-## Done criteria
-
-A surface is done only when:
-1. a canonical scenario exists under `test/parity/scenarios/<family>/`;
-2. `covers = [...]` names exact upstream paths from `docs/parity/PORT_MAP.md` **and** those paths are exercised by the asserted behavior;
-3. the scenario has behavioral verification quality (not boot-only, registration-only, smoke-only, or deferred) unless the surface is explicitly accepted as weak-only;
-4. the scenario was derived from upstream first;
-5. drift exposed by the scenario is fixed or recorded as a numbered divergence;
-6. legacy duplicate or weak coverage claims are removed;
-7. pure unit tests and caller-path tests exist for cross-layer bugs;
-8. `go test ./...` and the relevant parity gate pass.
-
-9. for an upstream leap, `make upstream-delta` proves every changed tracked source file has a non-pending disposition and durable evidence.
-
-10. `make interface-inventory-drift` proves the public package export graph and
-    exact published declaration inventory are current, and
-    `make interface-mapping-strict` proves every stable interface ID has complete
-    mapping/reachability/conformance/evidence closure.
-
-11. `make async-contracts` proves every current upstream Promise/async source has an explicit ordering/cancellation/error contract and durable evidence.
-
-12. interaction and state-machine behavior found during probing is closed in
-    `test/parity/behavior-contracts.toml` when declaration shape cannot express it.
-    Contracts bind a hashed current-upstream source range and its complete
-    keybinding/event inventory to Pig targets, a failing unit regression, and a
-    behavioral parity scenario. Boundary transitions such as first/last
-    wraparound, empty/singleton states, cancellation, ordering, and persistence
-    are separate obligations; interface presence does not prove them.
-
-`test/parity/interfaces/behavior-inputs-v<version>.json` is the compiler-derived
-denominator for upstream input/action state machines and render surfaces. It
-accounts for keybinding declarations, platform defaults, consumers, raw input,
-branch/state effects, theme calls, glyph/string tokens, width/layout calls,
-numeric positioning literals, and referenced file constants. Its reviewed
-mapping assigns each surface to one owner family and records pending, partial,
-ported, deferred, divergence, or designed-out closure. `make
-behavior-contracts` rejects source/facet drift, declaration/consumer mismatch,
-missing mappings, invalid family ownership, and stale evidence. `make
-behavior-contracts-strict` rejects pending or partial surfaces. Generated
-facets identify review obligations; they never prove branch semantics, visual
-output, or promote a mapping.
-
-Parallel porter campaigns may run only read-only `inventory` and `verify` jobs
-against disposable snapshots via `make porter-campaign`. Reports
-must be tied to one commit, upstream version, and owner family, and are proposals
-for the coordinator to re-probe. Production/evidence edits (`family` and
-`tighten`) remain serialized in the canonical workspace.
-
-Choose the option that makes the next upstream sync smaller. Do not embed pig-specific behavior in mirrored code unless it is a documented divergence.
-
-## Parity scenario rules
-
-Probe upstream first. Record enough evidence in comments for the next maintainer to see what was measured. Prefer strong, byte-faithful comparators. Use substring checks only when no stronger stable assertion exists.
-
-Scenario quality rules:
-- `covers` must name behavior exercised by the asserted crop/output, not merely code touched by startup, registration, or import/linking.
-- Boot-only scenarios may exist but cannot claim deep file coverage and do not count as behavioral verification.
-- Registration-only scenarios (for example `--list-models`) prove catalog visibility only. They must be tagged `registration-only`; they may cover registry/catalog/auth-wiring paths but must not claim provider stream/payload conversion files.
-- Smoke-only scenarios must be tagged `smoke-only`; they are useful tripwires but not acceptance evidence.
-- If output differs, fix pig or cite a numbered divergence. Comments alone are not enough.
-- Do not weaken a comparator to keep a pig bug green.
-- Scenario comments must explain any `normalize_replace`, `lint-known-gap`, `skip`, `serial`, group override, or weak-quality tag.
-- Keep `covers` narrow. Broad claims inflate the dashboard and hide untested behavior.
-- Re-probe affected cross-family scenarios when a fix changes shared behavior.
-
-Isolation rules for parallel parity:
-- Agent/home dirs are ephemeral copies. Never write into checked-in fixture roots.
-- Use `{{TEMP}}` for writable paths; do not hardcode `/tmp` paths.
-- tmux session names must be unique and cleanup may kill only `parity-*` sessions.
-- `PIG_CODING_AGENT_DIR` and `PI_CODING_AGENT_DIR` win over `PIG_HOME`, and every child process inherits them, including a tmux session started from your shell. A manual probe or test that runs pig must set or clear all of `PIG_CODING_AGENT_DIR`, `PI_CODING_AGENT_DIR`, `PIG_HOME`, `PI_HOME` and `HOME`, or `/logout` and login rewrite the real credentials (the 2026-10-06 lane `auth.json` wipe). A package whose `TestMain` calls `testenv.ScopeTempDir` or `testenv.RunScoped` replaces the agent-directory variables. Other packages inherit them, so a plain `go test` run from an agent shell sets `PIG_CODING_AGENT_DIR`, `PI_CODING_AGENT_DIR`, `PIG_HOME` and `PI_HOME` to scratch directories first. `make test` runs each group under seeded directories and fails a group that adds, removes or changes any file or directory in them (`automation/ci/agent-dir-guard.sh`).
-- `pre_clear_paths` is deprecated; prefer fresh temp dirs.
-- Use the default scheduler groups unless a justified `group = "..."` or `serial` tag is required.
-- Deferred scenarios stay visible in coverage; do not use skip/defer to hide known drift.
+| provider shape | OAuth, API key, OpenAI-compatible with custom base URL, no default model — as the path allows |
+| API path | each API kind reached; both `openai-completions` (`ai/openai.go`) and `openai-responses` (`ai/openai_responses.go`) when both apply; `agent/transform.go` before conversion |
+| mode | pure function/converter unit test + nearest caller (print, interactive or RPC) |
+| history | fresh + poisoned persisted history when relevant |
+| prior assistant turn | error, aborted, empty text, tool-call/orphaned tool-call when relevant |
+| auth/network | hermetic success + hermetic failure when touching auth refresh/error display |
 
 ## Divergences
 
-A prior divergence record is investigation evidence, not permanent approval.
-Re-probe it against the exact current upstream and current production path at
-every upstream leap and foundation/release review. Delete or reclassify entries
-that are language mechanics, additive behavior, test limitations,
-unreachable/equal behavior, stale scaffolds, or caller-free code. IDs are global
-across `docs/parity/DIVERGENCES.md` and additive ledgers; duplicate IDs fail even when they
-live in different files.
+- Allowed only when user-visible or interop-relevant and it cannot or should not be faithful now. Required: record `docs/parity/divergences/D<N>.md` (`docs/parity/AGENTS.md`), `SCRUTINIZED:approved`, remove-when condition, `// pig divergence (D<N>): ...` at every call site, parity coverage or explicit allowance.
+- Not divergences: TS → Go mechanics, harness differences, per-SDK implementation details. An SDK missing a capability or answering differently is drift; record and close it.
+- Where a user can observe a difference, the docs state it at the point of use and cite `D<N>`.
+- A prior divergence is evidence, not permanent approval; re-probe at every upstream leap.
+- `make divergence-guard` (in `make check`) flags in `agent`, `ai`, `coding`, `internal/codingagent`, `tui`, `cmd/pig`: `magic-literal`, `cancel-drop-send`, `default-drop-send`, `stream-parse-continue`, `stop-reason-success`, `hand-rolled-sse` (SSE only in `ai/sse.go`), `discarded-io-error`, `hook-fail-open`, `error-status-substring`, `agent-run-outside-session` (agent `Send`/`Continue` only in `coding/session*.go`); `bare-recover` everywhere. A hit passes only with `// pig divergence (D<N>): ...` or `// upstream: <file>:<symbol>` on its line or the line above. The cited file must exist in `.upstream/current` or a verified dependency snapshot (`test/parity/dependency-sources.json`, `docs/parity/dependency-source-proof.md`); a literal's value must appear there.
+- `automation/ci/divguard/baseline.toml` is shrink-only: a fix deletes its entries in the same change; never add an entry for new code.
 
-A divergence is allowed only when it is user-visible or interop-relevant and cannot or should not be made faithful now. Every active divergence must have:
-- `D<N>` id in `docs/parity/DIVERGENCES.md`;
-- `SCRUTINIZED:approved`;
-- remove-when condition;
-- `// pig divergence (D<N>): ...` at each call site;
-- parity coverage or an explicit parity allowance.
+## Verification
 
-Each record is one file, `docs/parity/divergences/D<N>.md`: an active record is a `## D<N> <title>` section, a retired record is one `- D<N> — ...` line. Edit that file only. `make divergences` generates `docs/parity/DIVERGENCES.md` from the files, and a lane does not commit the generated ledger; the merger regenerates it (`TestDivergenceLedgerEqualsItsRecordFiles` fails when they differ).
+- Bug fix → regression guard in the same change that fails on the bug, or name the existing failing test. Reproduce first; a test written after the fix is "not red-proven" — say so.
+- Core parity surfaces (agent loop, message normalization, provider payload conversion, session persistence, auth, tool execution, interactive rendering): red → green → refactor. Encode the upstream rule in the test name/comment. Fix at the lowest shared layer that matches upstream; no UI/provider band-aids.
+- Cross-layer bug → unit test at the pure layer + regression at the nearest caller (e.g. `NormalizeMessages` + OpenAI converter; session loop + print/interactive error display).
+- Persisted-session bugs → poisoned history: errored/aborted assistant turns, empty text blocks, nil content, orphaned tool calls, model/provider switches.
+- No accepted flake. Don't hide failures with retries, sleeps, longer budgets, env overrides, skips or normalization. Timeouts/retries only for faults outside our control, and surface them. Unavailable external dependency = blocker, not pass.
+- A new production API used to fix behavior needs a production call site or a test that drives the production path.
+- Exact-count assertions derive the expectation from an independent denominator or a reviewed generated snapshot plus its regeneration command.
+- Mutation evidence must compile, unless compilation is the contract.
+- Critical paths (extension, TUI, model/provider, Session/RPC, Package/Resource, startup/reload): representative benchmark/profile + resource-lifetime check. Test empty, ordinary, boundary and stress inputs; verify ordering, cancellation, replacement, cleanup, retained state.
+- Performance claims need a representative benchmark with allocations and a CPU/allocation profile. Interface dispatch is not a defect without evidence.
+- Known bug found in scope → fix with red/mutation evidence, or report it as a user-owned blocker and file a backlog item.
+- Green is necessary, not sufficient. Stop and report when everything passed first try or a check passed before and after the supposed fix.
+- Core parity fix report: failing symptom, regression test names, mirrored upstream rule, commands run.
 
-`make divergence-guard` (part of `make check`) catches divergences nobody recorded. It flags, in the agent, ai, coding, internal/codingagent, tui and cmd/pig packages: duration and cap literals with no upstream counterpart (`magic-literal`), event sends that race a context-done case (`cancel-drop-send`), non-blocking sends that drop their value (`default-drop-send`), decode errors skipped inside loops (`stream-parse-continue`), unknown or missing stop reasons mapped to success (`stop-reason-success`), SSE fields parsed outside `ai/sse.go` (`hand-rolled-sse`), `recover()` that discards the panic (`bare-recover`), discarded persistence errors (`discarded-io-error`), hooks that proceed when their handler fails (`hook-fail-open`), errors classified by status-code substrings (`error-status-substring`), and agent `Send`/`Continue` outside `coding/session*.go` (`agent-run-outside-session`). `bare-recover` scans every non-test Go file in the repository, not only those packages. A hit passes only with a `// pig divergence (D<N>): ...` marker on its line or the line above, or, when Pi really does the same, `// upstream: <file>:<symbol>` there; the file must exist in `.upstream/current` or be a SHA-256-verified dependency snapshot whose exact version matches a dependency pin in that mirror (`test/parity/dependency-sources.json`; see `docs/parity/dependency-source-proof.md`), the symbol must appear in it, and for a literal the value must appear too. A literal whose value appears in an upstream file that `docs/parity/PORT_MAP.md` maps to the Go file also passes. Every current hit is listed in `automation/ci/divguard/baseline.toml` with its finding and owning slice. The gate compares the scan with that file in both directions: a new hit fails, and so does an entry whose hit is gone, so a fix deletes its entries in the same change. It does not compare the file with its previous version, so keeping it shrink-only is a review rule: never add an entry for new code. A green guard shows these patterns are absent or accounted for, not that the code matches Pi; allow markers prove only that the cited file and symbol exist (and, for literals, that the value appears there).
+## Test isolation
 
-Do not record ordinary TS-to-Go mechanics, test harness differences, or an
-SDK's implementation of a capability every SDK has (naming convention, `Result`
-vs `(T, error)` vs raised exception, ownership and borrowing, host call versus
-replicated state).
+- `PIG_CODING_AGENT_DIR` and `PI_CODING_AGENT_DIR` beat `PIG_HOME`, and every child process inherits them, including tmux sessions started from your shell. Any manual probe or test that runs pig sets or clears all of `PIG_CODING_AGENT_DIR`, `PI_CODING_AGENT_DIR`, `PIG_HOME`, `PI_HOME`, `HOME`. Otherwise `/logout` and login rewrite the real credentials.
+- Plain `go test` from an agent shell: point those four `*_DIR`/`*_HOME` variables at scratch dirs first, unless the package's `TestMain` calls `testenv.ScopeTempDir` or `testenv.RunScoped`. `make test` fails a group that changes them (`automation/ci/agent-dir-guard.sh`).
+- tmux: unique session names; only `tmux kill-session -t <name>`; never `tmux kill-server`.
 
-That exemption covers implementation only. An SDK that lacks a capability
-another SDK has, or that answers the same call differently, is drift regardless
-of how faithfully its interface is spelled. Record it and close it.
+## Code and lint
 
-## Native Windows development
-
-Windows is a first-class target. Windows-only failures are fixed on a Windows machine, not by repeated CI round trips.
-
-Set up the toolchain at the pinned versions:
-- Go from `.go-version`, Node from `.node-version`, Python 3.12, and the Rust toolchain that `ci.yml` names in `RUST_VERSION`.
-- Git for Windows, and run the `make` targets and `automation/` scripts from Git Bash.
-- `fd` and `rg` from `automation/ci/install-windows-tools.ps1`, which verifies each archive against `automation/ci/windows-tools.txt`.
-- The Pi oracle with `automation/ci/install-npm-toolchain.sh`, then `python automation/pin/pin.py install-oracle`, then `python automation/ci/npm-locked.py internal/typebox/testdata/npm` and `python automation/ci/npm-locked.py ai/testdata/sdk`, as the Windows CI job does.
-- `./automation/gen/mirror-upstream.sh` from Git Bash with `MSYS=winsymlinks:nativestrict`.
-
-Reproduce a Windows CI job locally before you change code. Run the same command the job runs (see the `windows` job in `.github/workflows/ci.yml`). Use `go test -v` and a `-timeout` below the job limit, so a stall prints a stack.
-
-Set `PIG_HOME` and `PIG_CODING_AGENT_DIR` to a directory with a space in its path, as CI does. Many Windows bugs are path bugs: separators, drive letters, 8.3 short names, and `D:\work\project` against `/work/project`. Compare with what Pi does on Windows before you change a path rule.
-
-Work on a branch named `team/<name>/<topic>`. Push it to the staging remote, not to the public repository. The integrator stacks verified branches into the release branch. Each commit follows Commit hygiene below: `git commit --signoff -S`.
-
-## Code and lint policy
-
-Apply [Faithful, general implementations](#faithful-general-implementations) to code review and provider/model literal guard exceptions; each exception requires a Pi source citation.
-
-Fix valid findings at the source. Preserve upstream behavior over stylistic lint suggestions. Use the narrowest suppression for real false positives and explain why a source fix would be less faithful or less correct. `nolintlint` is enabled; stale or unexplained pragmas fail. Security suppressions must name the CLI threat-model reason.
-
-Code and interface style:
-- Production comments state only current behavior and non-obvious protocol, concurrency, security, compatibility, or behavioral invariants. Delete comments that restate code, narrate an implementation pass, preserve project history, or point to `docs/parity/PORT_MAP.md`, a phase, a future row, or another status ledger instead of stating the current contract. Keep migration and parity rationale in the owning ledger or specification.
-- Do not hard-wrap Markdown prose or source comments to fit a terminal pane. Editors can display-wrap long lines. Preserve structural line breaks in code blocks, tables, quoted material, poetry, generated files, and formats with an enforced line-length contract.
-- Roadmap phases, workstream labels, future-work promises, internal issue ownership, and placeholder implementation plans fail the source-hygiene gate; keep them in tracked specifications instead.
-- Historical comments, phase labels, placeholders, compatibility paths, manual
-  parity lists, test-only public implementations, and prior approvals have no
-  grandfather status. Revalidate against current upstream and production use;
-  update the current rationale, bind the full production path, reclassify, or
-  delete.
-- Production-grade Go means concrete validated data, minimal consumer-owned
-  interfaces, deterministic order, bounded resources, explicit lifetime/error
-  ownership, and one mechanism per concept. Do not mirror TypeScript internals
-  or add abstraction merely to look structurally similar; preserve observable
-  Pi semantics and portable wire/session/source behavior. Quality archaeology is
-  not a style sweep: change debt only with current contract/caller evidence and
-  leave accurate provenance and healthy out-of-family code alone.
-- `iface` rejects unused/duplicate interface declarations, opaque interface
-  returns with one concrete implementation, and unexported contracts leaked
-  through exported APIs. Do not suppress it
-  by default; delete an unneeded interface or keep the one consumer-owned
-  contract.
-- Do not enable or apply `ireturn` or `interfacebloat` mechanically. Extension
-  protocol interfaces, tagged unions, providers, and factories have legitimate
-  interface returns, and an upstream public protocol may be broad. Review those
-  surfaces against `docs/typescript-to-go-porting.md` and measure hot paths.
-- Performance claims require a representative benchmark with allocations and a
-  CPU/allocation profile. Interface dispatch is not a defect without evidence;
-  prioritize the measured cost center and preserve upstream behavior.
-
-- Exact-count assertions must derive their expectation from an independent denominator or identify an explicitly reviewed generated snapshot and use its owning regeneration command. A newly observed number proves that output changed, not that the new number is correct.
-- A runtime mutation must compile before its behavioral failure counts as evidence. A compiler failure counts only when compilation is the contract under test.
-- For extension, TUI, model/provider, Session/RPC, Package/Resource, and startup/reload critical paths, capture a representative benchmark/profile and resource-lifetime disposition with the owning behavior family. No blocking extension IPC or unbounded work may run on the TUI input/render loop.
-- Ordinary editor and transient popup changes must not clear or replay transcript history. No TUI input handler may synchronously copy, decode, or scan unbounded Session history.
-- Every known bug found in scope is fixed with red/mutation evidence or remains
-  an explicit user-owned blocker. Passing unrelated gates does not close it.
-
-Go style:
-- Build, CI, release-candidate, security-analysis, and documented setup commands use Go 1.27.3.
-- `.go-version` is the one Go pin. Workflows, scripts, images, the devcontainer, and the `toolchain` lines of `go.mod` and `go.work` name that release and no other. A script reads `.go-version` instead of repeating the number. Moving the pin changes `.go-version` and its recorded copies in one change; `make compliance` and `TestGoVersionPolicy` fail on any other release. Dated measurement records keep the release they ran on.
-- Maintained modules declare Go 1.26 or 1.26.0 as their language floor unless a concrete language requirement is approved. Do not raise a `go` directive merely to match the build toolchain.
-- Use language features available at the module floor. Prefer applicable modern standard-library APIs such as `slices.Sort`, `slices.SortFunc`, `cmp.Compare`, `maps.Copy`, `slices.Sorted(maps.Keys(m))`, `strings.Cut`, `CutPrefix`, `SplitSeq`, `for i := range n`, `wg.Go`, `min`, and `max`.
-- `go fix -diff ./...` should be empty.
-- When observable behavior changes, update the doc comment in the same commit.
-
-Lint commands when touching lint/config/code:
-```bash
-go tool golangci-lint config verify
-make lint-changed
-make lint
-```
-
-`make port-lint` runs the porting anti-pattern analyzers (`automation/ci/portlint/README.md`) against a ratcheting `baseline.toml`. Fix a finding at the source, or mark one reviewed false positive with `//portlint:allow <check> <reason>`. Never add a baseline entry for new code.
-
-Use `make lint-changed` in the development loop. It runs every configured linter over whole changed Go files in changed packages relative to the merge base with `main`. Use `make lint` for the full-repository gate. `make check` always runs the full-repository gate.
+- Go toolchain: `.go-version` is the only pin; scripts read it. Moving it updates its recorded copies (workflows, images, devcontainer, `toolchain` lines in `go.mod`/`go.work`) in one change; `make compliance` and `TestGoVersionPolicy` enforce it. Module `go` directives stay at the 1.26 floor unless a language need is approved.
+- Use modern stdlib: `slices`, `maps`, `cmp`, `strings.Cut`/`CutPrefix`/`SplitSeq`, `for i := range n`, `wg.Go`, `min`/`max`. `go fix -diff ./...` stays empty (`make go-fix-clean`).
+- Production-grade Go: concrete validated data, minimal consumer-owned interfaces, deterministic order, bounded resources, explicit lifetime and error ownership, one mechanism per concept.
+- Comments state current behavior and non-obvious protocol, concurrency, security or compatibility invariants. The source-hygiene gate rejects roadmap phases, workstream labels, future promises, placeholder plans and pointers to PORT_MAP/status ledgers. Nothing is grandfathered: revalidate old comments, placeholders and compatibility paths when touched.
+- Observable behavior change → update the doc comment in the same commit.
+- Lint: fix findings at the source; upstream behavior beats style. Narrowest suppression with a reason (`nolintlint` rejects stale or unexplained pragmas); security suppressions name the CLI threat-model reason. Don't suppress `iface`; delete the unneeded interface. Don't enable or apply `ireturn`/`interfacebloat` mechanically.
+- `make port-lint` (`automation/ci/portlint/README.md`): fix at the source or `//portlint:allow <check> <reason>` for a reviewed false positive; never add baseline entries for new code.
+- Pig-owned formats (source, manifest, record, graph/plan, builder, Marketplace, publication, subprocess): one strict current unversioned shape. No format discriminator, negotiation, compatibility reader, migration, redirect or dual write unless upstream versions the equivalent schema or the user approves.
+- Self-update: one native ownership tier per operation (standalone download, package manager, immutable Piglet Binary, OCI/Image, read-only); never substitute one for another after work starts. Downloads need full checksum and overflow-safe size checks. Startup checks stay bounded and best-effort; explicit update failures stay actionable.
+- Release version: only via `make set-version VERSION=x.y.z` (fork: see Fork).
 
 ## Commands
 
-Run `make generate` after changing exported Go API, CLI flags, settings, parity scenarios, or docs mirrors. Commit the result. Never hand-edit generated files; regenerate.
+- Iterate: `go test ./<pkg> -run '<Tests>'`. `-race` on edited packages only. No `-count=1` unless the test reads inputs through a child process. Bound fuzzing with `-parallel` and `-fuzztime`. Shared host: build with `-trimpath`.
+- Before a commit: `make test-changed lint-changed`, `go vet` on touched packages.
+- Before reporting ready: `make ci-drift ci-contracts` + affected `make parity-family FAMILY=<f>`.
+- Full: `make check` (deterministic gates + `parity-fast`), `make verify` (end-of-loop, regenerates coverage), `make test`, `make parity`, `make lint`. Tiers: `docs/project/test-economy.md`.
+- `make test` requires Go, Node, Python, Rust; fixture build failures are fatal. Prereqs: `make doctor`; setup: skill `setup-pig`.
+- Lint config change: `go tool golangci-lint config verify`.
+- All targets: `make help`, `make help-parity`. Don't `go install ./cmd/pig`; use `make pig` (→ `bin/pig`) or `make install`.
 
-Primary gates:
-```bash
-make generate
-make build
-make vet
-make lint
-make test
-make lint-scenarios
-make parity-fast
-make parity
-make check
-make verify
-make coverage
-```
+## Public writing
 
-Other gates as needed:
-```bash
-make port-lint
-make schedule-report
-make test-stress
-make parity-stress
-make parity-perf
-make test-timing   # blocking wall-clock/ratio gates (internal/testenv.TimingGate); PR CI only warns (PIG_PERF_TIMING_REPORT_ONLY=1)
-make parity-live
-make release-check
-go tool govulncheck ./...
-go tool deadcode ./...
-go fix -diff ./...
-```
+Applies to `README.md`, `docs/`, `changelog.d/`, user-visible Go strings; `automation/ci/check-public-claims.py` enforces part of it.
+- Describe PiG as a faithful Go implementation of Pi; name and link Pi as the reference. Credit Michael Kinsy as creator and state PiG was originally developed at Hewlett Packard Enterprise, separate from legal notices.
+- Don't call PiG an official Pi project or imply endorsement. Don't claim HPE sponsorship, OSPO approval, community governance, certification or trademark approval. No HPE logos/wordmarks/styling. Stock PiG branding stays product-neutral.
+- Direct technical prose; verifiable facts (pinned Pi version, observed parity, named divergences, published evidence). No slogans, superlatives, competitive framing or future promises.
+- Coverage figures in prose must match `test/parity/coverage.md`.
+- Don't hard-wrap Markdown prose or comments.
 
-Choose the test tier by the moment, as `docs/project/test-economy.md` defines: `go test ./<pkg> -run '<Tests>'` while iterating, `make test-changed`, `make lint-changed` and `go vet` on touched packages before a handoff commit, `make ci-drift ci-contracts` and the affected `make parity-family` runs before reporting ready, and the full suites (`make test`, `make check`, `make verify`, `make parity`, `go test ./...`) in CI, integration and release preview. Do not pass `-count=1` unless the test reads inputs through a child process. Use `-race` on edited packages, not the whole module. Bound `go test -fuzz` with `-parallel` and `-fuzztime`. On a shared host, build with `-trimpath`.
+## Git
 
-`make test` requires and exercises the Go, Node, Python, and Rust toolchains; fixture build failures are fatal. `make check` combines deterministic gates with one strict Pig/Pi pair per hermetic scenario. `make verify` is the end-of-loop gate: it runs each scenario's declared durability and regenerates coverage. `make parity` runs declared scenario pairs in parallel with default concurrency groups and suppresses `runtime_ratio_max` because parallel CPU contention makes that metric unreliable. `make parity-perf` runs serially and enforces runtime ratios; use it for release gates or cron, not normal loops.
+- User-facing change → fragment `changelog.d/<lane>-<sha>.md`, `<sha>` = a commit of the range reachable from `HEAD`. Never edit `CHANGELOG.md`; `make changelog-fold VERSION=x.y.z` folds fragments at release.
+  - Sections in `CHANGELOG.md` style, bullets only: `### Added`, `### Changed`, `### Fixed`, `### Upgrading` (what a previous-release user must change), `### Deprecated`, `### Removed`, `### Security`, `### Known issues`.
+  - Every `### Fixed` bullet ends with `<!-- fix: <sha>[,<sha>] -->` naming fixing commits reachable from `HEAD` (or a squash commit's `Fix-Commit:` trailer); the bug ledger reads it.
+  - Rebase/squash/amend replaced the SHA → rename the fragment and update markers. Check: `make changelog-check` (full history); preview: `make changelog-unreleased`. `automation/ci/changelogfrag/legacy.txt` only shrinks.
+- Conventional Commits. Upstream's DCO sign-off and signed-commit rules govern upstream contributions only.
+- Testdata dirs accumulate temp files; inspect before staging.
+- Forbidden: `git stash`, `git commit --no-verify`, `tmux kill-server`.
+- Read local files yourself; don't dispatch subagents to read them.
 
-## Documentation language
+## Windows
 
-Write instructions, references, procedures, and operational documentation as simple, direct technical English. Write one instruction per sentence, in the present tense and the active voice. Keep one term for each thing. Do not apply controlled technical English mechanically to personal essays, origin stories, interviews, or release narratives. Preserve the author's vocabulary, humor, uncertainty, and cadence in those forms.
-
-Do not hard-wrap Markdown prose to a terminal width. Use structural newlines only where Markdown or the content requires them.
-
-Where Pig differs from Pi in a way a user can observe, state the difference at
-the point of use and cite its `D<N>`. An agent carrying Pi pretraining does the
-Pi thing wherever Pig's difference is undocumented.
-
-## Public project writing
-
-Write about PiG as a faithful Go implementation of Pi. Name Pi as the reference
-implementation and link to its repository and documentation. Credit Michael
-Kinsy as PiG's creator and state that PiG was originally developed at Hewlett
-Packard Enterprise. Keep those facts separate from legal notices.
-
-Do not call PiG an official Pi project or imply endorsement by Pi's maintainers.
-Do not claim HPE sponsorship, Open Program Office approval, public release,
-community governance, certification, or trademark approval until the relevant
-decision is recorded and public. Do not use HPE logos, wordmarks, or exact
-corporate styling without recorded Brand approval. Keep Stock PiG branding
-product-neutral.
-
-Use direct technical prose. Avoid slogans, superlatives, invented motives,
-competitive framing, and promises of future collaboration. Prefer verifiable
-facts: the pinned Pi version, observed parity, named divergences, supported
-artifacts, and published evidence.
-
-## Commit hygiene
-
-User-facing changes go in `changelog.d/<lane>-<sha>.md`, one fragment per commit range, as `### Added`, `### Changed`, `### Fixed` (and `Upgrading`, `Deprecated`, `Removed`, `Security`, `Known issues`) sections of bullets in `CHANGELOG.md`'s style. `<sha>` is a commit of the range reachable from `HEAD`; a rebase, squash or amend replaces SHAs, so rename the fragment after the commit that replaced it. Every `### Fixed` bullet ends with `<!-- fix: <sha> -->` naming the commit (or commits, comma-separated) that fixes it, also reachable from `HEAD` (or named by a `Fix-Commit: <full sha>` trailer of a squash commit `HEAD` reaches, see `.github/CONTRIBUTING.md`): the bug ledger reads `### Fixed`, and a bullet without a marker has its commits guessed from history, which once credited the 0.5.0 squash and its ~11,000 tests to five bullets. `### Upgrading` is what a user of the previous release must change; the fold appends it to the release's "Upgrading from" section. Do not edit `CHANGELOG.md`. `make changelog-check` validates the names, sections, markers and reachability against the full history of `HEAD` (a shallow clone fails) and `make changelog-unreleased` prints the assembly; fragments whose commits a squash replaced before these rules are listed in `automation/ci/changelogfrag/legacy.txt`, are exempt from the name and marker rules, and the list only shrinks. The integrator runs `make changelog-fold VERSION=x.y.z` to append the fragments to that release in `CHANGELOG.md` and delete them; it runs again at release for fragments written since. `make bug-ledger` refuses to attribute the tests of a commit that touches more than 500 files (a squash or merge) and names the entry; name the real fix commit in its marker.
-
-Every commit requires both a DCO `Signed-off-by` line and a signature GitHub marks **Verified**. Use `git commit --signoff -S`. Sign-off is not a cryptographic signature. See `.github/CONTRIBUTING.md` for SSH signing setup and unsigned-commit repair. If signing is unavailable, a maintainer lands the change in a maintainer-signed commit with a `Co-authored-by:` trailer.
-
-Before committing, run `git diff --stat HEAD` and `git status --short`, then stage only files intentionally changed. Never `git add .`, `git add -A`, or add a whole directory without inspecting contents. Testdata dirs accumulate temp files.
-
-Forbidden commands:
-- `git reset --hard`
-- `git checkout .`
-- `git clean -fd`
-- `git stash`
-- `git commit --no-verify`
-- `git push -f`
-- `tmux kill-server`
-- `go install ./cmd/pig`
-
-Only `tmux kill-session -t <name>` is allowed. Commit only files changed in this session.
-
-Do not dispatch subagents to read local files available in this worktree. Read them yourself.
-
-## When unsure
-
-Read upstream source, read upstream tests, probe upstream behavior, then make pig match it. Ask the user instead of guessing.
+First-class target. Fix Windows-only failures on a Windows host, not by CI round trips.
+- Toolchain: `.go-version`, `.node-version`, Python 3.12, Rust per `RUST_VERSION` in `.github/workflows/ci.yml`, Git for Windows (run `make`/`automation/` from Git Bash), `fd`/`rg` via `automation/ci/install-windows-tools.ps1`. Mirror: `MSYS=winsymlinks:nativestrict ./automation/gen/mirror-upstream.sh`.
+- Reproduce with the `windows` job's command from `.github/workflows/ci.yml`, `go test -v` and a `-timeout` below the job limit.
+- Set `PIG_HOME` and `PIG_CODING_AGENT_DIR` to a path containing a space. Most Windows bugs are path bugs (separators, drive letters, 8.3 names); compare with Pi on Windows before changing a path rule.
