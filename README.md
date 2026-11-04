@@ -10,7 +10,10 @@ SPDX-License-Identifier: MIT
 
 This is a personal distribution of [Michael Kinsy's PiG](https://github.com/MichaelKinsy/PiG), not an upstream contribution branch. It keeps the `pig` executable and existing configuration paths. Hourly upstream merges and signed GitHub releases are managed by the [personal-fork workflow](.github/workflows/personal-fork.yml). See [fork installation and release policy](docs/personal-fork.md).
 
-[![CI](https://github.com/MichaelKinsy/PiG/actions/workflows/ci.yml/badge.svg)](https://github.com/MichaelKinsy/PiG/actions/workflows/ci.yml)
+[![Personal fork](https://github.com/furbyhaxx/pig/actions/workflows/personal-fork.yml/badge.svg)](https://github.com/furbyhaxx/pig/actions/workflows/personal-fork.yml)
+[![Personal release](https://img.shields.io/github/v/release/furbyhaxx/pig)](https://github.com/furbyhaxx/pig/releases)
+
+Upstream project references and evidence (not fork attestations):
 [![CodeQL](https://github.com/MichaelKinsy/PiG/actions/workflows/security.yml/badge.svg)](https://github.com/MichaelKinsy/PiG/actions/workflows/security.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/MichaelKinsy/PiG/badge)](https://scorecard.dev/viewer/?uri=github.com/MichaelKinsy/PiG)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14941/badge)](https://www.bestpractices.dev/projects/14941)
@@ -18,7 +21,6 @@ This is a personal distribution of [Michael Kinsy's PiG](https://github.com/Mich
 [![Go Reference](https://pkg.go.dev/badge/github.com/MichaelKinsy/PiG.svg)](https://pkg.go.dev/github.com/MichaelKinsy/PiG)
 [![Minimum Go version](https://img.shields.io/github/go-mod/go-version/MichaelKinsy/PiG?label=Go%20%E2%89%A5)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Latest release](https://img.shields.io/github/v/release/MichaelKinsy/PiG?sort=semver)](https://github.com/MichaelKinsy/PiG/releases)
 [![Pi pin 1.4.0+6c384aa3](https://img.shields.io/badge/Pi%20pin-1.4.0%2B6c384aa3-8A2BE2)](https://github.com/earendil-works/pi/commit/6c384aa30f619d7b28963f2bab24d8dacbe73cb6)
 [![Pi port progress](.github/badges/parity-coverage.svg)](test/parity/coverage.md)
 [![Follow PiG on X](https://img.shields.io/badge/X-%40PiGCodingAgent-000000?logo=x&logoColor=white)](https://x.com/PiGCodingAgent)
@@ -158,56 +160,17 @@ PiG runs with the permissions of the user who starts it. PiG does not provide a 
 
 Use a container, virtual machine, or another operating-system boundary when you need isolation. Load extensions and project instructions only from sources you trust. See [.github/SECURITY.md](.github/SECURITY.md).
 
-## Install with npm
+## Distribution channels
 
-Install the command with npm (Node.js 18 or newer):
-
-```bash
-npm install -g @pi-in-go/pig
-pig --version
-```
-
-Or run it once without installing:
-
-```bash
-npx @pi-in-go/pig --version
-```
-
-`pig` itself is the native binary: npm installs the matching platform package
-(`@pi-in-go/pig-<os>-<cpu>`, for macOS, Linux and Windows on x64 and arm64, and Android on arm64 for Termux) as
-an optional dependency, and Node.js runs only a small launcher. Do not install
-with `--omit=optional` or `--no-optional`, which leaves the binary out. Update
-with `npm update -g @pi-in-go/pig` and uninstall with
-`npm uninstall -g @pi-in-go/pig`. `pig update` does not replace an
-npm-installed binary; update through npm.
-
-## Install with Go
-
-Install the command without a source checkout with Go 1.26 or newer:
-
-```bash
-go install github.com/MichaelKinsy/PiG/cmd/pig@latest
-```
-
-Go writes the `pig` executable to `GOBIN`, or to the `bin` directory of the first
-`GOPATH` entry when `GOBIN` is unset: `$(go env GOPATH)/bin`, which is
-`~/go/bin` by default (`%USERPROFILE%\go\bin` on Windows). Add that directory to
-`PATH`. With an older Go 1.21 or later and the default `GOTOOLCHAIN=auto`, Go
-downloads a new enough toolchain automatically. Release binaries are built with
-Go 1.27.3.
-
-Use an exact release such as `@v0.2.0` when reproducibility matters. Update a Go
-installation by running `go install` again. Each release tags the root module
-(`v0.2.0`) and the Go extension SDK module (`extensions/sdk/v0.2.0`) on the same
-commit; `go install` needs both.
+This fork publishes GitHub release archives and its GitHub-hosted installer. Upstream npm and Go module installations remain upstream channels; they do not install personal releases. See [the fork policy](docs/personal-fork.md) before switching a package-manager installation.
 
 ## Install with Nix
 
 The flake builds PiG from source in the Nix sandbox, with every input pinned by `flake.lock`:
 
 ```bash
-nix run github:MichaelKinsy/PiG -- --version
-nix profile add github:MichaelKinsy/PiG
+nix run github:furbyhaxx/pig -- --version
+nix profile add github:furbyhaxx/pig
 ```
 
 Nix before 2.30 and Lix spell the second command `nix profile install`.

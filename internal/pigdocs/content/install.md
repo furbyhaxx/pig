@@ -5,93 +5,39 @@ Use this page to get from a fresh binary to a working session. Return to the
 
 ## 1. Build or install the binary
 
-On macOS, Linux or Android with Termux (arm64 only), install the latest release with
-`curl -fsSL https://pi-in-go.dev/install.sh | sh`; in Termux it installs the
-`android-arm64` release into `$PREFIX/bin`. Or download an archive from
-[GitHub Releases](https://github.com/MichaelKinsy/PiG/releases). Windows
-support is a preview. From a source checkout, build it with Go 1.27.3. Go 1.27 release binaries for macOS require macOS 13 or later:
+This is the `furbyhaxx/pig` personal distribution. On macOS, Linux, or Android with Termux arm64, install from this fork's GitHub Releases:
 
-```bash
-go build -o bin/pig ./cmd/pig
+```sh
+curl -fsSL https://github.com/furbyhaxx/pig/releases/latest/download/install.sh | sh
+pig update
+```
+
+To replace an existing standalone installation, set `PIG_INSTALL_DIR` on the `sh` side of the pipe to the directory containing the current `pig`. The installer preserves settings, sessions, and credentials. It replaces the installation receipt, update URL, and public trust-key sidecars so subsequent updates use signed personal releases. Explicit update environment overrides still take precedence. Uninstall a package-manager installation through its manager before switching; do not overwrite package-owned files.
+
+On Windows, stop PiG and replace `pig.exe` with the matching ZIP from [this fork's releases](https://github.com/furbyhaxx/pig/releases), after checking `SHA256SUMS`. Windows standalone in-place updates remain unsupported.
+
+The upstream npm package, upstream Go module installation, hosted website installer, and PowerShell installer install upstream, not this fork. This fork does not republish those packages. From this fork's checkout, build with the toolchain in `.go-version`:
+
+```sh
+go build -trimpath -o bin/pig ./cmd/pig
 ./bin/pig --version
 ```
 
-Install the command with npm (Node.js 18 or newer):
-
-```bash
-npm install -g @pi-in-go/pig
-pig --version
-```
-
-Or run it once without installing:
-
-```bash
-npx @pi-in-go/pig --version
-```
-
-`pig` itself is the native binary: npm installs the matching platform package
-(`@pi-in-go/pig-<os>-<cpu>`, for macOS, Linux and Windows on x64 and arm64, and Android on arm64 for
-Termux) as
-an optional dependency, and Node.js runs only a small launcher. Do not install
-with `--omit=optional` or `--no-optional`, which leaves the binary out. Update
-with `npm update -g @pi-in-go/pig` and uninstall with
-`npm uninstall -g @pi-in-go/pig`. `pig update` does not replace an
-npm-installed binary; update through npm.
-
-Install the command with Go 1.26 or newer, without a source checkout:
-
-```bash
-go install github.com/MichaelKinsy/PiG/cmd/pig@latest
-```
-
-Use an exact version for a reproducible installation:
-
-```bash
-go install github.com/MichaelKinsy/PiG/cmd/pig@v0.2.0
-```
-
-Go writes the `pig` executable to `GOBIN`, or to the `bin` directory below the
-first `GOPATH` entry when `GOBIN` is empty: `$(go env GOPATH)/bin`, which is
-`~/go/bin` by default (`%USERPROFILE%\go\bin` on Windows). Add that directory to
-`PATH`. With an older Go 1.21 or later and the default `GOTOOLCHAIN=auto`, Go
-downloads a new enough toolchain automatically. Update this installation by
-running `go install` again. PiG does not treat a Go-installed executable as a
-standalone release download, so `pig update` refuses to replace it without a
-matching installation receipt.
-
-Each release tags the root module (`v0.2.0`) and the nested Go extension SDK
-module (`extensions/sdk/v0.2.0`) on the same commit; `go install` needs both.
-
-Install or run the command with Nix:
-
-```bash
-nix run github:MichaelKinsy/PiG -- --version
-nix profile add github:MichaelKinsy/PiG
-```
-
-Nix before 2.30 and Lix spell the second command `nix profile install`.
-
-The Nix package wraps the command with `fd`, `ripgrep` and the clipboard
-commands. Extensions build and run with the toolchains on `PATH`, as in any
-other installation. Update the flake input to update it.
-
-After the project publishes a release, you can also download an artifact from
-its release page. Verify the published checksum before you place `pig` on
-`PATH`.
+Plain source builds keep the upstream version pin; personal release builds apply `x.y.z-c.N` in a disposable build tree. Go 1.27 release binaries for macOS require macOS 13 or later. Nix users can build `github:furbyhaxx/pig` and update that flake input; `pig update` does not replace a Nix installation.
 
 PiG stores user state under `~/.pig`. Set `PIG_HOME` only for an isolated config
 root, tests, or CI.
 
 ### Change what the install script does
 
-`install.sh` reads these environment variables. Set them on the `sh` side of the pipe, for example `curl -fsSL https://pi-in-go.dev/install.sh | PIG_VERSION=0.5.0 sh`.
+`install.sh` reads these environment variables. Set them on the `sh` side of the pipe, for example `curl -fsSL https://github.com/furbyhaxx/pig/releases/latest/download/install.sh | PIG_VERSION=0.5.3-c.1 sh`.
 
 | Variable | Meaning |
 |---|---|
 | `PIG_VERSION` | Install this release (for example `0.5.0`) instead of the latest. |
 | `PIG_INSTALL_DIR` | Directory that receives `pig`. The default is `$HOME/.local/bin`, or `$PREFIX/bin` in Termux. |
 | `PIG_HOME` | PiG's settings directory, where the install receipt goes. The default is `~/.pig`. |
-| `PIG_API_BASE` | The API that names the latest release. The default is `https://pi-in-go.dev/api`. |
+| `PIG_API_BASE` | Optional API that names the latest release. Unset by default; the installer uses GitHub directly. |
 | `PIG_LATEST_RELEASE_URL` | The page that redirects to the latest release, used when the API does not answer. |
 | `PIG_DOWNLOAD_BASE` | The release download root. The default is the GitHub Releases download URL of this repository. |
 | `PIG_UPDATE_URL` | The update manifest that `pig update` uses. The default is the latest release's `update.json`. |
