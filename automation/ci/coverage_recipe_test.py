@@ -36,7 +36,7 @@ class CoverageRecipeTest(unittest.TestCase):
             shutil.copytree(ROOT / "automation" / "make", root / "automation" / "make")
             (root / "coding").mkdir()
             shutil.copy(ROOT / "coding" / "upstream.go", root / "coding" / "upstream.go")
-            reports = ["test/parity/coverage.md", "AGENTS.md", ".github/badges/parity-coverage.svg"]
+            reports = ["test/parity/coverage.md", ".github/badges/parity-coverage.svg"]
             for name in reports:
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)

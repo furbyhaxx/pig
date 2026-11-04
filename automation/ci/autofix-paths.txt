@@ -4,7 +4,6 @@
 # one * in its last element. The privileged workflow reads this file from the default branch, never from the pull request.
 # A new generated file must land here, in its own reviewed change, before the bot may regenerate it.
 .github/badges/parity-coverage.svg
-AGENTS.md
 coding/piglet/piglet.schema.json
 docs/bug-ledger.json
 docs/knowledge-graph/pig-knowledge-graph.jsonld

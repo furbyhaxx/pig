@@ -21,7 +21,7 @@ passes its page sources and generated docs data), and fails on:
              record entry that excuses nothing fails, so the list cannot outlive
              the text it covers.
   numbers    a porting or verification percentage or ratio that differs from
-             the generated coverage block in AGENTS.md
+             the generated status of test/parity/coverage.md
   piglet    a ``pig piglet <verb>`` command in Markdown that is absent from
              ``pig piglet --help``, unless it appears under a Planned heading
 
@@ -66,8 +66,8 @@ BYTE_PHRASES = [
 USER_FACING = ("README.md", "CHANGELOG.md", "changelog.d/", "docs/site/", "internal/pigdocs/content/")  # and Go strings; changelog.d fragments become CHANGELOG.md and the bug ledger
 TOOL_DEFINITIONS = re.compile(r"\btool definitions\b", re.IGNORECASE)
 
-# Claims that need a recorded, public decision (AGENTS.md "Public project
-# writing") or a release that does not exist yet. A line that negates or
+# Claims that need a recorded, public decision (AGENTS.md "Public writing")
+# or a release that does not exist yet. A line that negates or
 # conditions the claim ("does not", "until", "not yet") is not a claim.
 GOVERNANCE = [
     r"\bsponsored by\b",
@@ -121,6 +121,9 @@ RATIO = re.compile(r"\b(\d+)\s*(?:/|of)\s*(\d+)\s+(?:intended-portable|upstream 
 
 SKIP_DIRS = {"node_modules", "vendor", "public", ".next", "out"}
 SKIP_ROOT_FILES = {"AGENTS.md", "docs/parity/PORT_MAP.md", "THIRD_PARTY_NOTICES.md"}
+COVERAGE_REPORT = "test/parity/coverage.md"
+# The per-file table after this sentence repeats figures that are not public claims.
+COVERAGE_BLOCK_END = "\nBehavioral evidence includes"
 # Generated text the site serves as is. The site's page sources and the docs
 # data it generates from docs/site/docs live in the private hosting
 # repository, whose CI passes them to this script as extra paths.
@@ -165,16 +168,15 @@ def go_const(root: pathlib.Path, name: str, relpath: str = "coding/upstream.go")
 
 
 def coverage_block(root: pathlib.Path) -> Coverage:
-    agents = (root / "AGENTS.md").read_text(encoding="utf-8")
-    match = re.search(
-        r"\*\*Porting:\*\* (\d+) / (\d+) intended-portable entries ✅ \((\d+\.\d)%\); "
-        r"\*\*Verification:\*\* (\d+) behavioral \((\d+\.\d)%\)",
-        agents,
-    )
-    if not match:
-        sys.exit("public-claims: AGENTS.md has no generated coverage summary; run: make generate (or: make coverage RESULTS=)")
-    ported, intended, porting_pct, behavioral, behavioral_pct = match.groups()
-    block = agents[match.start():agents.find("<!-- END COVERAGE -->", match.start())]
+    report = (root / COVERAGE_REPORT).read_text(encoding="utf-8")
+    porting = re.search(r"\*\*Porting:\*\* (\d+) / (\d+) intended-portable entries ✅ \((\d+\.\d)%\)", report)
+    behavior = re.search(r"\*\*Behavior verification:\*\* (\d+) / \d+ ported entries \((\d+\.\d)%\)", report)
+    if not porting or not behavior:
+        sys.exit(f"public-claims: {COVERAGE_REPORT} has no generated status; run: make coverage RESULTS=")
+    ported, intended, porting_pct = porting.groups()
+    behavioral, behavioral_pct = behavior.groups()
+    end = report.find(COVERAGE_BLOCK_END, porting.start())
+    block = report[porting.start():end if end >= 0 else len(report)]
     pcts = {porting_pct, behavioral_pct}
     pairs = {(int(ported), int(intended)), (int(behavioral), int(ported))}
     for scope in SCOPE_LINE.finditer(block):

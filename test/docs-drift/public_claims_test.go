@@ -41,7 +41,7 @@ func writeClaimsFixture(t *testing.T, files map[string]string) string {
 		"coding/upstream.go":                       "package coding\n\nconst UpstreamReviewedVersion = \"9.9.0\"\n",
 		"internal/coding/pigversion/pigversion.go": "package pigversion\n\nconst UpstreamPackageVersion = \"9.9.9\"\n",
 		"coding/piglet/main.go":                    "package piglet\n\nconst pigletUsageText = `pig piglet list\npig piglet build\n`\n",
-		"AGENTS.md":                                "<!-- BEGIN COVERAGE -->\n**Porting:** 40 / 50 intended-portable entries ✅ (80.0%); **Verification:** 30 behavioral (75.0%), 10 untested.\n<!-- END COVERAGE -->\n",
+		"test/parity/coverage.md":                  "## Status\n\n- **Porting:** 40 / 50 intended-portable entries ✅ (80.0%).\n- **Behavior verification:** 30 / 40 ported entries (75.0%); 0 weak-only, 10 untested.\n\nBehavioral evidence includes paired scenarios.\n",
 		"README.md":                                "# PiG\n",
 	}
 	maps.Copy(base, files)
@@ -109,21 +109,21 @@ func TestPublicClaimsCheckRejectsContradictedStatements(t *testing.T) {
 	}
 }
 
-// The generated block states the per-scope and per-package figures as well as the headline;
+// The generated status states the per-scope and per-package figures as well as the headline;
 // prose may quote any of them and nothing else. Each figure below appears in exactly one
-// place of the block, so dropping the scope lines, the package rows or the behavioral
-// side of either fails, and figures after the END marker are not part of the block.
+// place of the status, so dropping the scope lines, the package rows or the behavioral
+// side of either fails, and figures of the per-file table after it are not part of the status.
 func TestPublicClaimsCheckAcceptsEveryFigureOfTheGeneratedBlock(t *testing.T) {
-	agents := "<!-- BEGIN COVERAGE -->\n**Porting:** 40 / 50 intended-portable entries ✅ (80.0%); **Verification:** 30 behavioral (75.0%), 10 untested.\n\n" +
+	report := "## Status\n\n- **Porting:** 40 / 50 intended-portable entries ✅ (80.0%).\n- **Behavior verification:** 30 / 40 ported entries (75.0%); 0 weak-only, 10 untested.\n\n" +
 		"| package | src files | n/a | intended | ✅ | 🟡 | ⬜ | ported | behavioral |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|\n" +
 		"| `core` | 20 | 2 | 18 | 15 | 3 | 0 | 83.3% | 60.0% |\n" +
 		"| `edge` | 15 | 3 | 12 | 7 | 5 | 0 | 58.3% | 42.9% |\n\n" +
 		"- **Core packages (core, edge):** 22 / 30 intended-portable files ✅ (73.3%) from 35 rows; 12 behavioral (54.5%), 1 weak-only, 9 untested.\n" +
-		"<!-- END COVERAGE -->\n\n" +
+		"\nBehavioral evidence includes paired scenarios.\n\n" +
 		"| `stale` | 12 | 0 | 12 | 11 | 1 | 0 | 91.7% | 91.7% |\n" +
 		"- **Stale scope:** 11 / 12 intended-portable files ✅ (91.7%) from 12 rows; 10 behavioral (90.9%), 0 weak-only, 1 untested.\n"
 	root := writeClaimsFixture(t, map[string]string{
-		"AGENTS.md": agents,
+		"test/parity/coverage.md": report,
 		"docs/site/docs/index.md": "Core packages: 22/30 ported (73.3%), 12/22 ported verified (54.5%).\n" +
 			"The core package is 83.3% ported and 60.0% verified; edge is 58.3% ported and 42.9% verified.\n" +
 			"The whole port is 40/50 (80.0%).\n",
@@ -132,7 +132,7 @@ func TestPublicClaimsCheckAcceptsEveryFigureOfTheGeneratedBlock(t *testing.T) {
 		t.Fatalf("figures of the generated block were rejected:\n%s", output)
 	}
 	root = writeClaimsFixture(t, map[string]string{
-		"AGENTS.md":               agents,
+		"test/parity/coverage.md": report,
 		"docs/site/docs/index.md": "Core packages: 16/18 ported (88.8%).\nThe stale scope: 11/12 ported (91.7%), 90.9% verified.\n",
 	})
 	output, err := runPublicClaims(t, root)

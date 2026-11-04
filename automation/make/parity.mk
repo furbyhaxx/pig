@@ -373,21 +373,17 @@ parity-flow-coverage: parity-deps
 		go tool covdata textfmt -i="$$covdir" -o="$(PARITY_FLOW_COVERAGE)"; \
 		echo "$(PARITY_FLOW_COVERAGE)"
 
-# Regenerate test/parity/coverage.md from the latest results, and patch the
-# condensed coverage block in AGENTS.md.
+# Regenerate test/parity/coverage.md and the port progress badge from the latest results.
 coverage: ## Regenerate coverage.md from PORT_MAP + scenarios
 	@set -eu; mkdir -p tmp; tmp=$$(mktemp -d tmp/coverage.XXXXXXXX); trap 'rm -rf "$$tmp"' EXIT; \
-	    cp AGENTS.md "$$tmp/AGENTS.md"; \
 	    go run ./test/parity/cmd/coverage \
 	    $(if $(filter command line environment override,$(origin RESULTS)),$(if $(RESULTS),-results "$(RESULTS)",),$(if $(wildcard $(RESULTS)),-results "$(RESULTS)",)) \
 	    -port-map docs/parity/PORT_MAP.md \
 	    -scenarios test/parity/scenarios \
-	    -agents-md "$$tmp/AGENTS.md" \
 	    -badge "$$tmp/badge.svg" -out "$$tmp/coverage.md"; \
 	    mv "$$tmp/coverage.md" test/parity/coverage.md; \
-	    mv "$$tmp/AGENTS.md" AGENTS.md; \
 	    mv "$$tmp/badge.svg" .github/badges/parity-coverage.svg
-	@echo "wrote test/parity/coverage.md + AGENTS.md coverage block + Pi port progress badge"
+	@echo "wrote test/parity/coverage.md + Pi port progress badge"
 	@grep '^- \*\*' test/parity/coverage.md
 
 # The extractor's own tests run before each extraction; INTERFACE_EXTRACTOR_TEST=true skips them where another gate already ran them (pin-bump, a loaded host).
