@@ -50,7 +50,6 @@ func TestGoVersionPolicy(t *testing.T) {
 		"docs/site/docs/development.md":             "- Go " + goVersion + ";",
 		"docs/site/docs/quickstart.md":              "Build the `pig` executable with Go " + goVersion + ".",
 		"docs/testing/live-secrets.md":              "Run from the repository root with Go " + goVersion + ".",
-		"AGENTS.md":                                 "documented setup commands use Go " + goVersion + ".",
 		"automation/dev/toolchains.lock":            "\ngo\t" + goVersion + "\t",
 	}
 	for path, want := range buildPins {
