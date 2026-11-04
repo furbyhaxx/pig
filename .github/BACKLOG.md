@@ -1,0 +1,1 @@
+- B-0002 chore P3 — Community files still name the upstream maintainer → .project/backlog/B-0002-upstream-community-identity.md
