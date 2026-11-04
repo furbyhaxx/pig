@@ -241,7 +241,9 @@ latest_version() {
     latest=$(redirect_tag "$1" "$3")
     [ -n "$latest" ] ||
       fail "no PiG release is published yet (${2%/}/latest-version did not answer and $3 named no release); build from source or set PIG_VERSION"
-    say "${2%/}/latest-version did not name a release; using the latest on GitHub (${latest})" >&2
+    if [ -n "$2" ]; then
+      say "${2%/}/latest-version did not name a release; using the latest on GitHub (${latest})" >&2
+    fi
   fi
   echo "$latest"
 }

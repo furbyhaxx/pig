@@ -20,7 +20,7 @@ while IFS= read -r tag; do
   number=${tag#"v$base-c."}
   [[ "$number" =~ ^[1-9][0-9]*$ ]] || continue
   if ((number >= revision)); then revision=$((number + 1)); fi
-done < <(git tag -l "v$base-c.*")
+done < <(git tag -l "v$base-c.*"; jq -r '.[].[] | .tag_name' <<< "$releases")
 version="$base-c.$revision"
 make set-version VERSION="$version"
 go test ./automation/release/set-version
@@ -77,5 +77,15 @@ gh release create "v$version" --repo "$REPOSITORY" --target "$sha" --draft \
   --title "PiG $version" --notes "Personal PiG build. Upstream PiG: $base. Source: $sha
 
 Configuration and executable names are unchanged. Linux amd64 smoke-tested; other targets cross-built, not natively tested."
-gh release upload "v$version" "$work/out/"* --repo "$REPOSITORY"
-gh release edit "v$version" --repo "$REPOSITORY" --draft=false --prerelease=false --latest
+retry_release() {
+  local attempt
+  for attempt in 1 2 3; do
+    if "$@"; then return 0; fi
+    if ((attempt < 3)); then sleep "$((attempt * 5))"; fi
+  done
+  return 1
+}
+for asset in "$work/out/"*; do
+  retry_release gh release upload "v$version" "$asset" --repo "$REPOSITORY" --clobber
+done
+retry_release gh release edit "v$version" --repo "$REPOSITORY" --draft=false --prerelease=false --latest
