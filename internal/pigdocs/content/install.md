@@ -23,7 +23,7 @@ go build -trimpath -o bin/pig ./cmd/pig
 ./bin/pig --version
 ```
 
-Plain source builds keep the upstream version pin; personal release builds apply `x.y.z-c.N` in a disposable build tree. Go 1.27 release binaries for macOS require macOS 13 or later. Nix users can build `github:furbyhaxx/pig` and update that flake input; `pig update` does not replace a Nix installation.
+From a source checkout, build it with Go 1.27.3. Plain source builds keep the upstream version pin; personal release builds apply `x.y.z-c.N` in a disposable build tree. Go 1.27 release binaries for macOS require macOS 13 or later. Nix users can build `github:furbyhaxx/pig` and update that flake input; `pig update` does not replace a Nix installation.
 
 PiG stores user state under `~/.pig`. Set `PIG_HOME` only for an isolated config
 root, tests, or CI.
