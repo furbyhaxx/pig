@@ -8,20 +8,20 @@ Port of Pi `packages/tui`: Main Screen, differential renderer, Editor, component
 - Width/units: terminal cells, not bytes or runes; reuse `internal/jsstring`, `internal/wordsegmenter`.
 
 ## Contract
-- Main Screen preserves scrollback. Editor changes only the required visible rows. Viewport follows Pi's state machine. Frame work never scales with unchanged Session history.
+- Main Screen preserves scrollback. Editor changes only the required visible rows. Viewport behavior follows the documented contract; Pi comparisons cover unchanged inherited behavior. Frame work never scales with unchanged Session history.
 
 ## Failure modes
 | Failure | Detection | Required result |
 |---|---|---|
 | Ordinary editor shrink repaints the viewport | delete one newline or wrap row | local differential update |
-| Viewport snaps backward | origin before/after shrink | match Pi |
+| Viewport snaps backward | origin before/after shrink | preserve the viewport contract |
 | A frame replays transcript history | short vs large Sessions | bounded frame work |
-| Stale or duplicate row | apply bytes to the terminal simulator | Pi's final screen |
+| Stale or duplicate row | apply bytes to the terminal simulator | expected final screen |
 | Scrollback cleared | detect `CSI 2J`, `CSI 3J` | neither on an ordinary edit |
-| Cursor homes | detect `CSI H` | Pi-compatible relative movement |
-| Wrapped input enters history early | Up within wrapped input | Pi's cursor and history state |
-| Resize corrupts layout | width/height change with ANSI, wide text, images | Pi's final screen |
-| Hidden-row change can't repair locally | change content above viewport | Pi's recovery render |
+| Cursor homes | detect `CSI H` | relative movement |
+| Wrapped input enters history early | Up within wrapped input | expected cursor and history state |
+| Resize corrupts layout | width/height change with ANSI, wide text, images | expected final screen |
+| Hidden-row change can't repair locally | change content above viewport | repair the visible screen without losing scrollback |
 
 ## Evidence
 - Define the terminal scenario before renderer code. Compare escaped Pi and PiG output and simulator state; keep inputs, dimensions, bytes, screen state, mutation failure.

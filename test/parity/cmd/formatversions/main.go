@@ -117,7 +117,7 @@ func scanRemovedMarkers(root string, roots []string) ([]string, error) {
 			}
 			if entry.IsDir() {
 				switch entry.Name() {
-				case ".git", ".upstream", ".venv", "artifacts", "bin", "node_modules", "tmp", "vendor":
+				case ".git", ".upstream", ".venv", ".worktrees", "artifacts", "bin", "node_modules", "tmp", "vendor":
 					return filepath.SkipDir
 				}
 				return nil
@@ -181,7 +181,7 @@ func scanCandidates(root string) ([]candidate, error) {
 		}
 		if entry.IsDir() {
 			switch entry.Name() {
-			case ".git", ".upstream", "bin", "node_modules", "tmp", "vendor":
+			case ".git", ".upstream", ".worktrees", "bin", "node_modules", "tmp", "vendor":
 				return filepath.SkipDir
 			}
 			if filepath.ToSlash(path) == "test/parity/artifacts" {

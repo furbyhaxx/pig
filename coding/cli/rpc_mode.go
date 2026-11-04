@@ -554,15 +554,7 @@ func serveRPCMode(ctx context.Context, rt *coding.Runtime, options rpcModeOption
 	})
 	// rpc-mode.ts:341-343: ctx.reload() runs session.reload() and then rebinds the Session's extensions.
 	rt.SetReload(func(ctx context.Context, session *coding.Session) error {
-		previous := session.ExtensionRunner()
-		if err := session.Reload(ctx); err != nil {
-			// The old runner went stale after session_shutdown; its extension processes reject later calls with its message too.
-			if extensionHost := session.ExtensionHost(); extensionHost != nil && previous != nil && session.ExtensionRunner() == previous {
-				extensionHost.Invalidate(previous.StaleMessage())
-			}
-			return err
-		}
-		return host.bind(ctx, session, extension.SessionStartEvent{Type: codingagent.EventSessionStart, Reason: "reload"}, true)
+		return reloadHeadlessSession(ctx, session, host.bind)
 	})
 	first := rt.Session()
 	if err := host.bind(ctx, first, first.StartEvent(), false); err != nil {

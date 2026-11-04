@@ -17,20 +17,20 @@ Pi extension API port: registration, events, tools, commands, UI surfaces, provi
 - Two source forms: conventional factory (one standard symbol per language) and exact standalone (always isolated). Pig derives wire, SDK, runner, placement, registration.
 
 ## Adding a host feature
-1. Upstream Pi behavior.
+1. Contract from the fork spec; inspect upstream Pi behavior for intent where relevant.
 2. Protocol shape in `host/subprocess/protocol.go`.
 3. Host wiring in `host/subprocess/`.
 4. SDK ergonomics in every `extensions/sdk*/` (`extensions/AGENTS.md`).
 5. Conformance row in `test/extension-conformance/`.
 6. Parity row in `docs/extension-api-parity.md`, incl. its async contract; exercise isolated and packed modes.
-7. Numbered divergence only if needed.
+7. Fork behavior decisions in `.project/specs/`, user docs and changelog; upstream divergence records only for inherited behavior.
 
 ## Never without an approved spec
 - WASM or embedded-JS extension runtime; `plugin.Open` loader; linked/in-process production runtime — except the compiled-in `extension.ExtensionFactory` passed by value from the binary's own `main` (`docs/specs/extension-factory-trust.md`). Settings and `-e builtin:<name>` may select/disable a registered built-in; nothing user-, project-, Package-, Piglet- or wire-supplied adds factory code. Piglet members (incl. fused) never use it.
 - Multi-register (`RegisterPayload.Extensions`, `RequestPayload.TargetExtension`).
-- SDK semantics diverging from the in-process Go reference without a numbered divergence and a failing conformance test.
+- SDK semantics diverging from the in-process Go reference without a spec decision and a failing conformance test.
 - An authored extension manifest or another global extension configuration plane.
-- Changing the SDK API to hide a packed/isolated difference; fix the host or number a divergence.
+- Changing the SDK API to hide a packed/isolated difference; fix the host or decide the contract in a fork spec.
 
 ## Failure modes
 | Failure | Detection | Required result |

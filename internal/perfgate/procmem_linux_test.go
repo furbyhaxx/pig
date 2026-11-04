@@ -124,7 +124,7 @@ func TestDisableTransparentHugePagesReachesChildren(t *testing.T) {
 
 func TestDescendantFindsAGrandchildByName(t *testing.T) {
 	named := filepath.Join(t.TempDir(), "perfgate-probe")
-	// The probe is a shell under another name; it prints only after it has exec'd under that name, then waits in a child sleep.
+	// Waiting for a background child keeps shells from replacing the named probe with sleep.
 	shellPath, err := exec.LookPath("sh")
 	if err != nil {
 		t.Fatal(err)
@@ -132,7 +132,7 @@ func TestDescendantFindsAGrandchildByName(t *testing.T) {
 	if err := os.Symlink(shellPath, named); err != nil {
 		t.Fatal(err)
 	}
-	shell := exec.CommandContext(t.Context(), "sh", "-c", named+" -c 'echo started; sleep 30' & wait")
+	shell := exec.CommandContext(t.Context(), "sh", "-c", named+" -c 'sleep 30 & echo started; wait' & wait")
 	shell.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	stdout, err := shell.StdoutPipe()
 	if err != nil {

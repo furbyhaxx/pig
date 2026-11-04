@@ -15,9 +15,14 @@ import (
 	"io"
 	"net"
 	"os"
+	"time"
 )
 
 func main() {
+	mode := os.Getenv("FIXTURE_HANDSHAKE_MODE")
+	if mode == "connect" {
+		time.Sleep(time.Hour)
+	}
 	sockPath := os.Getenv("PIG_EXT_SOCKET")
 	if sockPath == "" {
 		fmt.Fprintf(os.Stderr, "PIG_EXT_SOCKET not set\n")
@@ -31,6 +36,9 @@ func main() {
 		os.Exit(1)
 	}
 	defer conn.Close()
+	if mode == "register" {
+		time.Sleep(time.Hour)
+	}
 
 	// Send register.
 	reg := map[string]any{

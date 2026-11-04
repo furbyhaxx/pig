@@ -187,33 +187,11 @@ func TestNodeCellRepeatedCrashesStayIsolated(t *testing.T) {
 	}
 }
 
-// TestFailedReloadKeepsCurrentCellCrashOwnership is CNC-003's regression.
-// armPackedProcessGenerations (CNC-002) bumps every known packed cell key's
-// generation so a crash report for a process this Reload is about to
-// replace can never race the replacement into existence (see its doc
-// comment). That reasoning depends on this Reload actually going on to
-// replace or explicitly tear down every currently-known packed process.
-// When the config loader fails, Reload returns immediately and retains
-// every currently running extension and process completely unchanged - so
-// arming generations before that failure is checked would invalidate crash
-// ownership for a process this aborted reload never touched: a real, later
-// crash of that still-current, still-running process would then be
-// silently discarded as stale (quarantinePackedCellGeneration's staleness
-// check) instead of quarantined, and pig would never notice the cell died.
-//
-// This test does not need a real Node process: it seeds the bookkeeping a
-// live packed process would have (a claimed generation and a
-// packedProcesses entry for its cell key) directly, fails Reload's config
-// load, and then submits the same crash report watchPackedProcess would
-// have sent for that still-current process. Before the fix (arming
-// generations unconditionally at the top of Reload), the failed Reload
-// call already invalidated the seeded generation, so the crash report was
-// discarded and QuarantinedCells stayed empty.
 func TestFailedReloadKeepsCurrentCellCrashOwnership(t *testing.T) {
 	h := NewHostWithConfigRoot(t.TempDir(), t.TempDir())
 	const key = "live-cell"
-	h.packedCellGeneration = map[string]int{key: 1}
-	h.packedProcesses = map[string]*packedProcessState{key: {key: key, generation: 1}}
+	generation := h.nextPackedCellGeneration(key)
+	h.packedProcesses = map[string]*packedProcessState{key: {key: key, generation: generation}}
 	h.SetConfigLoader(func() ([]ExtConfig, error) {
 		return nil, errors.New("bad config")
 	})
@@ -222,7 +200,7 @@ func TestFailedReloadKeepsCurrentCellCrashOwnership(t *testing.T) {
 		t.Fatal("expected the config loader's error to fail Reload")
 	}
 
-	h.quarantinePackedCellGeneration(key, 1, "real later crash of the still-current, unreplaced process")
+	h.quarantinePackedCellGeneration(key, generation, "real later crash of the still-current, unreplaced process")
 	if reason := h.QuarantinedCells()[key]; reason == "" {
 		t.Fatal("a failed reload invalidated the still-current cell's crash ownership: the later crash was discarded as stale instead of quarantined")
 	}

@@ -4,13 +4,23 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
+	"github.com/MichaelKinsy/PiG/coding"
 	"github.com/MichaelKinsy/PiG/coding/extension"
 	"github.com/MichaelKinsy/PiG/coding/extension/pigsdk"
 	"github.com/MichaelKinsy/PiG/internal/codingagent"
 )
+
+func reloadHeadlessSession(ctx context.Context, session *coding.Session, bind func(context.Context, *coding.Session, extension.SessionStartEvent, bool) error) error {
+	reloadErr := session.Reload(ctx)
+	if reloadErr != nil && !errors.Is(reloadErr, extension.ErrReloadPartiallyApplied) {
+		return reloadErr
+	}
+	return errors.Join(reloadErr, bind(ctx, session, extension.SessionStartEvent{Type: codingagent.EventSessionStart, Reason: "reload"}, true))
+}
 
 // reloadBuildResources is DefaultResourceLoader.reload for a build: it resolves the configured resource entries again and reads the skills, prompt templates, context files and system prompt files they select (resource-loader.ts reload). A resolution error leaves the previous resources in place.
 func (b *cliRuntimeBuilder) reloadBuildResources(build *cliBuild) error {
@@ -27,6 +37,7 @@ func (b *cliRuntimeBuilder) reloadBuildResources(build *cliBuild) error {
 
 // reloadBuildExtensions loads the build's extensions again and returns them in load order. The host reloads the file extensions on its own transaction; the built-in extensions load after them (resource-loader.ts:703-735). owner is the context the reloaded extension processes live under: a call's context ends with its command, which must not stop the extensions its reload started.
 func (b *cliRuntimeBuilder) reloadBuildExtensions(owner context.Context, build *cliBuild) ([]extension.Extension, error) {
+	var reloadErr error
 	if host := build.Host; host != nil {
 		// A reload recompiles out-of-tree extensions, so stage the embedded SDKs first, as startup does.
 		if err := pigsdk.EnsureSynced(codingagent.ConfigRoot()); err != nil {
@@ -37,7 +48,10 @@ func (b *cliRuntimeBuilder) reloadBuildExtensions(owner context.Context, build *
 		reloaded, err := host.Reload(owner)
 		release()
 		if err != nil {
-			return nil, fmt.Errorf("extension reload: %w", err)
+			reloadErr = fmt.Errorf("extension reload: %w", err)
+			if !errors.Is(err, extension.ErrReloadPartiallyApplied) {
+				return nil, reloadErr
+			}
 		}
 		build.SubprocessExtensions = reloaded
 	}
@@ -45,5 +59,5 @@ func (b *cliRuntimeBuilder) reloadBuildExtensions(owner context.Context, build *
 		build.BuiltinExtensions = build.ReloadBuiltinExtensions()
 	}
 	build.Extensions = codingagent.ExtensionsInLoadOrderWithExplicit(build.SubprocessExtensions, build.BuiltinExtensions, build.ExplicitBuiltinPaths)
-	return build.Extensions, nil
+	return build.Extensions, reloadErr
 }

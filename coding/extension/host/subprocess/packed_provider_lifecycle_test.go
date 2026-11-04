@@ -1,12 +1,17 @@
 package subprocess
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/MichaelKinsy/PiG/coding/extension"
 )
@@ -37,6 +42,114 @@ func Extension() *sdk.Extension {
 		t.Fatal(err)
 	}
 	return dir
+}
+
+func TestReloadPackedCellFailureKeepsServingGeneration(t *testing.T) {
+	marker := filepath.Join(t.TempDir(), "stall")
+	rootA := writePackedFactoryModuleWithProvider(t, "example.com/rollback/a", "rollback-a", "tool_a", "rollback-provider-a")
+	rootB := writePackedFactoryModuleWithProvider(t, "example.com/rollback/b", "rollback-b", "tool_b", "rollback-provider-b")
+	apiPath := filepath.Join(rootA, "ext.go")
+	apiSource, err := os.ReadFile(apiPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	apiText := strings.Replace(string(apiSource), `import "github.com/MichaelKinsy/PiG/extensions/sdk"`, `import ("os"; "github.com/MichaelKinsy/PiG/extensions/sdk")`, 1)
+	apiText = strings.Replace(apiText, `e := sdk.New("rollback-a")`, fmt.Sprintf(`e := sdk.New("rollback-a")
+	url, name := "https://mcp.invalid", "Route"
+	if _, err := os.Stat(%q); err == nil { url, name = "https://replacement.invalid", "Replacement" }
+	if err := e.RegisterMcpServer("rollback-mcp", sdk.McpServerConfig{Type: "http", URL: url}); err != nil { panic(err) }
+	if err := e.RegisterVirtualModel(sdk.VirtualModel{Provider: "rollback", ID: "route", Name: name, Route: func(sdk.Context, sdk.ModelRouteRequest) (sdk.ModelRoute, error) { return sdk.ModelRoute{}, nil }}); err != nil { panic(err) }`, marker), 1)
+	if err := os.WriteFile(apiPath, []byte(apiText), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(rootB, "ext.go")
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := strings.Replace(string(source), `import "github.com/MichaelKinsy/PiG/extensions/sdk"`, `import ("os"; "time"; "github.com/MichaelKinsy/PiG/extensions/sdk")`, 1)
+	text = strings.Replace(text, `e := sdk.New("rollback-b")`, fmt.Sprintf(`if _, err := os.Stat(%q); err == nil { time.Sleep(time.Hour) }; e := sdk.New("rollback-b")`, marker), 1)
+	if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	configs := []ExtConfig{
+		packedFactoryConfig("rollback-a", rootA, "example.com/rollback/a", "a"),
+		packedFactoryConfig("rollback-b", rootB, "example.com/rollback/b", "b"),
+	}
+	h := NewHostWithConfigRoot(t.TempDir(), t.TempDir())
+	t.Cleanup(func() { h.Shutdown("test done") })
+	h.SetConfigLoader(func() ([]ExtConfig, error) { return configs, nil })
+	h.SetReloadHandshakeTimeoutFunc(func() (time.Duration, error) { return 250 * time.Millisecond, nil })
+	var mu sync.Mutex
+	providers := map[string]bool{}
+	h.SetProviderCallbacks(func(name string, _ extension.ProviderConfig) error {
+		mu.Lock()
+		defer mu.Unlock()
+		providers[name] = true
+		return nil
+	}, func(name string) {
+		mu.Lock()
+		defer mu.Unlock()
+		delete(providers, name)
+	})
+	virtualModels := map[string]extension.VirtualModelDefinition{}
+	h.Runtime().BindProviderActions(extension.ProviderActions{
+		RegisterVirtualModel: func(model extension.VirtualModelDefinition) error {
+			mu.Lock()
+			defer mu.Unlock()
+			virtualModels[model.ID] = model
+			return nil
+		},
+		UnregisterVirtualModel: func(_ string, id string) {
+			mu.Lock()
+			defer mu.Unlock()
+			delete(virtualModels, id)
+		},
+	}, nil)
+	ctx, cancel := buildContext(t)
+	defer cancel()
+	if _, errs := h.LoadAll(ctx, configs); len(errs) != 0 {
+		t.Fatalf("initial load: %v", errs)
+	}
+	applyQueuedRegistrations(h)
+	h.mu.Lock()
+	oldA, oldB := h.exts["rollback-a"], h.exts["rollback-b"]
+	h.mu.Unlock()
+	if err := os.WriteFile(marker, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.Reload(ctx); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("reload error = %v, want handshake timeout", err)
+	}
+	h.mu.Lock()
+	gotA, gotB := h.exts["rollback-a"], h.exts["rollback-b"]
+	h.mu.Unlock()
+	if gotA != oldA || gotB != oldB {
+		t.Fatal("a failed member replaced a serving generation of its cell")
+	}
+	for _, old := range []*managedExt{oldA, oldB} {
+		for _, tool := range old.ext.Tools {
+			if _, err := tool.Definition.Execute(ctx, "after-rollback", json.RawMessage(`{}`), nil); err != nil {
+				t.Fatalf("old generation stopped serving: %v", err)
+			}
+		}
+	}
+	applyQueuedRegistrations(h)
+	mu.Lock()
+	if len(providers) != 2 || !providers["rollback-provider-a"] || !providers["rollback-provider-b"] {
+		t.Errorf("rollback changed the serving provider set: %v", providers)
+	}
+	if server, ok := h.Runtime().McpServers().Get("rollback-mcp"); !ok || server.Config.URL != "https://mcp.invalid" {
+		t.Errorf("rollback changed the serving MCP server: %#v", server)
+	}
+	if model, ok := virtualModels["route"]; !ok || model.Name != "Route" {
+		t.Errorf("rollback changed the serving virtual model: %#v", model)
+	}
+	mu.Unlock()
+	h.quarantinePackedCellGeneration(oldA.packedCellKey, oldA.packedProcess.generation, "serving process crashed")
+	if len(h.Extensions()) != 0 {
+		t.Fatal("failed reload made the serving process's crash report stale")
+	}
 }
 
 // TestPackedCell_ProviderLifecycle ensures that packed-cell members can

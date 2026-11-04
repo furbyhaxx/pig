@@ -39,6 +39,36 @@ type Document struct {
 	}
 }
 
+func TestScansExcludeNestedWorktrees(t *testing.T) {
+	root := t.TempDir()
+	for _, dir := range []string{"coding", ".worktrees/feature/coding"} {
+		path := filepath.Join(root, filepath.FromSlash(dir))
+		if err := os.MkdirAll(path, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(path, "format.go"), []byte("package coding\nconst SchemaVersion = 1\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(path, "piglet.yaml"), []byte("version: 1\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	candidates, err := scanCandidates(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(candidates) != 1 || candidates[0].Path != "coding/format.go" {
+		t.Fatalf("candidates = %+v; want only the owning checkout", candidates)
+	}
+	problems, err := scanRemovedMarkers(root, []string{"."})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(problems) != 1 || !strings.HasPrefix(problems[0], "coding/piglet.yaml:") {
+		t.Fatalf("problems = %v; want only the owning checkout", problems)
+	}
+}
+
 func TestScanRemovedMarkersRejectsFormerPigFormats(t *testing.T) {
 	root := t.TempDir()
 	if err := os.WriteFile(filepath.Join(root, "piglet.yaml"), []byte("version: 1\nname: old\n"), 0o644); err != nil {

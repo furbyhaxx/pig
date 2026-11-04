@@ -5,15 +5,36 @@ document:
   title: "Resolve the Workbench host gaps"
   description: "Slices that implement SPEC-0002..SPEC-0010 after re-steering the fork (SPEC-0001 D7-D10), with tests, wire/SDK parity and docs per slice"
   status: "draft"
-  revision: 1
+  revision: 8
   created_at: "2026-11-04T15:05:00+01:00"
-  updated_at: "2026-11-04T15:05:00+01:00"
+  updated_at: "2026-11-04T23:16:06+01:00"
   created_by: "orchestrator"
-  updated_by: "orchestrator"
+  updated_by: "coding-agent"
   changelog:
     - revision: 1
       reason: "Owner asked for a plan that resolves the verified host gaps, linked to the specs, including docs"
       changes: ["document creation"]
+    - revision: 2
+      reason: "S0 implementation and targeted verification; full gates blocked by pinned npm build"
+      changes: ["record S0 tasks and red-green evidence", "record B-0003 prerequisite blocker", "leave S1-S8 pending"]
+    - revision: 3
+      reason: "Owner requested fixing the integrity blocker"
+      changes: ["close B-0003 with pinned runtime and preflight", "fix nested-worktree format scans", "record passing drift/contracts and remaining B-0004 failures"]
+    - revision: 4
+      reason: "Owner requested continuing the plan; carry known S0 failures while starting S1"
+      changes: ["record additional S0 red-green repairs", "implement S1.1 socket ownership and stress coverage", "record P29 and S1.2 setting-shape questions"]
+    - revision: 5
+      reason: "Implement the approved flat handshake setting and Host/CLI transaction path without claiming the SDK loader or full slice complete"
+      changes: ["record S1.2 timeout and rollback evidence", "record caller freshness and partial-publication checks", "identify SDK loader ownership gap", "file retained watcher growth as B-0005"]
+    - revision: 6
+      reason: "Verify cancellation classification, retained writer ownership and cross-process progress; record broader gate failures honestly"
+      changes: ["record additional red-green regressions and focused race coverage", "refresh generated schema and interface evidence", "record passing drift/contracts components and install proof", "extend B-0004 with changed-suite failures"]
+    - revision: 7
+      reason: "Close the current verification pass and identify the remaining SDK transaction policy decision"
+      changes: ["record final ci-drift and ci-contracts passes", "make SDK partial-publication versus whole-attempt rollback choice explicit"]
+    - revision: 8
+      reason: "Owner approved per-cell publication for the SDK loader; implement it and record its evidence"
+      changes: ["route DefaultResourceLoader reloads through one persistent Host", "record red-green, mutation and baseline comparison evidence", "record the remaining pre-existing gate failures in B-0004", "mark S1.1 and S1.2 implemented in the progress and task tables"]
 ---
 
 # PLAN-0001 Resolve the Workbench host gaps
@@ -24,8 +45,8 @@ Input: `../../analyses/2026-11-04-host-gap-verification/README.md`. Policy: `../
 
 | Slice | Goal | Specs | Status |
 |---|---|---|---|
-| S0 | Steering, gates, public fork statement | 0001 | now |
-| S1 | Reliability fixes and skill roots | 0004 D1–D3, 0007 D1–D3, 0009 | next |
+| S0 | Steering, gates, public fork statement | 0001 | implemented; full gate blocked (B-0004) |
+| S1 | Reliability fixes and skill roots | 0004 D1–D3, 0007 D1–D3, 0009 | now; 1.1 and 1.2 implemented, P29 agent-turn reproduction open, 1.3–1.7 next |
 | S2 | Model request pipeline | 0003 | later |
 | S3 | System prompt composition | 0002 | later |
 | S4 | Headless output and dialogs | 0005 | later |
@@ -49,21 +70,43 @@ No work: U-09 and U-26 (wrong findings), U-20 (watch; regression test when it re
 |---|---|---|---|
 | 0.1 | Rewrite root `AGENTS.md` for the fork goal | 0001 D7–D10 | done |
 | 0.2 | SPEC-0001 revision 2 (D7–D10) | 0001 | done |
-| 0.3 | Child `AGENTS.md` files: scope parity-mandating rules to the parity machinery or replace them with fork rules: `docs/AGENTS.md` (D<N> rule), `docs/parity/AGENTS.md`, `test/parity/AGENTS.md`, `coding/extension/AGENTS.md`, `ai/AGENTS.md`, `agent/AGENTS.md`, `extensions/AGENTS.md`, `internal/AGENTS.md`, `tui/AGENTS.md`, `.github/AGENTS.md`, `automation/AGENTS.md`, `coding/AGENTS.md`, `piglets/AGENTS.md`, `mcp/AGENTS.md`; skill `agents-md` | 0001 D7, D10 | next |
-| 0.4 | `divergence-guard`: accept `// fork (SPEC-NNNN): <reason>` when `.project/specs/NNNN-*.md` exists; guard test; then update root `AGENTS.md` Code and lint and SPEC-0001 D10 | 0001 D10 | next |
-| 0.5 | `automation/ci/check-public-claims.py`: make sure it accepts the fork statement of 0.6; adjust rules that require Pi-faithful wording | 0001 D7 | next |
-| 0.6 | Docs: `docs/personal-fork.md` replaces "Runtime behavior … remain upstream-compatible" with the D7 policy; `README.md` replaces "If PiG behaves differently from Pi, that is either a bug or a documented divergence" with the fork statement and a link to `docs/personal-fork.md`; changelog fragment | 0001 D7 | next |
+| 0.3 | Child `AGENTS.md` files: scope parity-mandating rules to the parity machinery or replace them with fork rules: `docs/AGENTS.md` (D<N> rule), `docs/parity/AGENTS.md`, `test/parity/AGENTS.md`, `coding/extension/AGENTS.md`, `ai/AGENTS.md`, `agent/AGENTS.md`, `extensions/AGENTS.md`, `internal/AGENTS.md`, `tui/AGENTS.md`, `.github/AGENTS.md`, `automation/AGENTS.md`, `coding/AGENTS.md`, `piglets/AGENTS.md`, `mcp/AGENTS.md`; skill `agents-md` | 0001 D7, D10 | implemented |
+| 0.4 | `divergence-guard`: accept `// fork (SPEC-NNNN): <reason>` when `.project/specs/NNNN-*.md` exists; guard test; then update root `AGENTS.md` Code and lint and SPEC-0001 D10 | 0001 D10 | implemented |
+| 0.5 | `automation/ci/check-public-claims.py`: make sure it accepts the fork statement of 0.6; adjust rules that require Pi-faithful wording | 0001 D7 | implemented |
+| 0.6 | Docs: `docs/personal-fork.md` replaces "Runtime behavior … remain upstream-compatible" with the D7 policy; `README.md` replaces "If PiG behaves differently from Pi, that is either a bug or a documented divergence" with the fork statement and a link to `docs/personal-fork.md`; changelog fragment | 0001 D7 | implemented |
 | 0.7 | Outside this repo: pi-accordion resolves a Node executable instead of `process.execPath` (stray billed sessions) | analysis §3 | owner |
-| 0.8 | `TestFamilyCoverageReportMatchesCurrentStaticDashboard` (`test/parity/closure/report_projection_test.go:744`) reads the family dashboard from root `AGENTS.md`, which `f0db6902b` removed; it fails on `main`. Read the dashboard from the generated coverage report instead | 0001 D6 | next |
+| 0.8 | `TestFamilyCoverageReportMatchesCurrentStaticDashboard` (`test/parity/closure/report_projection_test.go:744`) reads the family dashboard from root `AGENTS.md`, which `f0db6902b` removed; it fails on `main`. Read the dashboard from the generated coverage report instead | 0001 D6 | implemented |
 
 Done when: `make check` passes, no child `AGENTS.md` demands Pi faithfulness for fork behavior, public docs state the fork policy.
 
-## S1 Reliability fixes and skill roots (next)
+### S0 verification (04.11.2026)
+
+- Audited all child steering files listed in 0.3; changed only conflicting rules. `extensions/AGENTS.md`, `internal/AGENTS.md`, `.github/AGENTS.md` and `mcp/AGENTS.md` needed no edits.
+- Red → green: `TestFamilyCoverageReportMatchesCurrentStaticDashboard` failed on the missing AGENTS dashboard, then passed against the generated family table. The coverage generator now shares its family-table renderer between report and condensed block.
+- Red → green: `TestForkMarkerRequiresExistingSpecAndReason`; recorded spec accepted, missing spec and missing reason rejected. Complete divguard unit suite passed.
+- Public-claims tests and checker passed without changing checker policy; added fork wording to the supported-statements fixture.
+- Targeted `-race` runs passed for fork markers, family projection, coverage report/status/evidence and public-claims tests. `go vet` passed on all four touched Go packages. `make lint-changed` passed with 0 issues. `git diff --check` passed.
+- Full divguard + closure race run exceeded the 120 s command deadline; targeted regression race runs completed. Full coverage-package test run fails its CLI test because `.upstream/current` is absent.
+- `make test-changed` and `make upstream-mirror` fail pinned npm tarball integrity checks; `make ci-drift ci-contracts` stops at correspondence extraction without `.upstream/current`; `make check` stops at missing Node SDK dependencies. See B-0003. No gate bypass or integrity override was applied.
+- Coverage regenerated using `go run -trimpath ./test/parity/cmd/coverage -upstream .upstream/v1.4.0+6c384aa3 -out test/parity/coverage.md`. The extracted pinned source has the manifests this generator consumes; full mirror hydration remains blocked. Generated diff adds only the family table.
+- 0.7 remains owner work outside this repository. S0 is not closed; S1–S8 have not started.
+
+### S0 follow-up verification (04.11.2026, 17:13)
+
+- B-0003 resolved: identical built source packed with Node 24.22.1 and npm 12.1.0 matches all seven frozen workspace hashes. Host Node 26.13.0 does not. No integrity values or dependency versions changed; the system Node installation was not replaced.
+- Added `pack()` runtime preflight and red-proven `ClosureTests.test_pack_rejects_unpinned_node_before_running_npm`; all 64 pin tests pass. Developer docs explain selecting `.node-version` before oracle builds.
+- `make upstream-mirror` succeeds after refreshing the earlier partial mirror. Use a persistent build cache separately from isolated HOME so the installed SDK links outlive the validation command. Preserve installed Rust toolchain discovery separately as well.
+- Red → green: `TestScansExcludeNestedWorktrees`; both format-version scanners now exclude `.worktrees/`. Full formatversions suite passes with `-race`.
+- `make ci-drift ci-contracts` passes. `make lint-changed` passes with 0 issues.
+- `make check` now reaches the full Go tests and fails outside the edited runtime/guard packages: shell/SSH, X11, process discovery, historical timezone names and other nested-worktree scanners. Exact tests and symptoms: B-0004.
+- `make test-changed lint-changed` exceeded the 600 s command deadline in the changed-package race group; not a pass. Separate lint passed. S0 remains open; S1–S8 remain pending.
+
+## S1 Reliability fixes and skill roots (now)
 
 | # | Task | Ref | Tests | Docs |
 |---|---|---|---|---|
-| 1.1 | Packed Go reload hang: looping red test reproducing P29; confirm cause; generation-unique sockets | 0004 D1 | `TestPackedGoReloadLoopNeverHangs` (fails before fix) | `docs/runtime-cell-reload.md`, bundle `runtime-cells.md` |
-| 1.2 | Bounded reload handshake, atomic reload, error to `ctx.Reload()`, `/reload`, RPC; setting `extensions.reloadHandshakeMs` | 0004 D2 | stuck-peer test (process never registers) keeps old generation serving | `settings.md`, `extensions.md` reload section |
+| 1.1 | Generation-unique sockets implemented; original P29 tree-navigation and agent-turn reproduction remains open | 0004 D1 | red-proven `TestSocketGenerationTeardownDoesNotUnlinkSuccessor`; 200-reload stress loop is not a P29 reproduction | `docs/runtime-cell-reload.md`, bundle `runtime-cells.md` |
+| 1.2 | Bounded reload handshake, atomic reload, error to `ctx.Reload()`, `/reload`, RPC and the SDK loader; global setting `extensionsReloadHandshakeMs` | 0004 D2 | stuck-peer test (process never registers) keeps old generation serving; SDK per-cell publication test | `settings.md`, `extensions.md` reload section |
 | 1.3 | Event-bus cancellation (`events.cancel`) host + all SDKs | 0004 D3 | conformance test: caller abort ends listener context in Go/Rust/Python/Node | `extensions.md` event bus |
 | 1.4 | `nextTurn` bound to leaf; discard + `queued_message_discarded` on navigation/new/fork/resume/switch | 0007 D1 | red test from probe P20; poisoned history case | `extensions.md`, `events.md` |
 | 1.5 | Strict `deliverAs`; SDK constants | 0007 D3 | wire test with unknown value → error | `extensions.md`, `rpc.md` |
@@ -71,6 +114,37 @@ Done when: `make check` passes, no child `AGENTS.md` demands Pi faithfulness for
 | 1.7 | `skills.roots[]`: settings object form, legacy migration fix, tokens, precedence, trust; `make generate-schemas` | 0009 | migration keeps `roots`/`paths`; collision order; untrusted project ignores project roots; `HOME`-independent isolation | `skills.md`, `settings.md`, `settings-examples.md`, root `AGENTS.md` test-isolation bullet |
 
 Done when: all S1 tests red-proven where they are bug fixes, `make check` passes, docs and changelog fragments merged.
+
+### S1.1 evidence and next decision (04.11.2026)
+
+- S0 remains open under B-0004. Its remaining nested-worktree scanners and named-process fixture are now red → green; the timezone and X11 failures reproduce, and the earlier ELOOP did not reproduce in the first narrow run. No full gate is claimed green.
+- Implemented generation-unique sockets across packed, isolated and park-ack starts. Removed pre-listen deletion of stable paths and reserved full-width counters in the Unix socket budget. Both docs trees and the changelog fragment are updated; SPEC-0004 D1 revision 2 records the implementation and evidence limits.
+- Red → green: `TestSocketGenerationTeardownDoesNotUnlinkSuccessor` demonstrates old teardown unlinking the successor's bound socket before the fix. `TestPackedGoReloadLoopNeverHangs` ran 200 reloads with factory-time parser calls, bus subscription and a tool call each time. Retained-process identity and shutdown cleanup pass. The initial loop also passed before the fix, so it does not reproduce P29; tree navigation plus a real agent turn remains unverified.
+- The loop's per-admission timeout explicitly retains the session context as `runtimeParent`: cancelling the operation context must not terminate the retained process being measured. The added retained-identity assertion initially exposed that fixture lifetime mistake; it was corrected without removing the assertion.
+- Focused socket/reload tests and the broader reload/retention selection pass with `-race`; `go vet`, `make lint-changed` and `make ci-drift ci-contracts` pass. The teardown regression uses the production `ListenExtension` boundary (avoiding a false-positive TempDir socket lint warning). Warm-cache reload benchmark: 3 iterations, 4,547,431 ns/op, 3,601,690 B/op, 5,657 allocs/op; CPU and allocation profiles captured locally. No before/after performance claim.
+- The owner approved flat `extensionsReloadHandshakeMs`. SPEC-0004 D2 and the settings wire, clone, serialization, global accessor, CLI wiring and schema now use it; the `extensions` path array is unchanged. D5 setting names are flat in the draft spec too.
+
+### S1.2 progress and remaining work (04.11.2026)
+
+- Implemented `Host.Reload` admission/connect/register budgets (default 15000 ms), excluding builds and admission-order waits. Isolated and packed paths preserve process lifetime independently of the operation deadline. Initial loads remain cancellation-only. A retained-process probe/write uses the same cancellation mechanism; its one owned writer is drained when the process ends and an expired write prevents that process being claimed again.
+- Red → green: `TestHost_Reload_FailedReplacementKeepsOldExtension`; `TestReloadPackedCellFailureKeepsServingGeneration` (old tools, provider set, MCP URL, virtual-model metadata and crash ownership); `TestReloadReportsUnresolvedConfigsAndKeepsServingGenerations` (source-based unresolved identities). The connect/register deadline test was added after the first timeout implementation and mutation-checked: removing the deadline made both cases wait for the outer deadline. `TestReloadDeadlineIncludesStalledRetainedAdmission` red-proved an unbounded stdin write before the handshake wait.
+- Staged providers, OAuth, native providers, MCP servers and virtual models publish only for accepted cells. Failed cell siblings are discarded without factory replay; crash allocation IDs remain monotonic while rollback restores the live generation's crash ownership. Ready activation precedes registry publication. Partial success carries `extension.ErrReloadPartiallyApplied`; loader/Session/headless/interactive adapters must publish the actual set and still return the error.
+- `TestSessionReloadKeepsTheOldRuntimeActiveOnFailure` was red → green. API registry cleanup now occurs after successful loading and keeps registrations made during the load, including source IDs. Partial reloads do not reset the serving registry. Real print/RPC tests pass for a never-registering Node factory, an invalid configured budget, an ordinary resource-resolution failure, and mixed healthy Node/failed Go cells. The mixed test checks new healthy tools, retained failed-cell tools and removal of replaced tools before the failure reaches its caller.
+- Existing failure-dropping/stale-instance tests are being rewritten to SPEC-0004 D2. The first broader Host reload selection exposed only old-contract expectations and one synthetic generation fixture; the first interactive selection exposed four old-contract expectations. Follow-up gate status is recorded below only after observing it.
+- `make generate` initially stopped because the schema tests were renamed and active unit-evidence locators still named them. Those locators now name the fork-contract tests. The settings schema is checked against its pinned origin plus the exact fork property, rather than falsely claiming byte equality for the changed settings schema.
+- SDK path implemented after the owner approved per-cell publication: an ordinary `DefaultResourceLoader` reload now runs `Host.Reload` on the Host the loader already owns instead of creating a new Host, so it inherits the budget, per-cell rollback and `ErrReloadPartiallyApplied`. A trust bootstrap pass still starts a fresh Host, and a caller-supplied `DefaultResourceLoaderOptions.Runtime` keeps its identity. The aggregate runtime of a reload is a fresh `ReloadSnapshot` view over the same live provider registration state, so factory APIs from the previous generation go stale while MCP, provider and virtual-model registries stay bound. Compiled-in and inline factory failures keep their serving extension record through `extensionset.Loader.Previous`, and factory APIs of extensions a reload removed are retired.
+- Red → green: `TestDefaultResourceLoaderPublishesHealthyFactoriesAndKeepsFailedGenerations` (both `Runtime` ownership cases) failed first with a nil reload error, then with the serving command dropped when `Previous` retention was removed; both mutations were reverted. The test also asserts the Host survives the reload, the supplied runtime keeps identity and the omitted one gets a new snapshot.
+- Baseline comparison for the `coding` and `coding/cli` suites used a throwaway `HEAD` worktree, since these failures are outside the reload change: `TestStartupAllocationBudget`, `TestRPCUsageGoldenMatchesPi`, `TestRawPigContainsNoPlatformAPIPaths` and `internal/codingagent.TestSessionSearchRegexMatchesPi` fail identically on unmodified `5972948ba`. None is claimed fixed or caused here; all are recorded in B-0004.
+- Resource-lifetime probe: one retained OS process has 201 `watchedPacked` states after 200 reloads, though final shutdown drains it. Filed B-0005 with the measured reproduction and required crash/retention constraints; no bounded steady-state resource claim. P29's original tree-navigation plus agent-turn reproduction and B-0004 full-gate failures also remain open.
+- Further red → green: `TestReloadDeadlineDoesNotSelectAnotherRuntime` exposed cancellation/deadline errors being classified as runtime startup incompatibility; deadline tests exposed incorrect SDK-rebuild advice. Both are corrected. `TestRetentionProbeDoesNotBlockAnotherProcessClaim` timed out with an unrelated claim waiting on the retention mutex behind blocked stdin I/O; probes now reserve an owned reference and perform I/O outside the mutex.
+- Admission writes now use one `sync.Once`-started, `WaitGroup`-owned worker per process. `TestProcessShareCancellationReturnsBeforeTheOwnerDrainsItsWriter` proves caller cancellation returns before blocked I/O drains, while owner release waits for that drain. No lint suppression was added.
+- `TestDivergenceCitationsExcludeSpecDecisions` red-proved the documentation gate confusing qualified fork decisions with upstream D<N> entries. Scoped single decisions and ranges are excluded; adjacent upstream citations remain checked. The packed Python shape-skew test now requires the caller error and still checks the exact unknown-field/rebuild diagnostics in the report.
+- Focused reload/retention/publication/setting selections pass with `-race` in Host, CLI, Session, API registry and interactive packages. `make generate`, `make generate-schemas`, `make interface-gaps-update`, `make lint-changed` and touched-package `go vet` passed. Generated mapping changes are limited to this work’s API-registry/reload evidence and production references.
+- Final `make ci-drift`, `make ci-contracts`, `make lint-changed` and touched-package `go vet` passed. Drift used an alternate index containing the new files because the source-zip gate omits untracked files; the real index remains unchanged. An earlier ordinary-index invocation failed for those missing files, not because the complete source failed to compile. No complete slice gate is claimed.
+- The latest `make test-changed` exceeded its 1200 s command limit and exposed ELOOP, an MCP configuration data race, X11 disagreement, a provider cancellation mismatch, four inner 600 s package timeouts and a Rust cancellation wait failure. Two in-scope failures (scoped spec citations and shape-skew reload error expectations) were fixed and rerun. The Rust cancellation test passed once narrowly without a fix; the broad failure remains open. Details: B-0004.
+- Post-change warm-cache reload benchmark: 3 iterations, 4,988,982 ns/op, 3,590,306 B/op, 5,692 allocs/op, with CPU/allocation profiles captured. No comparative performance or bounded steady-state resource claim; B-0005 remains open.
+- Remaining 1.2 caveat: SDK reload coverage exercises inline factories, built-ins and file extensions through the loader. Compiled-in `extensionFactories` still go through the same inline path, but a real agent-turn reload against a compiled-in factory has not been driven end to end.
+- S1.3–S1.7 and S2–S8 have not started. No complete slice gate or commit is claimed by these implementation notes.
 
 ## S2 Model request pipeline (later)
 

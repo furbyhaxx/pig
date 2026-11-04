@@ -2,11 +2,13 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"maps"
 	"slices"
 	"sync"
 
 	"github.com/MichaelKinsy/PiG/coding"
+	"github.com/MichaelKinsy/PiG/coding/extension"
 	"github.com/MichaelKinsy/PiG/internal/codingagent"
 	"github.com/MichaelKinsy/PiG/internal/ctxowner"
 	"github.com/MichaelKinsy/PiG/internal/jsstring"
@@ -56,7 +58,7 @@ func (b *cliRuntimeBuilder) buildResourceLoader(owner context.Context, build *cl
 			return cliReloadedResources{}, err
 		}
 		extensions, err := b.reloadBuildExtensions(ctxowner.WithValuesOf(owner, ctx), build)
-		if err != nil {
+		if err != nil && !errors.Is(err, extension.ErrReloadPartiallyApplied) {
 			return cliReloadedResources{}, err
 		}
 		return cliReloadedResources{
@@ -66,7 +68,7 @@ func (b *cliRuntimeBuilder) buildResourceLoader(owner context.Context, build *cl
 			skills:     skills(),
 			sourceInfo: sourceInfo(),
 			extensions: coding.LoadExtensionsResult{Extensions: extensions, Runtime: build.Runtime},
-		}, nil
+		}, err
 	}
 	return loader
 }
@@ -132,13 +134,13 @@ func (l *cliResourceLoader) Reload(options ...coding.ResourceLoaderReloadOptions
 	return l.ReloadWith(context.Background(), options...)
 }
 
-// ReloadWith rereads the build's resources and reloads its extensions under ctx (resource-loader.ts reload). An error leaves the loader's resources as they were.
+// ReloadWith publishes successful cell replacements even when another cell reports a partial reload error.
 func (l *cliResourceLoader) ReloadWith(ctx context.Context, _ ...coding.ResourceLoaderReloadOptions) error {
 	if l.reload == nil {
 		return nil
 	}
 	reloaded, err := l.reload(ctx)
-	if err != nil {
+	if err != nil && !errors.Is(err, extension.ErrReloadPartiallyApplied) {
 		return err
 	}
 	l.set(reloaded.prompts, reloaded.skills, reloaded.sourceInfo)
@@ -146,7 +148,7 @@ func (l *cliResourceLoader) ReloadWith(ctx context.Context, _ ...coding.Resource
 	l.mu.Lock()
 	l.extensions = reloaded.extensions
 	l.mu.Unlock()
-	return nil
+	return err
 }
 
 func (l *cliResourceLoader) catalog() codingagent.SlashCommandCatalog {

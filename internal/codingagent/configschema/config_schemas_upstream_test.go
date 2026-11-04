@@ -230,8 +230,10 @@ func TestSettingsSchemaRejectsWhatRuntimeAccessorsReject(t *testing.T) {
 		`{"compaction":{"modelOverrides":{"provider/model":{"reserveTokens":9007199254740992}}}}`,
 		`{"httpIdleTimeoutMs":-1}`, `{"websocketConnectTimeoutMs":-1}`, `{"httpIdleTimeoutMs":"bogus"}`, `{"websocketConnectTimeoutMs":"30000"}`,
 		`{"codemode":{"inlineBudget":-1}}`,
+		`{"extensionsReloadHandshakeMs":0}`, `{"extensionsReloadHandshakeMs":-1}`, `{"extensionsReloadHandshakeMs":1.5}`,
+		`{"extensionsReloadHandshakeMs":null}`, `{"extensionsReloadHandshakeMs":"15000"}`, `{"extensionsReloadHandshakeMs":9223372036855}`,
 	}
-	valid := `{"compaction":{"reserveTokens":0,"keepRecentTokens":9007199254740991,"modelOverrides":{"provider/model":{"reserveTokens":0}}},"httpIdleTimeoutMs":0,"websocketConnectTimeoutMs":"disabled","codemode":{"inlineBudget":0}}`
+	valid := `{"compaction":{"reserveTokens":0,"keepRecentTokens":9007199254740991,"modelOverrides":{"provider/model":{"reserveTokens":0}}},"httpIdleTimeoutMs":0,"websocketConnectTimeoutMs":"disabled","codemode":{"inlineBudget":0},"extensionsReloadHandshakeMs":9223372036854}`
 	var docs []any
 	for _, d := range invalid {
 		docs = append(docs, parse(t, d))

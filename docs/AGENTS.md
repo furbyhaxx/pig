@@ -14,5 +14,5 @@ Maintainer references and the public user documentation. Product surface: keep c
 
 - The agent/offline docs bundle is `internal/pigdocs/content/`, separate from `site/docs/`; a user-visible change usually updates both.
 - Language: simple direct technical English, one instruction per sentence, present tense, active voice, one term per thing. Don't apply this mechanically to essays, interviews or release narratives.
-- Observable PiG ≠ Pi difference → state it at the point of use and cite `D<N>`.
+- Inherited upstream differences cite `D<N>` at the point of use. Fork behavior changes cite `.project/specs/` decisions; never allocate upstream divergence IDs for them.
 - Pin-dependent statements must name the pinned Pi version; earlier versions only in files listed in `automation/ci/version-records.toml`.

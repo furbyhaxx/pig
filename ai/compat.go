@@ -172,6 +172,35 @@ func ensureBuiltInAPIProvidersLocked() {
 func ResetAPIProviders() {
 	compatRegistry.mu.Lock()
 	defer compatRegistry.mu.Unlock()
+	resetAPIProvidersLocked()
+}
+
+// ResetAPIProvidersKeepingChanges resets earlier registrations but retains additions and replacements since a GetAPIProviders snapshot, including their source IDs.
+func ResetAPIProvidersKeepingChanges(previous []*APIProvider) {
+	compatRegistry.mu.Lock()
+	defer compatRegistry.mu.Unlock()
+	before := make(map[API]*APIProvider, len(previous))
+	for _, provider := range previous {
+		before[provider.API] = provider
+	}
+	var changes []*registeredAPIProvider
+	for _, api := range compatRegistry.order {
+		entry := compatRegistry.entries[api]
+		if entry.provider != before[api] {
+			changes = append(changes, entry)
+		}
+	}
+	resetAPIProvidersLocked()
+	for _, entry := range changes {
+		api := entry.provider.API
+		if _, exists := compatRegistry.entries[api]; !exists {
+			compatRegistry.order = append(compatRegistry.order, api)
+		}
+		compatRegistry.entries[api] = entry
+	}
+}
+
+func resetAPIProvidersLocked() {
 	compatBuiltInsRegistered = true
 	compatRegistry.order = nil
 	compatRegistry.entries = map[API]*registeredAPIProvider{}

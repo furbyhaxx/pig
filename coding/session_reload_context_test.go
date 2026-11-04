@@ -2,11 +2,62 @@ package coding
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"path/filepath"
 	"testing"
 
+	"github.com/MichaelKinsy/PiG/ai"
 	"github.com/MichaelKinsy/PiG/coding/extension"
 )
+
+func TestSessionReloadPublishesPartialCellSuccessAndReturnsTheFailure(t *testing.T) {
+	services := newTestServices(t)
+	retained := registryTool("retained", "Retained", "Serving failed cell", "")
+	healthyOld := registryTool("healthy_old", "Old", "Previous healthy cell", "")
+	healthyNew := registryTool("healthy_new", "New", "Replacement healthy cell", "")
+	partial := false
+	cause := errors.New("another cell failed to register")
+	runtime := extension.CreateExtensionRuntime()
+	loader := NewDefaultResourceLoader(DefaultResourceLoaderOptions{
+		CWD: services.CWD(), AgentDir: filepath.Join(t.TempDir(), "agent"), NoSkills: true, NoPromptTemplates: true, NoThemes: true, NoContextFiles: true,
+		LoadExtensions: func(context.Context, ExtensionLoadRequest) (LoadExtensionsResult, error) {
+			healthy, loadErr := healthyOld, error(nil)
+			if partial {
+				healthy = healthyNew
+				loadErr = errors.Join(extension.ErrReloadPartiallyApplied, cause)
+			}
+			return LoadExtensionsResult{Runtime: runtime, Extensions: []extension.Extension{
+				{Path: "<retained>", Tools: map[string]extension.RegisteredTool{retained.Name: {Definition: retained}}},
+				{Path: "<healthy>", Tools: map[string]extension.RegisteredTool{healthy.Name: {Definition: healthy}}},
+			}}, loadErr
+		},
+	})
+	if err := loader.ReloadWith(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	session, err := NewSession(services, SessionOptions{NoSession: true, ResourceLoader: loader})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+	partial = true
+	if err := session.Reload(t.Context()); !errors.Is(err, cause) {
+		t.Fatalf("partial reload error = %v", err)
+	}
+	if _, found := session.GetToolDefinition(healthyOld.Name); found {
+		t.Fatal("the replaced healthy cell's old tool stayed published")
+	}
+	for _, name := range []string{healthyNew.Name, retained.Name} {
+		tool, found := session.GetToolDefinition(name)
+		if !found {
+			t.Fatalf("serving tool %s was not published", name)
+		}
+		if result, err := tool.Execute(t.Context(), "partial-probe", json.RawMessage(`{}`), nil); err != nil || result.Text() != "ok" {
+			t.Fatalf("serving tool %s failed: %v, %v", name, result, err)
+		}
+	}
+}
 
 type reloadContextKey struct{}
 
@@ -56,9 +107,7 @@ func (l *runtimeReloadLoader) GetExtensions() LoadExtensionsResult {
 	return LoadExtensionsResult{Runtime: l.runtime}
 }
 
-// Pi's reload marks the old runner and its runtime stale right after session_shutdown (agent-session.ts:3663-3664, runner.ts:722-728), and the resource loader then loads the extensions against a fresh runtime (loader.ts:689). A Pig loader can hand the rebuilt runner the runtime the old runner bound (the CLI build's host runtime): that runtime must stay active, or every built-in extension of the reloaded Session reads a stale ctx. A runtime the rebuilt runner does not bind goes stale, and so does the old runtime when the reload fails.
-// mutation-checked: invalidating the old runtime even when the rebuilt runner binds it fails the "kept" case; dropping the deferred invalidation fails the "replaced" and "failed" cases.
-func TestSessionReloadInvalidatesTheOldRuntimeUnlessTheRebuiltRunnerKeepsIt(t *testing.T) {
+func TestSessionReloadKeepsTheOldRuntimeActiveOnFailure(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
 		fresh     bool
@@ -67,7 +116,7 @@ func TestSessionReloadInvalidatesTheOldRuntimeUnlessTheRebuiltRunnerKeepsIt(t *t
 	}{
 		{name: "kept"},
 		{name: "replaced", fresh: true, wantStale: true},
-		{name: "failed", err: errors.New("resource reload failed"), wantStale: true},
+		{name: "failed", err: errors.New("resource reload failed")},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Setenv("PIG_HOME", t.TempDir())
@@ -85,6 +134,9 @@ func TestSessionReloadInvalidatesTheOldRuntimeUnlessTheRebuiltRunnerKeepsIt(t *t
 			if _, err := session.ReloadExtensions(nil, old); err != nil {
 				t.Fatal(err)
 			}
+			ai.RegisterAPIProvider(ai.APIProvider{API: "reload-serving-api"}, "reload-serving-source")
+			t.Cleanup(ai.ResetAPIProviders)
+			servingAPI := ai.GetAPIProvider("reload-serving-api")
 			loader.err = tc.err
 			if tc.fresh {
 				loader.runtime = extension.CreateExtensionRuntime()
@@ -95,8 +147,11 @@ func TestSessionReloadInvalidatesTheOldRuntimeUnlessTheRebuiltRunnerKeepsIt(t *t
 			if stale := old.AssertActive() != nil; stale != tc.wantStale {
 				t.Fatalf("old runtime stale = %v, want %v", stale, tc.wantStale)
 			}
-			if tc.err == nil && session.ExtensionRunner().Runtime().AssertActive() != nil {
-				t.Fatal("the reloaded runner's runtime is stale")
+			if tc.err != nil && ai.GetAPIProvider("reload-serving-api") != servingAPI {
+				t.Fatal("failed reload replaced the serving API registration")
+			}
+			if session.ExtensionRunner().Runtime().AssertActive() != nil || session.ExtensionRunner().IsStale() {
+				t.Fatal("the serving runner or its runtime is stale")
 			}
 		})
 	}

@@ -1,6 +1,6 @@
 # Personal PiG distribution
 
-`furbyhaxx/pig` is Furby Haxx's personal fork of [PiG](https://github.com/MichaelKinsy/PiG), created by Michael Kinsy and originally developed at Hewlett Packard Enterprise. It is not an official Pi project and does not imply endorsement. Runtime behavior, executable names, module identities, configuration paths, sessions, and credentials remain upstream-compatible.
+`furbyhaxx/pig` is Furby Haxx's personal fork of [PiG](https://github.com/MichaelKinsy/PiG), created by Michael Kinsy and originally developed at Hewlett Packard Enterprise. It is not an official Pi project and does not imply endorsement. This fork is a base for the owner's coding agent. Compatibility with Pi and upstream PiG is kept while it does not limit correctness, performance, design quality or the owner's requirements; it is not a requirement (SPEC-0001 D7). Breaking changes require a fork specification and a user migration note. Executable names, module identities, configuration paths, sessions and credentials retain their inherited names and formats until a specification decides otherwise.
 
 ## Install or switch from upstream
 

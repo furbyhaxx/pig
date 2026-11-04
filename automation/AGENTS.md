@@ -2,7 +2,7 @@
 
 Every non-Go script. The root `Makefile` and `make/*.mk` are the interface; folder map in `README.md`. Add a make target when a script is called by hand twice.
 
-- `release/personal-fork.sh`, `release/personal-fork-sync.sh`, `release/personal-update-trust.pem` — fork-owned release and sync (`.project/specs/0001-personal-distribution.md`). Everything else is upstream-owned; keep fork edits minimal.
+- `release/personal-fork.sh`, `release/personal-fork-sync.sh`, `release/personal-update-trust.pem` — fork-owned release and sync (`.project/specs/0001-personal-distribution.md`). Other scripts are inherited; weigh merge cost against design quality under the root fork policy.
 - Ratchet baselines are shrink-only; a fix deletes its entries; never add entries for new code: `ci/divguard/baseline.toml`, `ci/portlint/baseline.toml`, `ci/anytrap` baseline, `perf/ratchet.toml`, `ci/changelogfrag/legacy.txt`.
 - `changelog.d/` accepts only fragments; `ci/changelogfrag` rejects any other file there.
 - `ci/autofix-paths.txt` / `ci/autofix-gates.txt` — what the upstream autofix bot may regenerate; a new generated file needs a reviewed entry.

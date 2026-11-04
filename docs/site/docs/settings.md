@@ -21,7 +21,7 @@ Use `/settings` to change a setting from inside a session. PiG writes the file f
 
 ## Where PiG reads settings
 
-PiG merges two files. A key set in the project file overrides the same key in the global file. Resource lists are combined. `defaultProjectTrust`, `httpProxy`, `cacheWarming`, `extensionsAutoUpgrade` and `extensionsTypescriptRuntime` are global settings: PiG ignores them in the project file.
+PiG merges two files. A key set in the project file overrides the same key in the global file. Resource lists are combined. `defaultProjectTrust`, `httpProxy`, `cacheWarming`, `extensionsAutoUpgrade`, `extensionsTypescriptRuntime` and `extensionsReloadHandshakeMs` are global settings: PiG ignores them in the project file.
 
 | Scope | Path |
 |---|---|
@@ -105,6 +105,7 @@ To turn cache warming off, choose `off` for **Cache warming** in `/settings`, or
 | `fullscreenWheelScrollLines` | `"auto"` \| number | `"auto"` | Lines per mouse-wheel event in fullscreen mode, from 1 to 100. `"auto"` moves one line per event in local macOS terminals, which already accelerate wheel and trackpad input; elsewhere, and over SSH, it speeds up fast wheel spins to at most 6 lines per event. Alt+wheel moves five times as far. A fractional value is rounded down, and any other value falls back to `"auto"`. No effect in regular mode. |
 | `extensionsAutoUpgrade` | boolean | `false` | PiG-only (D109). Run `pig extension upgrade` rules at startup and after `pig update` for Go extensions written for an older SDK, with a backup and one line per extension. Global settings only; a project file cannot turn it on. Pi's `extensions` setting is an array and unrelated. |
 | `extensionsTypescriptRuntime` | string | `node` | PiG-only (D19). Runtime that runs TypeScript and JavaScript extensions: `node` or the name of a runtime an extension or Piglet installed. When it cannot run, extensions run on its fallback runtime if it names one, then on Node; `pig extensions runtime status` shows why. `PIG_TS_RUNTIME` overrides it. Global settings only. See [TypeScript extension runtimes](/docs/latest/typescript-runtimes). |
+| `extensionsReloadHandshakeMs` | integer | `15000` | Global connect/register budget for `Host.Reload` and CLI extension reloads, in milliseconds. Must be positive and at most 9223372036854. Build time is excluded; initial loads remain cancellation-only. A project file cannot override it (SPEC-0004 D2). |
 | `maskSecretInput` | boolean | `true` | PiG-only login-input privacy (D80). Show dots, a character count and the last four characters; fewer than five characters show no suffix. The setting applies to API-key logins and to `secret` prompts of an extension's OAuth login. False restores Pi's plain-text typing and submitted history. Change **Mask secret input** in `/settings`. Pi ignores this key in shared settings. |
 | `hideThinkingBlock` | boolean | `false` | Hide thinking blocks in the transcript. |
 | `doubleEscapeAction` | string | `tree` | Action for pressing Escape twice with an empty editor: `tree`, `fork`, or `none`. |

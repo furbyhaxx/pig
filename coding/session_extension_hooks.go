@@ -492,7 +492,7 @@ func (s *Session) ReloadExtensions(extensions []extension.Extension, runtime ...
 	s.bindExtensionCore(runner)
 	s.ReplaceRunner(runner)
 	if previous != nil {
-		if len(runtime) != 0 && runtime[0] == previous.Runtime() {
+		if len(runtime) != 0 && runtime[0] != nil && runtime[0].SharesRegistrations(previous.Runtime()) {
 			// The factories registered against the runtime the previous runner binds: the rebuilt runner keeps it.
 			previous.InvalidateKeepingRuntime("")
 		} else {

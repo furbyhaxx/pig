@@ -224,10 +224,7 @@ func TestResponseAfterADroppedSuspensionOfARetiredGeneration(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h := NewHostWithConfigRoot(t.TempDir(), t.TempDir())
 		h.mu.Lock()
-		if h.packedCellGeneration == nil {
-			h.packedCellGeneration = map[string]int{}
-		}
-		h.packedCellGeneration["retired"] = 2
+		h.packedCellActiveGeneration = map[string]int{"retired": 2}
 		h.mu.Unlock()
 		hostSide, extSide := net.Pipe()
 		conn := NewConn("retired", hostSide)

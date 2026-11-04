@@ -322,8 +322,10 @@ PiG instead provides a bounded failure contract:
 3. Close UI and renderer state owned by that connection.
 4. Isolate or quarantine the affected member or cell.
 5. Preserve unrelated healthy extensions where possible.
-6. Keep the previous working extension set when a replacement fails validation.
+6. Keep a failed replacement cell's serving generations.
 7. Permit an explicit reload or supervised restart when safe.
+
+Reloads, including the SDK's `DefaultResourceLoader`, use the global `extensionsReloadHandshakeMs` budget (default 15000 milliseconds) for connection and registration, excluding builds. Failure keeps that cell's previous generations and returns an error to `ctx.Reload()`, `/reload` or RPC. Other cells can commit; their tools are published before the error returns. The SDK reuses one Host across reloads and reports healthy factory and file extensions alongside a failed sibling's retained generation. Unlike Pi and upstream PiG, a failed replacement is not silently dropped. Catch reload errors rather than assuming success. Initial loads remain cancellation-only, and user factory side effects are not rolled back (SPEC-0004 D2).
 
 A heartbeat proves that the transport dispatcher is alive. It does not prove that an extension handler is making progress.
 

@@ -368,6 +368,10 @@ func emitReport(w io.Writer, entries []portMapEntry, coverage, behavioralCoverag
 	_, _ = fmt.Fprintln(w, "Behavioral evidence includes paired scenarios and reviewed mutation-proven Go unit tests. Unit tests are listed separately; last run refers only to paired scenarios, not unit execution or exhaustive parity.")
 	_, _ = fmt.Fprintln(w)
 
+	_, _ = fmt.Fprintln(w, "## Families")
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprint(w, buildFamilyTable(scenarios, results))
+
 	// Per-entry table. `scenarios` is every scenario that references the file;
 	// `behavioral` is the stricter count used by the verification headline.
 	_, _ = fmt.Fprintln(w, "| upstream | port | scenarios | behavioral | last run | unit tests |")
@@ -666,29 +670,7 @@ type familyRow struct {
 	NotRun     int
 }
 
-func patchAgentsMd(path string, entries []portMapEntry, coverage, behavioralCoverage map[string][]string, results map[string]jsonOutcome, scenarios []scenarioFile, accounting *packageAccounting) error {
-	block := buildCoverageBlock(entries, coverage, behavioralCoverage, results, scenarios, accounting)
-	return patchFileBlock(path, covBeginMarker, covEndMarker, block)
-}
-
-func buildCoverageBlock(entries []portMapEntry, coverage, behavioralCoverage map[string][]string, results map[string]jsonOutcome, scenarios []scenarioFile, accounting *packageAccounting) string {
-	// 1. Top-line numbers.
-	stats := computeStatusStats(entries, coverage, behavioralCoverage)
-
-	// Count weak/non-behavioral scenarios for quality visibility.
-	var bootOnly, registrationOnly, smokeOnly int
-	for _, sc := range scenarios {
-		switch scenarioQuality(sc) {
-		case qualityBootOnly:
-			bootOnly++
-		case qualityRegistrationOnly:
-			registrationOnly++
-		case qualitySmokeOnly:
-			smokeOnly++
-		}
-	}
-
-	// 2. Per-family aggregation.
+func buildFamilyTable(scenarios []scenarioFile, results map[string]jsonOutcome) string {
 	famIdx := make(map[string]*familyRow)
 	for _, sc := range scenarios {
 		f := sc.Family
@@ -740,6 +722,51 @@ func buildCoverageBlock(entries []portMapEntry, coverage, behavioralCoverage map
 	}
 	sort.Strings(families)
 
+	var b strings.Builder
+	fmt.Fprintln(&b, "| family | scenarios | behavioral | boot-only | weak | deferred | upstream behavioral covered | last run |")
+	fmt.Fprintln(&b, "|---|---:|---:|---:|---:|---:|---:|---|")
+	for _, f := range families {
+		row := famIdx[f]
+		lastRun := "not run"
+		switch {
+		case row.Fail > 0:
+			lastRun = fmt.Sprintf("%d pass / **%d fail**", row.Pass, row.Fail)
+		case row.Pass > 0 && row.NotRun == 0:
+			lastRun = fmt.Sprintf("%d pass", row.Pass)
+		case row.Pass > 0:
+			lastRun = fmt.Sprintf("%d pass / %d not run", row.Pass, row.NotRun)
+		case row.Scenarios > 0:
+			lastRun = "not run"
+		}
+		fmt.Fprintf(&b, "| `%s` | %d | %d | %d | %d | %d | %d | %s |\n",
+			row.Family, row.Scenarios, row.Behavioral, row.BootOnly, row.Weak, row.Deferred, row.Covered, lastRun)
+	}
+	fmt.Fprintln(&b)
+	return b.String()
+}
+
+func patchAgentsMd(path string, entries []portMapEntry, coverage, behavioralCoverage map[string][]string, results map[string]jsonOutcome, scenarios []scenarioFile, accounting *packageAccounting) error {
+	block := buildCoverageBlock(entries, coverage, behavioralCoverage, results, scenarios, accounting)
+	return patchFileBlock(path, covBeginMarker, covEndMarker, block)
+}
+
+func buildCoverageBlock(entries []portMapEntry, coverage, behavioralCoverage map[string][]string, results map[string]jsonOutcome, scenarios []scenarioFile, accounting *packageAccounting) string {
+	// 1. Top-line numbers.
+	stats := computeStatusStats(entries, coverage, behavioralCoverage)
+
+	// Count weak/non-behavioral scenarios for quality visibility.
+	var bootOnly, registrationOnly, smokeOnly int
+	for _, sc := range scenarios {
+		switch scenarioQuality(sc) {
+		case qualityBootOnly:
+			bootOnly++
+		case qualityRegistrationOnly:
+			registrationOnly++
+		case qualitySmokeOnly:
+			smokeOnly++
+		}
+	}
+
 	// 3. Render.
 	var b strings.Builder
 	fmt.Fprintln(&b, "<!--")
@@ -760,25 +787,7 @@ func buildCoverageBlock(entries []portMapEntry, coverage, behavioralCoverage map
 		fmt.Fprintf(&b, "Weak scenarios not counted as behavioral verification: %d boot-only, %d registration-only, %d smoke-only.\n", bootOnly, registrationOnly, smokeOnly)
 	}
 	fmt.Fprintln(&b)
-	fmt.Fprintln(&b, "| family | scenarios | behavioral | boot-only | weak | deferred | upstream behavioral covered | last run |")
-	fmt.Fprintln(&b, "|---|---:|---:|---:|---:|---:|---:|---|")
-	for _, f := range families {
-		row := famIdx[f]
-		lastRun := "not run"
-		switch {
-		case row.Fail > 0:
-			lastRun = fmt.Sprintf("%d pass / **%d fail**", row.Pass, row.Fail)
-		case row.Pass > 0 && row.NotRun == 0:
-			lastRun = fmt.Sprintf("%d pass", row.Pass)
-		case row.Pass > 0:
-			lastRun = fmt.Sprintf("%d pass / %d not run", row.Pass, row.NotRun)
-		case row.Scenarios > 0:
-			lastRun = "not run"
-		}
-		fmt.Fprintf(&b, "| `%s` | %d | %d | %d | %d | %d | %d | %s |\n",
-			row.Family, row.Scenarios, row.Behavioral, row.BootOnly, row.Weak, row.Deferred, row.Covered, lastRun)
-	}
-	fmt.Fprintln(&b)
+	b.WriteString(buildFamilyTable(scenarios, results))
 	fmt.Fprintln(&b, "Full per-file detail: `test/parity/coverage.md`.")
 	return b.String()
 }

@@ -62,7 +62,8 @@ func TestPublicClaimsCheckAcceptsSupportedStatements(t *testing.T) {
 		"docs/site/docs/index.md": "PiG pins Pi 9.9.9. Porting reads 40/50 (80.0%).\n" +
 			"Tool definitions and their order match Pi byte for byte.\n" +
 			"This page does not claim HPE sponsorship or that PiG is sponsored by an Open Source Program Office.\n" +
-			"The ledgers were last reviewed against Pi 9.9.0.\n",
+			"The ledgers were last reviewed against Pi 9.9.0.\n" +
+			"This personal fork keeps Pi and upstream PiG compatibility while it does not limit correctness, performance or the owner\u0027s requirements; compatibility is not a requirement.\n",
 		// Comments are not user-visible; only string literals are checked.
 		"coding/cli/help.go": "package main\n\n// This comment may say full parity.\nconst help = \"pig targets Pi 9.9.9\"\n",
 	})

@@ -105,6 +105,13 @@ func (r *ExtensionRuntime) RegisterVirtualModel(definition VirtualModelDefinitio
 	return register(definition)
 }
 
+// QueueVirtualModelRegistration defers a loader declaration until the next provider-action binding, even when actions are already bound.
+func (r *ExtensionRuntime) QueueVirtualModelRegistration(definition VirtualModelDefinition, extensionPath string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.pendingVirtualModelRegistrations.entries = append(r.pendingVirtualModelRegistrations.entries, PendingVirtualModelRegistration{Definition: definition, ExtensionPath: extensionPath})
+}
+
 // UnregisterVirtualModel removes every queued registration of the provider and id before binding, and applies the removal through the bound [ProviderActions] afterward.
 //
 // upstream: loader.ts:229-233, runner.ts:538-541 (unregisterVirtualModel)

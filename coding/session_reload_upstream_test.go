@@ -90,10 +90,7 @@ func TestSessionReloadRebuildsTheRunnerFromTheResourceLoader(t *testing.T) {
 	}
 }
 
-// Ports agent-session.ts:3654-3657: reload resets the API provider registry (resetApiProviders, compat.ts:209-213) after the settings reload and
-// before the resource loader loads the extensions again. A provider registered before the reload is gone, a provider registered while the
-// extensions load is kept, and the built-in providers stay registered.
-func TestSessionReloadResetsAPIProvidersBeforeTheExtensionsLoad(t *testing.T) {
+func TestSessionReloadResetsPriorAPIProvidersAndKeepsLoadRegistrations(t *testing.T) {
 	const stale, reloaded ai.API = "test-reload-stale-api", "test-reload-loaded-api"
 	t.Cleanup(ai.ResetAPIProviders)
 	root := t.TempDir()
@@ -117,7 +114,7 @@ func TestSessionReloadResetsAPIProvidersBeforeTheExtensionsLoad(t *testing.T) {
 		t.Fatalf("%s survived reload; resetApiProviders clears providers registered before it", stale)
 	}
 	if ai.GetAPIProvider(reloaded) == nil {
-		t.Fatalf("%s registered while the extensions loaded is gone; the reset must run before loader.reload", reloaded)
+		t.Fatalf("%s registered while the extensions loaded was discarded by the reset", reloaded)
 	}
 	if ai.GetAPIProvider(ai.APIAnthropicMessages) == nil {
 		t.Fatal("the built-in providers are not registered again after the reset")

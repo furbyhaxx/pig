@@ -133,8 +133,9 @@ type DefaultResourceLoader struct {
 	resourceMetadata                                *pathMetadataIndex
 	extensionSources                                extensionSources
 
-	// files owns the Extension Host of the default extension load; the next load and Close shut it down.
-	files LoadExtensionsResult
+	// files owns the persistent Extension Host; Close stops it.
+	files        LoadExtensionsResult
+	filesContext context.Context
 	// filesConfigs are the Host configurations of files, which the final pass of a trust reload does not attempt again.
 	filesConfigs []subprocess.ExtConfig
 	// cliExtensionPaths are the canonical paths of the extensions AdditionalExtensionPaths named in the last load; an extension at one of them has the source "cli" (resource-loader.ts :562-569).
@@ -225,7 +226,7 @@ func (l *DefaultResourceLoader) ReloadWith(ctx context.Context, options ...Resou
 }
 
 // discover rediscovers every resource from the settings as they currently are.
-func (l *DefaultResourceLoader) discover(ctx context.Context, preTrust *LoadExtensionsResult) error {
+func (l *DefaultResourceLoader) discover(ctx context.Context, preTrust *LoadExtensionsResult) (resultErr error) {
 	trusted := l.settings.IsProjectTrusted()
 	manager := packagemanager.NewPackageManager(packagemanager.PackageManagerOptions{CWD: l.cwd, SettingsManager: l.settings})
 	manager.AgentDir = l.agentDir
@@ -233,9 +234,15 @@ func (l *DefaultResourceLoader) discover(ctx context.Context, preTrust *LoadExte
 	if err != nil {
 		return fmt.Errorf("coding: %w", err)
 	}
-	extensions, err := l.loadFinalExtensions(ctx, preTrust)
-	if err != nil {
-		return err
+	extensions, extensionErr := l.loadFinalExtensions(ctx, preTrust)
+	if extensionErr != nil {
+		if !errors.Is(extensionErr, extension.ErrReloadPartiallyApplied) {
+			return extensionErr
+		}
+		l.mu.Lock()
+		l.extensions = extensions
+		l.mu.Unlock()
+		defer func() { resultErr = errors.Join(extensionErr, resultErr) }()
 	}
 	metadata := &pathMetadataIndex{}
 	sources := extensionSources{}

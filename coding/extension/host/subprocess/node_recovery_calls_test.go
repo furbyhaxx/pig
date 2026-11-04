@@ -14,7 +14,7 @@ func TestOldNodeGenerationCannotPublishFramesOrStartHostCalls(t *testing.T) {
 	h.uiBridge = NewUIBridge(nil)
 	conn := NewConn("peer", a)
 	old := withConn(&managedExt{config: ExtConfig{Name: "peer"}, packedProcess: &packedProcessState{key: "node", generation: 1, node: true}}, conn)
-	h.packedCellGeneration = map[string]int{"node": 2}
+	h.packedCellActiveGeneration = map[string]int{"node": 2}
 	calls := 0
 	h.onCall = func(string, *CallPayload) (*CallResultPayload, error) { calls++; return &CallResultPayload{}, nil }
 	h.runCall(old, old.connection(), "", &CallPayload{Method: "probe"}, nil)

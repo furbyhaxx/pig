@@ -582,6 +582,18 @@ class ClosureTests(unittest.TestCase):
         self.assertEqual(given["packages"][self.AGENT + "/node_modules/@earendil-works/pi-ai"]["integrity"], "sha512-ai")
         self.assertNotIn("sha512-x", json.dumps(given))
 
+    def test_pack_rejects_unpinned_node_before_running_npm(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            package = root / "source" / "packages" / "agent"
+            package.mkdir(parents=True)
+            (package / "package.json").write_text(json.dumps({"name": oracle.AGENT, "version": "1.0.0"}))
+            with mock.patch.object(oracle.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, stdout="v0.0.0\n")), mock.patch.object(oracle, "npm") as npm:
+                with self.assertRaisesRegex(pinlib.PinError, r"Node.*\.node-version"):
+                    oracle.pack(root / "source", root / "packs")
+            npm.assert_not_called()
+            self.assertFalse((root / "packs").exists())
+
     def test_tarball_integrity_is_the_npm_sha512(self):
         tgz = Path(tempfile.mkdtemp()) / "x.tgz"
         tgz.write_bytes(b"abc")

@@ -78,6 +78,7 @@ These are the call names the host accepts. SDK bindings wrap each into a method 
 - `getModelAuth(provider, model)` - read credentials/headers the host would send.
 - `complete(model, prompt, options)` - request a one-shot completion through the host's provider stack (typed unsupported error if not wired in this build).
 - `isIdle()`, `hasPendingMessages()`, `waitForIdle()`, `abort()`, `shutdown()`, `reload()`, `compact(options)`.
+- `reload()` failures, including from the SDK's `DefaultResourceLoader`, reject the call and keep the failed cell's serving generations. The SDK reuses one Host across reloads, publishes healthy factory and file extensions, and keeps a caller-supplied `Runtime`. Healthy cells may commit, and their tools publish before the error returns. Connection and registration use the global `extensionsReloadHandshakeMs` budget (default 15000 milliseconds), excluding builds; initial loads remain cancellation-only. Catch reload errors. User factory side effects cannot be rolled back (SPEC-0004 D2).
 - `newSession(opts)`, `fork(entryID, opts)`, `navigateTree(targetID, opts)`, `switchSession(path, opts)` - return `{cancelled: bool}` so the extension can detect user dismissal.
 
 ### UI bridge
@@ -256,7 +257,7 @@ Provider-object access has documented 0.3.x known gaps (D78, owner decision 2026
 
 Partial-message observation across the process boundary is D82: retained snapshots do not acquire later producer revisions. The strict RPC33 comparison keeps its raw failure. Every Node extension, including strict isolation and exact standalones, shares one `pi.events` bus; a listener in another process receives the original payload by reference. D83 names the remaining cross-process boundaries: timing order of independent tasks, microtask order beyond a listener's first post-await continuation, cross-process reference cycles, brand checks and `util.types.isProxy` on foreign objects, an empty placeholder from `util.inspect` with `customInspect: false`, the Proxy wrapper from `showProxy: true`, and, on Node 26.0.0 and later, `Proxy(...)` around a non-extensible foreign payload in `util.inspect`. These known gaps do not waive event order, callback completion, cancellation, final results, persistence or cleanup. See [Divergences](divergences.md).
 
-Extensions may register additional inference providers. The registration payload is opaque to the host except for the name. Providers registered by an extension are torn down when the extension shuts down, fails to register on reload, or its quarantined packed cell fissions. Names registered by a replacement extension at reload are preserved across the swap.
+Extensions may register additional inference providers. The registration payload is opaque to the host except for the name. Providers registered by an extension are torn down when the extension shuts down or its quarantined packed cell fissions. A failed CLI reload keeps the previous cell's providers; staged declarations are not published. Names registered by a replacement extension at reload are preserved across the swap.
 
 ### Cancellation contract
 

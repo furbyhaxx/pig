@@ -24,7 +24,7 @@ Public Go SDK for embedding the coding agent (Pi `packages/coding-agent` core): 
 | Session replacement leaks prior work | replace an active Session | prior runtime cancelled and drained |
 | Paging loses or duplicates an append | append during page transfer | each entry once, in order |
 | Resume scans/copies full history on input | editor and command paths on a large Session | bounded work |
-| Compaction races queued input | queue input during compaction | Pi ordering |
+| Compaction races queued input | queue input during compaction | documented queue ordering |
 | Poisoned history breaks a later turn | aborted, errored, empty, orphaned entries | recover or fail at the owning boundary |
 | Shutdown leaves work or files open | cancel during provider, tool, extension activity | owned work drained, resources closed |
 

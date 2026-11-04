@@ -568,17 +568,14 @@ func WithBeforeSessionStart(fn func(context.Context) error) ReloadOption {
 // Reload is AgentSession.reload (agent-session.ts:3640-3685): the old extensions receive session_shutdown with reason reload and go stale;
 // the settings and the resource loader are read again; the loader's extensions build a new runner that keeps the previous flag values; the
 // tools a settings reload newly added to defaultTools activate; and, when the mode bound its UI or command actions, the new runner gets them
-// and session_start with reason reload, then the resources its resources_discover handlers contribute. A failure before the new runner exists
-// leaves the old one stale, as Pi does.
-func (s *Session) Reload(ctx context.Context, options ...ReloadOption) error {
+// and session_start with reason reload, then the resources its resources_discover handlers contribute. A loader failure keeps the old runner active.
+func (s *Session) Reload(ctx context.Context, options ...ReloadOption) (resultErr error) {
 	var reload reloadOptions
 	for _, option := range options {
 		option(&reload)
 	}
 	previous := s.currentRunner()
 	var flagValues map[string]any
-	// keepsRuntime is set when the rebuilt runner binds the previous runner's runtime.
-	keepsRuntime := false
 	if previous != nil {
 		flagValues = previous.GetFlagValues()
 		if previous.HasHandlers(icodingagent.EventSessionShutdown) {
@@ -586,25 +583,22 @@ func (s *Session) Reload(ctx context.Context, options ...ReloadOption) error {
 				return err
 			}
 		}
-		// upstream: agent-session.ts:3663-3664 marks the old runner stale right after session_shutdown. Its runtime stays active until the reload knows whether the rebuilt runner keeps it: a loader whose extensions registered against the same runtime hands it to the new runner, and invalidating it would make the new runner stale too.
-		previous.InvalidateKeepingRuntime("")
-		defer func() {
-			if !keepsRuntime && previous.Runtime() != nil {
-				previous.Runtime().Invalidate(previous.StaleMessage())
-			}
-		}()
 	}
 	s.ReloadSettings()
 	// The tools the settings reload staged activate in the runtime rebuild below; any other exit drops them (agent-session.ts:3598-3609).
 	defer s.DiscardAddedDefaultTools()
-	// The API provider registry returns to the built-in providers before the extensions load again, so a provider a removed extension registered is gone (agent-session.ts:3656 resetApiProviders).
-	ai.ResetAPIProviders()
+	providersBeforeReload := ai.GetAPIProviders()
 	loader := s.ResourceLoader()
-	if err := reloadResourceLoader(ctx, loader); err != nil {
-		return err
+	loadErr := reloadResourceLoader(ctx, loader)
+	if loadErr != nil && !errors.Is(loadErr, extension.ErrReloadPartiallyApplied) {
+		return loadErr
+	}
+	if loadErr != nil {
+		defer func() { resultErr = errors.Join(loadErr, resultErr) }()
+	} else {
+		ai.ResetAPIProvidersKeepingChanges(providersBeforeReload)
 	}
 	loaded := loader.GetExtensions()
-	keepsRuntime = previous != nil && loaded.Runtime != nil && loaded.Runtime == previous.Runtime()
 	runner, err := s.ReloadExtensions(loaded.Extensions, loaded.Runtime)
 	if err != nil {
 		return err

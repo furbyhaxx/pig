@@ -764,7 +764,7 @@ func TestFamilyCoverageReportMatchesCurrentStaticDashboard(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RenderReport(): %v", err)
 	}
-	current, err := os.ReadFile(filepath.Join(root, "AGENTS.md"))
+	current, err := os.ReadFile(filepath.Join(root, "test", "parity", "coverage.md"))
 	if err != nil {
 		t.Fatal(err)
 	}

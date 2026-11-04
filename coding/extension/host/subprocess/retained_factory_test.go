@@ -759,10 +759,12 @@ export default function (pi) {
 	}
 	reload := func() []string {
 		t.Helper()
-		if _, err := h.Reload(t.Context()); err != nil {
-			t.Fatal(err)
+		_, err := h.Reload(t.Context())
+		issues := h.LastReloadReport().Issues
+		if (err == nil) != (len(issues) == 0) {
+			t.Fatalf("reload error = %v, issues = %q", err, issues)
 		}
-		return h.LastReloadReport().Issues
+		return issues
 	}
 	if got := probe(); got != "old-1" {
 		t.Fatalf("load probe = %q, want old-1", got)
@@ -784,8 +786,8 @@ export default function (pi) {
 	if issues := reload(); len(issues) != 1 || !strings.Contains(issues[0], "Failed to load extension") {
 		t.Fatalf("reload of a broken edit: issues = %q, want the extension's load failure", issues)
 	}
-	if extensions := h.Extensions(); len(extensions) != 0 {
-		t.Fatalf("after a broken edit %d extensions stay loaded, want none", len(extensions))
+	if got := probe(); got != "new-1" {
+		t.Fatalf("broken edit discarded the serving generation: %q", got)
 	}
 	write(version("fixed"))
 	if issues := reload(); len(issues) != 0 {

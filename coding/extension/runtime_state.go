@@ -8,9 +8,16 @@ import (
 	"maps"
 	"slices"
 	"sync"
+	"time"
 
 	"github.com/MichaelKinsy/PiG/ai"
 )
+
+// DefaultReloadHandshakeTimeout bounds connection and registration during explicit extension reloads.
+const DefaultReloadHandshakeTimeout = 15 * time.Second
+
+// ErrReloadPartiallyApplied marks a reload that published successful cells while retaining failed cells' serving generations.
+var ErrReloadPartiallyApplied = errors.New("extension reload partially applied")
 
 // DefaultStaleRuntimeMessage is the error an invalidated runtime reports when Invalidate gets no message.
 const DefaultStaleRuntimeMessage = "This extension ctx is stale after session replacement or reload. Do not use a captured pi or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload()."
@@ -35,6 +42,16 @@ func (r *ExtensionRuntime) AssertActive() error {
 		return errors.New(r.staleMessage)
 	}
 	return nil
+}
+
+// ReloadSnapshot creates fresh flag and lifecycle state over the same live provider registrations.
+func (r *ExtensionRuntime) ReloadSnapshot() *ExtensionRuntime {
+	return &ExtensionRuntime{FlagValues: map[string]any{}, providerRuntimeState: r.providerRuntimeState}
+}
+
+// SharesRegistrations reports whether two runtime views belong to the same live extension owner.
+func (r *ExtensionRuntime) SharesRegistrations(other *ExtensionRuntime) bool {
+	return other != nil && r.providerRuntimeState == other.providerRuntimeState
 }
 
 // FlagValue returns the value of an extension flag and whether the flag has one.
@@ -71,7 +88,7 @@ func (r *ExtensionRuntime) SetFlagDefault(name string, value any) {
 }
 
 // ReplaceFactoryAPI records retire as the way to make the API of the compiled-in extension loaded from path stale, and retires the API a
-// previous load of the same path left. A reload runs a built-in factory again on the runtime the replacement runner keeps, so the API
+// previous load of the same path left. A nil retire removes the previous API without replacing it. A reload runs a built-in factory again on the runtime the replacement runner keeps, so the API
 // the earlier run captured stops working with the stale message, as upstream's runtime.invalidate makes the old runtime's API fail.
 //
 // upstream: loader.ts:193-203 (invalidate), agent-session.ts _buildRuntime (a reload creates a new runtime and runs every factory again)
@@ -81,7 +98,11 @@ func (r *ExtensionRuntime) ReplaceFactoryAPI(path string, retire func(message st
 	if r.factoryAPIs == nil {
 		r.factoryAPIs = map[string]func(string){}
 	}
-	r.factoryAPIs[path] = retire
+	if retire == nil {
+		delete(r.factoryAPIs, path)
+	} else {
+		r.factoryAPIs[path] = retire
+	}
 	r.mu.Unlock()
 	if previous != nil {
 		previous(DefaultStaleRuntimeMessage)

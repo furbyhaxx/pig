@@ -8,9 +8,37 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MichaelKinsy/PiG/coding/extension"
 	"github.com/MichaelKinsy/PiG/coding/extension/host/runtimecell"
 	"github.com/MichaelKinsy/PiG/internal/pigsdklock"
 )
+
+type reloadHandshakeTimeoutKey struct{}
+
+// SetReloadHandshakeTimeoutFunc sets the reload-only connect/register budget source; nil uses 15 seconds.
+func (h *Host) SetReloadHandshakeTimeoutFunc(fn func() (time.Duration, error)) {
+	h.reloadHandshakeTimeout = fn
+}
+
+func reloadHandshakeDeadline(ctx context.Context) time.Time {
+	if reloadPass(ctx) == 0 {
+		return time.Time{}
+	}
+	timeout, ok := ctx.Value(reloadHandshakeTimeoutKey{}).(time.Duration)
+	if !ok {
+		timeout = extension.DefaultReloadHandshakeTimeout
+	}
+	return time.Now().Add(timeout)
+}
+
+func withReloadHandshakeDeadline(ctx context.Context, deadline time.Time) (context.Context, context.CancelFunc) {
+	if deadline.IsZero() {
+		return ctx, func() {}
+	}
+	parent := runtimeParent(ctx)
+	ctx, cancel := context.WithDeadlineCause(ctx, deadline, fmt.Errorf("extension reload handshake timed out: %w", context.DeadlineExceeded))
+	return context.WithValue(ctx, runtimeParentKey{}, parent), cancel
+}
 
 // stageOutcome is the result of staging one planner cell. ReloadCellReport is
 // populated for every attempted cell so /reload --explain reflects the full
@@ -71,12 +99,25 @@ type cellFailure struct {
 	err error
 }
 
-// isolateCellFailure preserves successful staged outcomes and retries each
-// member of a failed packed cell in isolation. Callers that prepared the packed
-// cell concurrently can reuse its outcome without repeating that preparation.
+// isolateCellFailure retries initial-load failures in isolation; reload failures discard the cell without rerunning factories.
 func (h *Host) isolateCellFailure(ctx context.Context, cell CellSpec, oldByName map[string]*managedExt, outcome stageOutcome, err error) ([]stageOutcome, []cellFailure) {
 	if err == nil {
 		return []stageOutcome{outcome}, nil
+	}
+	if reloadPass(ctx) != 0 {
+		h.rollbackPartialPackedCell(outcome.staged)
+		outcome.staged = nil
+		failures := make([]cellFailure, len(cell.Extensions))
+		for i, cfg := range cell.Extensions {
+			cause := err
+			if acceptErr, ok := errors.AsType[*packedAcceptError](err); ok {
+				if memberErr := acceptErr.perMember[cfg.Name]; memberErr != nil {
+					cause = memberErr
+				}
+			}
+			failures[i] = cellFailure{cfg: cfg, err: fmt.Errorf("reload cell %s (%s): %w", cell.Key, cfg.Name, cause)}
+		}
+		return []stageOutcome{outcome}, failures
 	}
 	if acceptErr, ok := errors.AsType[*packedAcceptError](err); ok {
 		// One or more members failed to register after the shared process
@@ -183,7 +224,12 @@ func (h *Host) stageIsolated(ctx context.Context, cfg ExtConfig, oldByName map[s
 	old := oldByName[resolved.Name]
 	var retained *processShare
 	if entry, ok := nodeLauncherEntry(resolved.Path); ok {
-		retained = h.dropStaleTier(ctx, h.retention().claim("node-extension:"+resolved.Name+"\x00"+entry), resolved.Path, resolved.Name)
+		var err error
+		retained, err = h.claimRetainedProcessKey(ctx, "node-extension:"+resolved.Name+"\x00"+entry)
+		if err != nil {
+			return nil, fmt.Errorf("reload %q: %w", resolved.Name, err)
+		}
+		retained = h.dropStaleTier(ctx, retained, resolved.Path, resolved.Name)
 	}
 	me, _, err := h.startManagedIn(ctx, resolved, retained)
 	if err != nil {

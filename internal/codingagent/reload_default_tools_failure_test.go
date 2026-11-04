@@ -26,13 +26,14 @@ func (h *pendingToolsHandle) RefreshTools() error {
 func TestFailedExtensionReloadDropsTheStagedDefaultTools(t *testing.T) {
 	restoreStartupTheme(t)
 	handle := &pendingToolsHandle{}
+	reloadErr := errors.New("reload failed")
 	m := reloadTestMode(InteractiveModeOptions{
-		SubprocessHost:  &orderRecordingHost{err: errors.New("reload failed")},
+		SubprocessHost:  &orderRecordingHost{err: reloadErr},
 		SessionHandle:   handle,
 		SettingsManager: NewSettingsManager(t.TempDir(), t.TempDir()),
 	})
-	if err := m.buildSlashContext(t.Context()).Reload(); err != nil {
-		t.Fatal(err)
+	if err := m.buildSlashContext(t.Context()).Reload(); !errors.Is(err, reloadErr) {
+		t.Fatalf("reload error = %v, want %v", err, reloadErr)
 	}
 	if handle.pending || handle.refreshes != 0 {
 		t.Fatalf("pending = %v, refreshes = %d: a failed extension reload left the staged default tools for a later refresh", handle.pending, handle.refreshes)

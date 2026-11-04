@@ -719,7 +719,9 @@ func (m *InteractiveMode) buildSlashContext(ctx context.Context) *SlashContext {
 		// re-fire session_start for extensions.
 		// Mirrors upstream handleReloadCommand (interactive-mode.ts:6223)
 		// and session.reload() (agent-session.ts:3291).
-		Reload: func() error {
+		Reload: func() (resultErr error) {
+			var partialReloadErr error
+			defer func() { resultErr = errors.Join(partialReloadErr, resultErr) }()
 			// upstream: packages/coding-agent/src/modes/interactive/interactive-mode.ts:handleReloadCommand
 			if m.runStreaming() {
 				m.showWarning("Wait for the current response to finish before reloading.")
@@ -862,23 +864,27 @@ func (m *InteractiveMode) buildSlashContext(ctx context.Context) *SlashContext {
 					return reloadErr
 				}
 				if reloadErr != nil {
-					// The rebuild does not run, so the staged tools must not activate when a handler of this reload registers a tool below.
-					discardStagedTools()
-					m.reloadIssues = append(m.reloadIssues, "[extension] reload failed: "+reloadErr.Error())
+					if report := host.LastReloadReport(); report == nil || (report.Error == "" && len(report.Issues) == 0) {
+						m.reloadIssues = append(m.reloadIssues, "[extension] reload failed: "+reloadErr.Error())
+					}
 					fmt.Fprintf(os.Stderr, "extension reload: %v\n", reloadErr)
-				} else {
-					resetLogin = true
-					if m.opts.ReloadBuiltinExtensions != nil {
-						m.opts.BuiltinExtensions = m.opts.ReloadBuiltinExtensions()
+					if !errors.Is(reloadErr, extension.ErrReloadPartiallyApplied) {
+						discardStagedTools()
+						return reloadErr
 					}
-					orderedExts := ExtensionsInLoadOrderWithExplicit(reloadedExts, m.opts.BuiltinExtensions, m.opts.ExplicitBuiltinPaths)
-					// Mirrors upstream reload: tool and flag conflicts are
-					// listed under Extension issues in complete load order.
-					m.extensionConflicts = DetectExtensionConflicts(orderedExts)
-					for _, err := range m.replaceExtensionRunner(reloadedExts) {
-						m.reloadIssues = append(m.reloadIssues, "[tool] "+err.Error())
-						fmt.Fprintf(os.Stderr, "tool reload: %v\n", err)
-					}
+					partialReloadErr = reloadErr
+				}
+				resetLogin = true
+				if m.opts.ReloadBuiltinExtensions != nil {
+					m.opts.BuiltinExtensions = m.opts.ReloadBuiltinExtensions()
+				}
+				orderedExts := ExtensionsInLoadOrderWithExplicit(reloadedExts, m.opts.BuiltinExtensions, m.opts.ExplicitBuiltinPaths)
+				// Mirrors upstream reload: tool and flag conflicts are
+				// listed under Extension issues in complete load order.
+				m.extensionConflicts = DetectExtensionConflicts(orderedExts)
+				for _, err := range m.replaceExtensionRunner(reloadedExts) {
+					m.reloadIssues = append(m.reloadIssues, "[tool] "+err.Error())
+					fmt.Fprintf(os.Stderr, "tool reload: %v\n", err)
 				}
 			} else {
 				if m.opts.ReloadBuiltinExtensions != nil {
@@ -975,7 +981,7 @@ func (m *InteractiveMode) buildSlashContext(ctx context.Context) *SlashContext {
 			diag.Diagnostics = append(diag.Diagnostics, m.reloadIssues...)
 			if m.opts.SubprocessHost != nil {
 				if rep := m.opts.SubprocessHost.LastReloadReport(); rep != nil {
-					if rep.Error != "" {
+					if rep.Error != "" && len(rep.Issues) == 0 {
 						diag.Diagnostics = append(diag.Diagnostics, "[extension] "+rep.Error)
 					}
 					diag.ReloadDuration = rep.Duration

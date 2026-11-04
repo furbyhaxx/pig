@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/MichaelKinsy/PiG/internal/coding/pigversion"
@@ -11,9 +12,31 @@ import (
 	"github.com/MichaelKinsy/PiG/internal/codingagent/configschema"
 )
 
-// The artifacts Pig renders are byte-equal to the schemas the pinned Pi package ships (its generate-schemas.ts output), so a pin bump that
-// changes a TypeBox schema fails here until the Go trees follow.
-func TestRenderedSchemasAreByteEqualToThePinnedPiPackage(t *testing.T) {
+func assertSchemaContract(t *testing.T, path, rendered string, origin []byte) {
+	t.Helper()
+	if path != "schemas/settings.schema.json" {
+		if rendered != string(origin) {
+			t.Errorf("%s differs from its origin", path)
+		}
+		return
+	}
+	var got, want map[string]any
+	if err := json.Unmarshal([]byte(rendered), &got); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(origin, &want); err != nil {
+		t.Fatal(err)
+	}
+	want["properties"].(map[string]any)["extensionsReloadHandshakeMs"] = map[string]any{
+		"type": "integer", "minimum": float64(1), "maximum": float64(9223372036854),
+		"default": float64(15000), "description": "Global reload-only connect/register budget in milliseconds; build time is excluded.",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Error("settings schema differs from its origin plus SPEC-0004 D2")
+	}
+}
+
+func TestRenderedSchemasMatchPinnedOriginAndForkContract(t *testing.T) {
 	pi := filepath.Join(repoRoot(t), "extensions", "sdk-ts", "node_modules", "@earendil-works", "pi-coding-agent")
 	var manifest struct{ Version string }
 	data, err := os.ReadFile(filepath.Join(pi, "package.json"))
@@ -35,15 +58,11 @@ func TestRenderedSchemasAreByteEqualToThePinnedPiPackage(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got != string(want) {
-			t.Errorf("%s differs from the pinned Pi package", path)
-		}
+		assertSchemaContract(t, path, got, want)
 	}
 }
 
-// The same byte equality against Pi's own schemas/ directory in the upstream mirror (scripts/generate-schemas.ts output at the pin),
-// which needs no installed Pi package.
-func TestRenderedSchemasAreByteEqualToTheUpstreamMirror(t *testing.T) {
+func TestRenderedSchemasMatchUpstreamMirrorAndForkContract(t *testing.T) {
 	pi := filepath.Join(repoRoot(t), ".upstream", "current", "packages", "coding-agent")
 	rendered, err := configschema.Render(codingagent.KeybindingsSchemaArtifact())
 	if err != nil {
@@ -54,8 +73,6 @@ func TestRenderedSchemasAreByteEqualToTheUpstreamMirror(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got != string(want) {
-			t.Errorf("%s differs from Pi's %s", path, filepath.Join(".upstream/current/packages/coding-agent", path))
-		}
+		assertSchemaContract(t, path, got, want)
 	}
 }

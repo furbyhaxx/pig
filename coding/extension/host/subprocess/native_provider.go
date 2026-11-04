@@ -309,6 +309,22 @@ func (h *Host) registerNativeProvider(ctx context.Context, me *managedExt, conn 
 	if declaration.ID == "" || declaration.Key == "" || declaration.Auth == nil {
 		return errors.New("native provider requires id, callback key and auth declaration")
 	}
+	p := h.newNativeProviderProxy(me, conn, declaration)
+	var published sync.Once
+	publish := func() { published.Do(func() { h.publishNativeProvider(p) }); extension.CallInitiated(ctx) }
+	if loading {
+		h.queueNativeProvider(p)
+	} else if err := h.providerRuntime.RegisterNativeProviderCarrier(extension.WithCallInitiation(ctx, publish), p.carrier(), extConfigOrigin(me.config)); err != nil {
+		return err
+	}
+	publish()
+	if h.uiBridge != nil {
+		h.uiBridge.PublishModelCatalog()
+	}
+	return nil
+}
+
+func (h *Host) newNativeProviderProxy(me *managedExt, conn *Conn, declaration *NativeProviderDeclaration) *nativeProviderProxy {
 	declaration.Handle = rand.Text()
 	p := &nativeProviderProxy{host: h, owner: me, registered: true, references: map[*Conn]map[string]struct{}{}, conn: conn, declaration: *declaration, publications: map[string]nativeProviderCallback{}}
 	h.mu.Lock()
@@ -327,22 +343,15 @@ func (h *Host) registerNativeProvider(ctx context.Context, me *managedExt, conn 
 	h.nativeProviders[conn][declaration.ID] = p
 	h.mu.Unlock()
 	h.releaseProviderCallbacks(released)
-	var published sync.Once
-	publish := func() { published.Do(func() { h.publishNativeProvider(p) }); extension.CallInitiated(ctx) }
-	if loading {
-		h.providerRuntime.QueueNativeProviderCarrier(p.carrier(), extConfigOrigin(me.config), func(err error) {
-			if err != nil {
-				h.withdrawNativeProvider(p)
-			}
-		})
-	} else if err := h.providerRuntime.RegisterNativeProviderCarrier(extension.WithCallInitiation(ctx, publish), p.carrier(), extConfigOrigin(me.config)); err != nil {
-		return err
-	}
-	publish()
-	if h.uiBridge != nil {
-		h.uiBridge.PublishModelCatalog()
-	}
-	return nil
+	return p
+}
+
+func (h *Host) queueNativeProvider(p *nativeProviderProxy) {
+	h.providerRuntime.QueueNativeProviderCarrier(p.carrier(), extConfigOrigin(p.owner.config), func(err error) {
+		if err != nil {
+			h.withdrawNativeProvider(p)
+		}
+	})
 }
 
 // withdrawNativeProvider gives back what the host recorded for a queued Provider object the registry refused, unless another registration replaced it since.

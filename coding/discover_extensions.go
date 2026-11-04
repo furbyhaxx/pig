@@ -93,9 +93,6 @@ func loadExtensionPathsIn(ctx context.Context, paths []string, cwd string, runti
 		runtime = extension.CreateExtensionRuntime()
 	}
 	result := LoadExtensionsResult{Runtime: runtime}
-	if len(configs) == 0 {
-		return result
-	}
 	host := subprocess.NewHostWithConfigRoot(cwd, icodingagent.ConfigRoot())
 	host.UseRuntime(runtime)
 	// A headless bridge: the loaded extensions' contexts read the Session state a Session binds to it (agent-session.ts _bindExtensionCore), and with no UI bound hasUI is false.

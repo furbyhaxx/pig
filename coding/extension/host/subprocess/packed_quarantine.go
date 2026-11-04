@@ -6,46 +6,37 @@ import (
 	"strings"
 )
 
-// armPackedProcessGenerations bumps packedCellGeneration for every packed
-// cell key this Host has ever spawned a process for (h.packedProcesses),
-// atomically under one h.mu hold. Reload calls this only once config
-// loading has succeeded (CNC-003), never before: a config-loader failure
-// returns early and retains every currently running extension and process
-// unchanged, so arming generations before that point would invalidate
-// crash ownership for a process an aborted reload never actually replaces,
-// causing its real, later crash to be silently discarded as stale instead
-// of quarantined.
-//
-// Given a successful config load, every explicit Reload always respawns
-// each packed cell still present in the plan with a brand-new process (see
-// stagePackedNode/startGoPackedCell: there is no "keep the existing process
-// if unchanged" path), and a cell key dropped entirely from the plan is
-// torn down explicitly through the "removed" list, which stops its process
-// before watchPackedProcess can act on it. So every currently-known packed
-// process is, from this Reload's point of view, either about to be
-// replaced or already being shut down deliberately - bumping its key's
-// generation now can never make a still-relevant crash invisible.
-//
-// Doing this bump first, instead of only inside stagePackedNode/
-// startGoPackedCell once a plan has been computed, closes CNC-002's
-// remaining race: without it, a crash report for a cell key's old process
-// could still observe its generation as current (because the bump for the
-// key's *replacement* process had not happened yet) and write a quarantine
-// entry after Reload's own releaseRetryableQuarantines already read an
-// empty map but before PlanCells read it, causing this same Reload - the
-// one recovering from that very crash - to wrongly fission the cell. Bumping
-// every known key's generation up front, before any of that can run, means
-// no crash report for a process spawned before this Reload can ever pass
-// quarantinePackedCellGeneration's staleness check again, regardless of how
-// the rest of Reload's work interleaves with the async report.
+// armPackedProcessGenerations suppresses earlier crash reports while replacement cells stage.
 func (h *Host) armPackedProcessGenerations() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if h.packedCellGeneration == nil {
-		h.packedCellGeneration = make(map[string]int)
-	}
 	for key := range h.packedProcesses {
-		h.packedCellGeneration[key]++
+		h.advancePackedCellGenerationLocked(key)
+	}
+}
+
+func (h *Host) restoreServingPackedProcesses() {
+	h.mu.Lock()
+	processes := make(map[*packedProcessState]struct{})
+	for _, me := range h.exts {
+		if p := me.packedProcess; p != nil {
+			h.packedCellActiveGeneration[p.key] = p.generation
+			h.packedProcesses[p.key] = p
+			processes[p] = struct{}{}
+		}
+	}
+	h.mu.Unlock()
+	for p := range processes {
+		if p.stopping.Load() || h.shuttingDown.Load() || (p.parent != nil && p.parent.Err() != nil) {
+			continue
+		}
+		select {
+		case <-p.startWait():
+			if !p.node {
+				h.quarantinePackedCellGeneration(p.key, p.generation, "packed process exited during reload")
+			}
+		default:
+		}
 	}
 }
 
@@ -83,26 +74,13 @@ func (h *Host) quarantinePackedCell(cellKey, reason string) {
 	h.quarantinePackedCellGeneration(cellKey, 0, reason)
 }
 
-// quarantinePackedCellGeneration is quarantinePackedCell's generation-aware
-// form (CNC-002). generation, when nonzero, is the packedCellGeneration value
-// the caller's packed process claimed at spawn time. The staleness check
-// against the cell key's current generation and every state mutation below
-// (the quarantine-map write and detaching the cell's managedExts) happen
-// under one h.mu hold, so a concurrent Reload that claims a fresh generation
-// for this key cannot interleave between "the report is still current" and
-// "tear the cell down": either this call observes its generation is already
-// stale and does nothing, or it completes its teardown before any later
-// nextPackedCellGeneration call for this key can be observed to have
-// happened. Without that atomicity, a process-death report for a process a
-// Reload has already replaced could still detach the replacement's
-// newly-registered extensions from h.exts, which is exactly the permanent
-// fission CNC-002 fixes.
+// quarantinePackedCellGeneration ignores reports outside the currently admitted or restored generation.
 func (h *Host) quarantinePackedCellGeneration(cellKey string, generation int, reason string) {
 	if cellKey == "" {
 		return
 	}
 	h.mu.Lock()
-	if generation != 0 && h.packedCellGeneration[cellKey] != generation {
+	if generation != 0 && h.packedCellActiveGeneration[cellKey] != generation {
 		// A later Reload already claimed a fresh generation for this key
 		// (releaseRetryableQuarantines/nextPackedCellGeneration) before this
 		// report reached the lock: it is stale and must not quarantine the
@@ -111,6 +89,7 @@ func (h *Host) quarantinePackedCellGeneration(cellKey string, generation int, re
 		h.mu.Unlock()
 		return
 	}
+	delete(h.packedCellActiveGeneration, cellKey)
 	if h.quarantinedCells == nil {
 		h.quarantinedCells = make(map[string]string)
 	}
@@ -188,20 +167,21 @@ func (h *Host) releaseRetryableQuarantines() {
 	}
 }
 
-// nextPackedCellGeneration claims and returns the next packedCellGeneration
-// value for key. Every attempt to spawn a packed process for a given cell key
-// (startGoPackedCell) claims a fresh generation, whether this is the key's
-// first spawn or a reload replacing an earlier one; watchPackedProcess only
-// acts on a crash report whose generation is still the latest one claimed, so
-// an async report for a since-superseded process can never quarantine the
-// process that replaced it, even though they share the same content-derived
-// key (CNC-002).
+// nextPackedCellGeneration reserves a unique ID and revokes the prior crash-report owner.
 func (h *Host) nextPackedCellGeneration(key string) int {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	return h.advancePackedCellGenerationLocked(key)
+}
+
+func (h *Host) advancePackedCellGenerationLocked(key string) int {
 	if h.packedCellGeneration == nil {
 		h.packedCellGeneration = make(map[string]int)
 	}
+	if h.packedCellActiveGeneration == nil {
+		h.packedCellActiveGeneration = make(map[string]int)
+	}
 	h.packedCellGeneration[key]++
+	h.packedCellActiveGeneration[key] = h.packedCellGeneration[key]
 	return h.packedCellGeneration[key]
 }

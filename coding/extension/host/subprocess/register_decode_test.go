@@ -2,7 +2,6 @@ package subprocess
 
 import (
 	"bytes"
-	"context"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -14,7 +13,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/MichaelKinsy/PiG/internal/testbudget"
 	"github.com/MichaelKinsy/PiG/internal/toolchain"
@@ -102,21 +100,6 @@ func copySDKSource(t *testing.T, src, dst string, edit func(rel string, data []b
 	}
 }
 
-func reloadIssues(t *testing.T, h *Host, configs []ExtConfig) []string {
-	t.Helper()
-	h.SetConfigLoader(func() ([]ExtConfig, error) { return configs, nil })
-	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
-	defer cancel()
-	if _, err := h.Reload(ctx); err != nil {
-		t.Fatalf("reload: %v", err)
-	}
-	rep := h.LastReloadReport()
-	if rep == nil {
-		t.Fatal("no reload report")
-	}
-	return rep.Issues
-}
-
 func requireOneIssueContaining(t *testing.T, issues []string, wants ...string) {
 	t.Helper()
 	for _, want := range wants {
@@ -184,8 +167,18 @@ func TestPackedRunnerWithAnotherSDKsRegisterShapeNamesTheRebuild(t *testing.T) {
 
 	h := NewHostWithConfigRoot(t.TempDir(), t.TempDir())
 	t.Cleanup(func() { h.Shutdown("test done") })
-	issues := reloadIssues(t, h, []ExtConfig{packedPythonFactoryConfig("shapeskew-py", root, "shapeskew_py", "shapeskew-py")})
-	requireOneIssueContaining(t, issues,
+	h.SetConfigLoader(func() ([]ExtConfig, error) {
+		return []ExtConfig{packedPythonFactoryConfig("shapeskew-py", root, "shapeskew_py", "shapeskew-py")}, nil
+	})
+	_, err := h.Reload(t.Context())
+	if err == nil || !strings.Contains(err.Error(), `unknown field "field_from_another_sdk"`) || !strings.Contains(err.Error(), "run `pig reload` to rebuild it") {
+		t.Fatalf("reload error = %v, want the field mismatch and rebuild advice", err)
+	}
+	report := h.LastReloadReport()
+	if report == nil {
+		t.Fatal("no reload report")
+	}
+	requireOneIssueContaining(t, report.Issues,
 		`unknown field "field_from_another_sdk"`,
 		"if pig or its SDK changed since this extension was built, run `pig reload` to rebuild it")
 }

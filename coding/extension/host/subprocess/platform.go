@@ -28,9 +28,8 @@ func resolveSocketDirForGOOS(goos, xdgRuntimeDir, tmpDir, systemTempDir string, 
 // socketRuntimeDirPrefix is the os.MkdirTemp prefix of a Host's private runtime directory.
 const socketRuntimeDirPrefix = "h"
 
-// worstRuntimeSocketSuffix is the longest path below the socket directory: os.MkdirTemp's <prefix><uint32> directory
-// and an e-<counter>.sock leaf of up to four digits.
-const worstRuntimeSocketSuffix = len("/" + socketRuntimeDirPrefix + "4294967295" + "/e-9999.sock")
+// worstRuntimeSocketSuffix reserves a runtime directory and the full-width identity and generation counters.
+const worstRuntimeSocketSuffix = len("/" + socketRuntimeDirPrefix + "4294967295" + "/e-18446744073709551615-g18446744073709551615.sock")
 
 // socketRuntimeBase returns the directory below which a Host creates its private runtime directory. It is socketDir
 // unless a socket below it could exceed the platform's Unix socket path limit, as with a deep $TMPDIR or %TEMP%, and

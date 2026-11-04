@@ -117,6 +117,43 @@ func TestUnrecordedDivergenceMarkerIsAProblem(t *testing.T) {
 	}
 }
 
+func TestForkMarkerRequiresExistingSpecAndReason(t *testing.T) {
+	root := t.TempDir()
+	specDir := filepath.Join(root, ".project", "specs")
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(specDir, "0001-policy.md"), []byte("# Policy\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, marker string
+		allowed      bool
+	}{
+		{"recorded", "// fork (SPEC-0001): bounded queue by policy", true},
+		{"missing", "// fork (SPEC-9999): bounded queue by policy", false},
+		{"no reason", "// fork (SPEC-0001):   ", false},
+		{"no colon", "// fork (SPEC-0001)", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e := fixtureEnv(t)
+			e.Root = root
+			src := []byte("package agent\n\n" + tc.marker + "\nconst maxQueue = 64\n")
+			hits, problems, err := scanSource("agent/x.go", src, e, []check{magicLiteral})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tc.allowed {
+				if len(hits) != 0 || len(problems) != 0 {
+					t.Fatalf("recorded marker: hits %v, problems %v", hits, problems)
+				}
+			} else if len(hits) != 1 || len(problems) != 1 {
+				t.Fatalf("invalid marker: hits %v, problems %v; want one of each", hits, problems)
+			}
+		})
+	}
+}
+
 func TestUpstreamReferenceMustExist(t *testing.T) {
 	src := []byte("package agent\n\nimport \"time\"\n\n// upstream: agent/src/missing.ts:thing\nconst waitTimeout = 30 * time.Second\n\n// upstream: agent/src/agent-loop.ts:noSuchSymbol\nconst otherTimeout = 2 * time.Second\n")
 	hits, problems, err := scanSource("agent/x.go", src, fixtureEnv(t), []check{magicLiteral})

@@ -168,7 +168,7 @@ func TestTimingGatesAreListed(t *testing.T) {
 		}
 		if d.IsDir() {
 			switch d.Name() {
-			case ".git", "node_modules", "third_party", ".upstream", "testdata":
+			case ".git", "node_modules", "third_party", ".upstream", ".worktrees", "testdata":
 				return filepath.SkipDir
 			}
 			return nil

@@ -4,6 +4,8 @@ This page covers atomic replacement, crash quarantine/fission, diagnostics, and 
 
 ## Atomic reload
 
+Each extension start receives a generation-unique socket path (`e-<index>-g<generation>.sock`). Retiring an old generation removes only its own socket, not its successor's. The host reserves space for the counters when selecting a short socket directory (SPEC-0004 D1).
+
 `Host.Reload` treats a new extension set as a transaction:
 
 1. resolve the requested extension configs/specs;
@@ -15,7 +17,11 @@ This page covers atomic replacement, crash quarantine/fission, diagnostics, and 
 7. atomically publish the new registry;
 8. stop old cells only after the swap.
 
-Like upstream reload, every extension factory runs again even when its source and cached artifact are unchanged. Each extension loads on its own. An extension that fails to resolve, build, start, or register is not loaded: its previous runtime stops, and `ReloadReport.Issues` records `<path>: Failed to load extension: <error>`, which `/reload` lists under Extension issues. Every other extension loads. When a packed cell fails, each member is staged again in its own isolated cell, so only the failing members are reported. Only a config loader failure fails the whole reload.
+Every configured factory runs again, including unchanged factories in retained processes. `Host.Reload` bounds connection and registration by the global `extensionsReloadHandshakeMs` setting (default 15000 milliseconds). The clock starts at spawn or factory admission, not during compilation. Retained-process admission writes are cancellable too. Initial loading remains cancellation-only (SPEC-0004 D2).
+
+A failed cell keeps its previous serving generations. Its staged siblings and declarations are discarded rather than retried in isolation. Newly spawned failed processes are killed and reaped; failure in a retained process does not kill its serving generations. Provider, OAuth, MCP and virtual-model declarations publish only for accepted cells. User factory side effects cannot be rolled back.
+
+Failures populate `ReloadReport.Issues` and return an error through the CLI's `ctx.Reload()`, `/reload` and RPC paths. Healthy cells may still commit. Go callers can identify that result with `errors.Is(err, extension.ErrReloadPartiallyApplied)` and must use the returned active extension set even when an error is returned. CLI callers publish that set before reporting the error. A completely failed replacement leaves the previous runner active; a config error changes no extension generations.
 
 ## Quarantine and fission
 
@@ -98,7 +104,7 @@ Stock Pig has no Piglet-specific registrations or closure. Runtime registration 
 ## Verification
 
 - reload success swaps all registries together;
-- a failed build/start/register drops only that extension and reports it;
+- a failed build/start/register preserves its cell's serving generations and returns the failure;
 - Node factory admission preserves interleaved native order without splitting the Node bus;
 - a Node crash restarts healthy members together, with one whole-group retry and then bisection when attribution is unavailable;
 - native quarantine retains its explicit fission policy;

@@ -5,11 +5,11 @@ document:
   title: "Personal PiG distribution"
   description: "Fork identity, upstream synchronization, versioning, release, update trust and agent-steering ownership of furbyhaxx/pig"
   status: "published"
-  revision: 2
+  revision: 3
   created_at: "2026-11-04T12:30:29+01:00"
-  updated_at: "2026-11-04T14:21:06+01:00"
+  updated_at: "2026-11-04T15:28:56+01:00"
   created_by: "orchestrator"
-  updated_by: "orchestrator"
+  updated_by: "coding-agent"
   changelog:
     - revision: 1
       reason: "document creation"
@@ -17,6 +17,9 @@ document:
     - revision: 2
       reason: "Owner: the fork is a base for a fast, well-engineered personal coding agent; Pi and PiG compatibility is not a requirement"
       changes: ["Context no longer requires a drop-in replacement", "D7 goal and compatibility", "D8 merge cost", "D9 recording fork behavior changes", "D10 inherited parity gates"]
+    - revision: 3
+      reason: "Implement S0 fork steering and gate ownership"
+      changes: ["D6 family dashboard lives in generated coverage", "D10 fork markers require an existing spec and a reason"]
 ---
 
 # SPEC-0001 Personal PiG distribution
@@ -61,7 +64,7 @@ document:
 
 - All `AGENTS.md` files follow skill `agents-md`; artifacts follow skill `dot-project` under `.project/`.
 - Root `AGENTS.md` carries no generated status: the parity coverage block was removed and `automation/ci/check-public-claims.py` reads `test/parity/coverage.md` instead.
-- No test or gate reads `AGENTS.md` content. Upstream couplings were removed: `TestGoVersionPolicy` no longer pins a sentence in `AGENTS.md`; `TestAgentsDocRendersTheTierTable` was deleted with the upstream CI tier table it checked. Reason: with `merge=ours`, such a test fails as soon as upstream moves the data it compares against.
+- No test or gate reads `AGENTS.md` content. Upstream couplings were removed: `TestGoVersionPolicy` no longer pins a sentence in `AGENTS.md`; `TestAgentsDocRendersTheTierTable` was deleted with the upstream CI tier table it checked; `TestFamilyCoverageReportMatchesCurrentStaticDashboard` compares with the generated family table in `test/parity/coverage.md`. Reason: with `merge=ours`, such a test fails as soon as upstream moves the data it compares against.
 - `changelog.d/` has no `AGENTS.md`: the fragment checker accepts only fragments there; fragment rules live in the root file.
 - Upstream-owned artifact directories (`docs/plan/`, `docs/specs/`, `docs/findings/`, `plans/`, `research/`, `handoffs/`) stay in place to keep merges clean.
 
@@ -86,7 +89,7 @@ document:
 
 - Upstream's Pi-comparison machinery (parity scenarios, Pi oracle tests, interface inventories, PORT_MAP drift, `divergence-guard` markers, `port-lint`) keeps running.
 - A fork change that intentionally changes behavior one of them pins rewrites or deletes the affected test or scenario in the same change and cites the spec.
-- `divergence-guard` patterns are kept as engineering checks. Fork code fixes the smell; an intentional hit needs a fork marker that cites a spec, which the guard does not support yet (`.project/plans/0001-host-gap-resolution/plan.md` S0).
+- `divergence-guard` patterns are kept as engineering checks. Fork code fixes the smell; an intentional hit needs `// fork (SPEC-NNNN): <reason>`, accepted only when `.project/specs/NNNN-*.md` exists as a regular file and the reason is nonempty. Invalid markers remain findings and report an actionable problem.
 - Root `AGENTS.md` states this policy; child `AGENTS.md` files of the parity machinery apply only to maintaining it.
 
 ## Consequences

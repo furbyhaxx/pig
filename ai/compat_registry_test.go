@@ -81,6 +81,42 @@ func TestCompatCompleteDispatchesThroughTheRegistryAndFillsTheEnvironmentKey(t *
 	}
 }
 
+func TestResetAPIProvidersKeepingChanges(t *testing.T) {
+	resetCompatRegistry(t)
+	const stale, replaced, added API = "reset-stale", "reset-replaced", "reset-added"
+	RegisterAPIProvider(APIProvider{API: stale}, "old-source")
+	RegisterAPIProvider(APIProvider{API: replaced}, "old-source")
+	before := GetAPIProviders()
+	calls := &capturedCall{}
+	for _, api := range []API{replaced, added, APIOpenAIResponses} {
+		RegisterAPIProvider(APIProvider{API: api, Stream: calls.stream(false), StreamSimple: calls.stream(true)}, "new-source")
+	}
+	ResetAPIProvidersKeepingChanges(before)
+	if GetAPIProvider(stale) != nil {
+		t.Fatal("an unchanged prior registration survived")
+	}
+	for _, api := range []API{replaced, added, APIOpenAIResponses} {
+		if _, err := Complete(t.Context(), compatTestModel("custom", api), compatHello, StreamOptions{APIKey: "request-key"}); err != nil {
+			t.Fatalf("new registration %s no longer dispatches: %v", api, err)
+		}
+	}
+	var customOrder []API
+	for _, provider := range GetAPIProviders() {
+		if provider.API == replaced || provider.API == added {
+			customOrder = append(customOrder, provider.API)
+		}
+	}
+	if !slices.Equal(customOrder, []API{replaced, added}) {
+		t.Fatalf("new registration order = %v", customOrder)
+	}
+	UnregisterAPIProviders("new-source")
+	for _, api := range []API{replaced, added, APIOpenAIResponses} {
+		if GetAPIProvider(api) != nil {
+			t.Fatalf("registration %s lost its source ownership", api)
+		}
+	}
+}
+
 func TestCompatDispatchErrors(t *testing.T) {
 	resetCompatRegistry(t)
 	if _, err := Stream(t.Context(), compatTestModel("p", "no-such-api"), compatHello); err == nil || err.Error() != "No API provider registered for api: no-such-api" {

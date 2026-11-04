@@ -23,7 +23,7 @@ The qualified verification toolchain is:
 - Rust and Cargo 1.97.1;
 - tmux 3.7 on Unix.
 
-Use the versions pinned by the repository and CI image metadata.
+Use the versions pinned by the repository and CI image metadata. Source-built Pi oracle archives require the exact Node version in `.node-version`; another runtime can produce different compressed bytes and fail the frozen npm integrity checks. Select the pinned Node runtime before running `make upstream-mirror` or parity gates; do not replace the frozen hashes to accommodate a different runtime.
 
 ## Build
 

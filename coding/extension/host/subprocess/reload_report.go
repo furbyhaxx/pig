@@ -27,9 +27,7 @@ type ReloadReport struct {
 	Cells     []ReloadCellReport
 	Removed   []string
 	Error     string
-	// Issues lists, as "<path>: Failed to load extension: <error>", the
-	// extensions that failed to resolve, build, start, or register. They do
-	// not fail the reload.
+	// Issues lists load diagnostics for failed cells; Reload also returns their errors.
 	Issues []string
 }
 

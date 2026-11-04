@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -273,15 +274,33 @@ func TestPigOwnedInstructionsUsePiglets(t *testing.T) {
 	}
 }
 
-// A divergence cited in the docs must exist in the ledger, and a user-visible
-// divergence the ledger approves should be findable from the docs. Without the
-// first check a page can promise behavior no longer approved; without the
-// second, an approved difference reaches nobody. Agents are the reason this
-// matters most: one that carries Pi knowledge will confidently do the Pi thing
-// wherever Pig's difference is undocumented.
+func upstreamDivergenceCitations(body string) []string {
+	// Spec decisions have their own D<N> namespace.
+	body = regexp.MustCompile(`\bSPEC-\d{4}[ \t]+D\d+(?:[–-]D?\d+)?\b`).ReplaceAllString(body, "")
+	return regexp.MustCompile(`\bD\d+\b`).FindAllString(body, -1)
+}
+
+func TestDivergenceCitationsExcludeSpecDecisions(t *testing.T) {
+	for _, tc := range []struct {
+		body string
+		want []string
+	}{
+		{"SPEC-0004 D1", nil},
+		{"SPEC-0004 D1–D3; D42", []string{"D42"}},
+		{"SPEC-0004 D1-D3; D42", []string{"D42"}},
+		{"D77, SPEC-0004 D1; D78", []string{"D77", "D78"}},
+		{"SPEC-0004 D1 and D999", []string{"D999"}},
+	} {
+		t.Run(tc.body, func(t *testing.T) {
+			if got := upstreamDivergenceCitations(tc.body); !slices.Equal(got, tc.want) {
+				t.Fatalf("citations = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestDocumentedDivergenceIDsExistInTheLedger(t *testing.T) {
-	// IDs are global across the parity ledger and the additive ledger, so both
-	// are the denominator. Reading one alone reports a true entry as missing.
+	// Upstream D<N> entries share one namespace across both ledgers.
 	declared := map[string]bool{}
 	for _, ledger := range []string{"../../docs/parity/DIVERGENCES.md", "../../docs/additive-features.md"} {
 		data, err := os.ReadFile(ledger)
@@ -296,10 +315,8 @@ func TestDocumentedDivergenceIDsExistInTheLedger(t *testing.T) {
 		t.Fatal("no divergence IDs parsed from the ledger; the gate would pass vacuously")
 	}
 
-	cited := regexp.MustCompile(`\bD(\d+)\b`)
 	for name, body := range docFiles(t) {
-		for _, match := range cited.FindAllStringSubmatch(body, -1) {
-			id := "D" + match[1]
+		for _, id := range upstreamDivergenceCitations(body) {
 			if !declared[id] {
 				t.Errorf("%s cites %s, which docs/parity/DIVERGENCES.md does not declare", name, id)
 			}

@@ -83,9 +83,16 @@ func (l *DefaultResourceLoader) loadExtensionFiles(ctx context.Context, request 
 	}
 	// One runtime serves every extension of a reload: the Host adopts it and the factories register against it (resource-loader.ts passes
 	// preTrustExtensions.runtime on). A pass with no PreTrust starts a new reload.
+	previous := l.files
+	// A bootstrap pass starts the host of a trust reload over the untrusted set, so it loads afresh rather than reloading.
+	reloading := previous.host != nil && request.PreTrust == nil && !request.Bootstrap
 	if request.PreTrust == nil || l.factoryRuntime == nil {
-		l.factoryRuntime = l.options.Runtime
-		if l.factoryRuntime == nil {
+		switch {
+		case l.options.Runtime != nil:
+			l.factoryRuntime = l.options.Runtime
+		case l.factoryRuntime != nil:
+			l.factoryRuntime = l.factoryRuntime.ReloadSnapshot()
+		default:
 			l.factoryRuntime = extension.CreateExtensionRuntime()
 		}
 	}
@@ -96,17 +103,20 @@ func (l *DefaultResourceLoader) loadExtensionFiles(ctx context.Context, request 
 		l.eventBus = extension.CreateEventBus()
 	}
 	factories := &extensionset.Loader{CWD: l.cwd, Inline: l.options.ExtensionFactories, Runtime: l.factoryRuntime, EventBus: l.eventBus}
-	// ctx ends the load; the extensions it loads belong to the loader, which stops them at its next load or Close. Pi's reload() has no caller whose end would stop them.
-	loadCtx, release := context.WithCancel(context.WithoutCancel(ctx))
-	stopWatching := context.AfterFunc(ctx, release)
-	defer stopWatching()
+	if reloading {
+		factories.Previous = previous.Extensions
+	}
+	var reloadErr error
+	filesApplied := false
 	var result LoadExtensionsResult
-	if request.PreTrust != nil && l.files.host != nil {
+	switch {
+	case request.PreTrust != nil && l.files.host != nil:
 		// resource-loader.ts:747-790 loadFinalExtensionSet: the extensions the bootstrap pass loaded stay loaded, and a path it attempted, loaded or failed, is
 		// not attempted again; only the other paths load, in the same Host so the extensions share one runtime.
 		host := l.files.host
-		loaded, errs := host.LoadFinalExtensionSet(loadCtx, configs, l.filesConfigs)
 		bootstrapRelease := l.files.release
+		loadCtx, release := context.WithCancel(context.WithoutCancel(ctx))
+		loaded, errs := host.LoadFinalExtensionSet(loadCtx, configs, l.filesConfigs)
 		result = LoadExtensionsResult{
 			Extensions: append([]extension.Extension{}, loaded...),
 			Errors:     slices.Concat(request.PreTrust.Errors, extensionLoadErrors(errs)),
@@ -121,10 +131,28 @@ func (l *DefaultResourceLoader) loadExtensionFiles(ctx context.Context, request 
 				}
 			},
 		}
-	} else {
-		l.closeExtensionFiles()
+	case reloading:
+		// The caller's context bounds this reload; the serving host keeps the context it started with.
+		host := previous.host
+		host.SetConfigLoader(func() ([]subprocess.ExtConfig, error) { return slices.Clone(configs), nil })
+		host.SetReloadHandshakeTimeoutFunc(l.settings.GetExtensionsReloadHandshakeTimeout)
+		loaded, err := host.Reload(subprocess.WithRuntimeParent(ctx, l.filesContext))
+		reloadErr = err
+		filesApplied = errors.Is(err, extension.ErrReloadPartiallyApplied)
+		result = LoadExtensionsResult{Extensions: loaded, Runtime: l.factoryRuntime, host: host, bridge: previous.bridge, release: previous.release}
+		if report := host.LastReloadReport(); report != nil {
+			for _, issue := range report.Issues {
+				result.Errors = append(result.Errors, ExtensionLoadError{Error: issue})
+			}
+		}
+	default:
+		// ctx ends the load; the extensions it loads belong to the loader, which stops them at its next load or Close. Pi's reload() has no caller whose end would stop them.
+		loadCtx, release := context.WithCancel(context.WithoutCancel(ctx))
+		l.filesContext = loadCtx
 		result = loadExtensionPathsIn(loadCtx, filePaths, l.cwd, l.factoryRuntime)
 		result.release = release
+		stopWatching := context.AfterFunc(ctx, release)
+		defer stopWatching()
 		if request.PreTrust != nil {
 			result.Errors = slices.Concat(request.PreTrust.Errors, result.Errors)
 			result.Warnings = slices.Concat(request.PreTrust.Warnings, result.Warnings)
@@ -191,6 +219,35 @@ func (l *DefaultResourceLoader) loadExtensionFiles(ctx context.Context, request 
 	}
 	var replacementWarnings []icodingagent.ExtensionWarning
 	result.Extensions = extensionset.OmitReplaced(append(ordered, inline...), &replacementWarnings)
+	if reloading {
+		failed := make(map[string]bool)
+		for _, issue := range result.Errors {
+			if !strings.HasPrefix(issue.Path, "builtin:") && !strings.HasPrefix(issue.Path, "<inline:") {
+				continue
+			}
+			reloadErr = errors.Join(reloadErr, fmt.Errorf("%s: %s", issue.Path, issue.Error))
+			failed[issue.Path] = true
+		}
+		live := make(map[string]bool)
+		applied := filesApplied
+		for _, ext := range result.Extensions {
+			live[ext.Path] = true
+			if !failed[ext.Path] && (strings.HasPrefix(ext.Path, "builtin:") || strings.HasPrefix(ext.Path, "<inline:")) {
+				applied = true
+			}
+		}
+		for _, ext := range previous.Extensions {
+			if !live[ext.Path] {
+				l.factoryRuntime.ReplaceFactoryAPI(ext.Path, nil)
+				applied = true
+			}
+		}
+		if reloadErr != nil {
+			if applied {
+				reloadErr = errors.Join(extension.ErrReloadPartiallyApplied, reloadErr)
+			}
+		}
+	}
 	result.Runtime = l.factoryRuntime
 	// loader.ts registerFlag sets a flag's default into the runtime's flagValues as the extension registers it.
 	for _, ext := range result.Extensions {
@@ -229,7 +286,7 @@ func (l *DefaultResourceLoader) loadExtensionFiles(ctx context.Context, request 
 			result.Errors = append(result.Errors, ExtensionLoadError{Path: conflict.Path, Error: conflict.Message})
 		}
 	}
-	return result, nil
+	return result, reloadErr
 }
 
 // extensionLoadErrors maps the errors of a Host load to the {path, error} entries of LoadExtensionsResult.
@@ -256,8 +313,14 @@ func enabledExtensionPaths(resources []icodingagent.ResolvedResource) []string {
 }
 
 func (l *DefaultResourceLoader) closeExtensionFiles() {
+	for _, ext := range l.files.Extensions {
+		if l.factoryRuntime != nil {
+			l.factoryRuntime.ReplaceFactoryAPI(ext.Path, nil)
+		}
+	}
 	l.files.Close()
 	l.files, l.filesConfigs = LoadExtensionsResult{}, nil
+	l.filesContext = nil
 }
 
 // Close shuts down the Extension Host the default extension load started. The loaded extensions stop.

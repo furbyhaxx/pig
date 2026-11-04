@@ -51,35 +51,46 @@ func (r *RuntimeRetention) register(share *processShare) {
 }
 
 // claim returns a live process retained under key, holding one reference for the caller. A process parked by a retiring Host transfers the parking reference instead.
-func (r *RuntimeRetention) claim(key string) *processShare {
+func (r *RuntimeRetention) claim(ctx context.Context, key string) (*processShare, error) {
 	if key == "" {
-		return nil
+		return nil, nil
 	}
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	live := r.procs[:0]
-	var found *processShare
-	for _, share := range r.procs {
-		if !share.alive() || share.exited() {
-			continue
+	for {
+		if ctx.Err() != nil {
+			return nil, context.Cause(ctx)
 		}
-		if share.dead.Load() {
+		r.mu.Lock()
+		live := r.procs[:0]
+		var found *processShare
+		for _, share := range r.procs {
+			if !share.alive() || share.exited() {
+				continue
+			}
 			live = append(live, share)
-			continue
-		}
-		// A process that has died but not yet been reaped still looks alive; its closed stdin proves it is gone.
-		if share.send(factoryAdmission{Op: "noop"}) != nil {
-			continue
-		}
-		live = append(live, share)
-		if found == nil && share.key == key {
-			if share.parked.CompareAndSwap(true, false) || share.acquire() {
+			if found == nil && share.key == key && !share.dead.Load() && share.acquire() {
 				found = share
 			}
 		}
+		r.procs = live
+		r.mu.Unlock()
+		if found == nil {
+			return nil, nil
+		}
+		// Hold a probe reference without serializing other claims behind process I/O.
+		if err := found.send(ctx, factoryAdmission{Op: "noop"}); err == nil {
+			if found.parked.CompareAndSwap(true, false) {
+				found.release()
+			}
+			return found, nil
+		}
+		if ctx.Err() == nil {
+			found.dead.Store(true)
+		}
+		found.release()
+		if ctx.Err() != nil {
+			return nil, context.Cause(ctx)
+		}
 	}
-	r.procs = live
-	return found
 }
 
 // enter numbers a Host that starts sharing the retention.
@@ -221,7 +232,6 @@ func (h *Host) awaitParkAck(share *processShare, conns []*Conn) error {
 	if err != nil {
 		return err
 	}
-	_ = os.Remove(sockPath)
 	listener, address, err := ListenExtension(sockPath, share.node)
 	if err != nil {
 		return err
@@ -237,7 +247,7 @@ func (h *Host) awaitParkAck(share *processShare, conns []*Conn) error {
 			close(accepted)
 		}
 	}()
-	if err := share.send(factoryAdmission{Op: "park", Socket: address}); err != nil {
+	if err := share.send(h.recoveryContext, factoryAdmission{Op: "park", Socket: address}); err != nil {
 		return err
 	}
 	stalled := make(chan struct{})
@@ -287,6 +297,12 @@ func (me *managedExt) withdrawProcessFromRetention() {
 }
 
 // claimRetainedProcess finds the live process the cell's factories can be re-invoked in.
-func (h *Host) claimRetainedProcess(ctx context.Context, artifact string, node bool) *processShare {
-	return h.retention().claim(h.retentionKey(ctx, artifact, node))
+func (h *Host) claimRetainedProcess(ctx context.Context, artifact string, node bool) (*processShare, error) {
+	return h.claimRetainedProcessKey(ctx, h.retentionKey(ctx, artifact, node))
+}
+
+func (h *Host) claimRetainedProcessKey(ctx context.Context, key string) (*processShare, error) {
+	ctx, done := withReloadHandshakeDeadline(ctx, reloadHandshakeDeadline(ctx))
+	defer done()
+	return h.retention().claim(ctx, key)
 }

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -355,9 +356,128 @@ export default function (pi) {
 }
 `
 
-// agent-session.ts:3663-3664 invalidates the old runner before the step that throws, and nothing replaces it, so after a rejected reload the old instance's captured pi throws the stale message while session_shutdown(quit) still reaches it. Probed with Pi 0.99.2 in print mode and Pi 1.1.0 in RPC mode (rpc-mode.ts:341-343 binds the same session.reload()): "shutdown:reload", "rejected:File URL path must not include encoded / characters", "stale:This extension ctx is stale ...", "shutdown:quit".
-// mutation-checked: dropping the extension host invalidation after a failed reload in RPC mode (rpc_mode.go SetReload) logs "live" instead of the stale message.
-func TestFailedExtensionReloadLeavesTheOldInstanceStale(t *testing.T) {
+const reloadHandshakeFailureProbeNode = `import { appendFileSync } from "node:fs";
+let generation = 0;
+export default async function (pi) {
+  if (++generation > 1) await new Promise(() => {});
+  const log = (line) => appendFileSync(process.env.RELOAD_PROBE_LOG, line + "\n");
+  pi.registerTool({name: "reload_probe", label: "Probe", description: "Probe", parameters: {type: "object", properties: {}},
+    async execute() { return {content: [{type: "text", text: "serving"}]}; }});
+  pi.registerCommand("reloadhandshake", {description: "Fail replacement admission", handler: async (_args, ctx) => {
+    try { await ctx.reload(); log("resolved"); } catch (error) { log("rejected:" + error.message); }
+    log("active:" + pi.getActiveTools().includes("reload_probe"));
+  }});
+}
+`
+
+func runHeadlessReloadProbe(t *testing.T, binary, mode, command, settingsJSON string, paths ...string) string {
+	t.Helper()
+	home, cwd, sessionDir := t.TempDir(), t.TempDir(), t.TempDir()
+	agentDir := filepath.Join(home, "pig")
+	if err := os.MkdirAll(agentDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(agentDir, "settings.json"), []byte(settingsJSON), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	logPath := filepath.Join(t.TempDir(), "reload.log")
+	env := []string{"HOME=" + home, "PIG_HOME=" + filepath.Join(home, ".pig"), "PI_HOME=" + filepath.Join(home, ".pig"), "PIG_CODING_AGENT_DIR=" + agentDir, "PI_CODING_AGENT_DIR=" + agentDir, "PIG_TEST_FAUX=1", "PIG_TEST_FAUX_SCENARIO=parity-basic", "PIG_OFFLINE=1", "RELOAD_PROBE_LOG=" + logPath, "RELOAD_STALL_MARKER=" + filepath.Join(t.TempDir(), "stall")}
+	args := []string{"--no-extensions", "--model", "test-faux/faux-1", "--session-dir", sessionDir}
+	for _, path := range paths {
+		args = append(args, "-e", path)
+	}
+	if mode == "rpc" {
+		p := startRPCProcessAt(t, cwd, env, args...)
+		request, err := json.Marshal(map[string]string{"id": "reload", "type": "prompt", "message": "/" + command})
+		if err != nil {
+			t.Fatal(err)
+		}
+		p.send(string(request))
+		p.await("the reload caller's response", func(record rpcRecord) bool {
+			if record["type"] == "extension_error" {
+				t.Fatalf("extension_error: %v", record)
+			}
+			return record["type"] == "response" && record["id"] == "reload"
+		})
+		p.closeAndWait("reload caller answered")
+	} else {
+		ctx, cancel := context.WithTimeout(t.Context(), testbudget.Wait(t))
+		defer cancel()
+		cmd := exec.CommandContext(ctx, binary, append(args, "--print", "/"+command)...)
+		cmd.Dir, cmd.Env = cwd, append(os.Environ(), env...)
+		if out, err := cmd.CombinedOutput(); err != nil || strings.Contains(string(out), "Extension error") {
+			t.Fatalf("print: %v\n%s", err, out)
+		}
+	}
+	return strings.Join(readReloadLog(t, logPath), "\n")
+}
+
+func TestReloadHandshakeFailureReachesHeadlessCallerAndKeepsOldGeneration(t *testing.T) {
+	binary := buildPigBinaryForSignalTest(t)
+	path := filepath.Join(t.TempDir(), "reload-handshake.mjs")
+	if err := os.WriteFile(path, []byte(reloadHandshakeFailureProbeNode), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, mode := range []string{"print", "rpc"} {
+		for _, setting := range []struct{ name, json, want string }{
+			{"timeout", `{"extensionsReloadHandshakeMs":250}`, "reload handshake timed out"},
+			{"invalid-budget", `{"extensionsReloadHandshakeMs":0}`, "extensionsReloadHandshakeMs must be a positive integer"},
+		} {
+			t.Run(mode+"/"+setting.name, func(t *testing.T) {
+				got := runHeadlessReloadProbe(t, binary, mode, "reloadhandshake", setting.json, path)
+				if !strings.Contains(got, "rejected:") || !strings.Contains(got, setting.want) || !strings.HasSuffix(got, "active:true") || strings.Contains(got, "resolved") {
+					t.Fatalf("reload caller did not receive its failure and keep serving: %s", got)
+				}
+			})
+		}
+	}
+}
+
+func TestPartialReloadPublishesHealthyCellsInHeadlessModes(t *testing.T) {
+	binary := buildPigBinaryForSignalTest(t)
+	goRoot := writeReloadProbe(t, "go")
+	goSource := `package reloadprobe
+import ("os"; sdk "github.com/MichaelKinsy/PiG/extensions/sdk")
+func Extension() *sdk.Extension {
+  if _, err := os.Stat(os.Getenv("RELOAD_STALL_MARKER")); err == nil { select {} }
+  e := sdk.New("reloadprobe")
+  e.Tool("retained_tool", "Retained tool", sdk.Schema{"type":"object"}, func(sdk.Context, map[string]any) (any,error) { return "serving",nil })
+  return e
+}
+`
+	if err := os.WriteFile(filepath.Join(goRoot, "extension.go"), []byte(goSource), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	nodePath := filepath.Join(t.TempDir(), "partial-reload.mjs")
+	nodeSource := `import { appendFileSync, writeFileSync } from "node:fs";
+let generation = 0;
+export default function (pi) {
+  const tool = ++generation === 1 ? "healthy_old" : "healthy_new";
+  const log = (line) => appendFileSync(process.env.RELOAD_PROBE_LOG, line + "\n");
+  pi.registerTool({name: tool, label: tool, description: tool, parameters: {type:"object",properties:{}}, async execute() { return {content:[{type:"text",text:"serving"}]}; }});
+  pi.on("session_start", async (event) => {
+    if (event.reason === "reload") { const tools = pi.getActiveTools(); log("tools:" + tools.includes("healthy_new") + ":" + tools.includes("retained_tool") + ":" + tools.includes("healthy_old")); }
+  });
+  pi.registerCommand("partialreload", {description:"Partially reload", handler: async (_args, ctx) => {
+    writeFileSync(process.env.RELOAD_STALL_MARKER, "stall");
+    try { await ctx.reload(); log("resolved"); } catch(error) { log("rejected:"+error.message); }
+  }});
+}
+`
+	if err := os.WriteFile(nodePath, []byte(nodeSource), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, mode := range []string{"print", "rpc"} {
+		t.Run(mode, func(t *testing.T) {
+			got := runHeadlessReloadProbe(t, binary, mode, "partialreload", `{"extensionsReloadHandshakeMs":250}`, nodePath, goRoot)
+			if !strings.Contains(got, "tools:true:true:false") || !strings.Contains(got, "rejected:") || !strings.Contains(got, "reload handshake timed out") || strings.Contains(got, "resolved") {
+				t.Fatalf("partial cell set was not published with its error: %s", got)
+			}
+		})
+	}
+}
+
+func TestFailedExtensionReloadKeepsTheOldInstanceActive(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds the pig binary and extensions")
 	}
@@ -396,7 +516,7 @@ func TestFailedExtensionReloadLeavesTheOldInstanceStale(t *testing.T) {
 				}
 			}
 			got := strings.Join(readReloadLog(t, logPath), "\n")
-			want := "shutdown:reload\nrejected:" + invalidFileURLMessage() + "\nstale:" + (&inproc.StaleError{}).Error() + "\nshutdown:quit"
+			want := "shutdown:reload\nrejected:" + invalidFileURLMessage() + "\nlive\nshutdown:quit"
 			if got != want {
 				t.Fatalf("extension log:\n%s\nwant:\n%s", got, want)
 			}

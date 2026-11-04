@@ -211,22 +211,22 @@
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestModelSchemaExportsMatchPi",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "ai/providers/model-schema.js of the pinned Pi: TestModelSchemaExportsMatchPi compares every export with the Go schema tree, and the rendered models.schema.json is byte-equal to the schema Pi publishes (.upstream/current/packages/coding-agent/schemas/models.schema.json)",
-  "mutation": "internal/codingagent/configschema/model.go: replace `Opt{\"maximum\", 100}` with `Opt{\"maximum\", 101}`; TestModelSchemaExportsMatchPi, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/model.go: replace `Opt{\"maximum\", 100}` with `Opt{\"maximum\", 101}`; TestModelSchemaExportsMatchPi, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/ai/src/providers/model-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestModelSchemaExportsMatchPi",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "ai/providers/model-schema.js of the pinned Pi: TestModelSchemaExportsMatchPi compares every export with the Go schema tree, and the rendered models.schema.json is byte-equal to the schema Pi publishes (.upstream/current/packages/coding-agent/schemas/models.schema.json)",
-  "mutation": "internal/codingagent/configschema/model.go: replace `Opt{\"exclusiveMinimum\", 0}` with `Opt{\"minimum\", 0}`; TestModelSchemaExportsMatchPi, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/model.go: replace `Opt{\"exclusiveMinimum\", 0}` with `Opt{\"minimum\", 0}`; TestModelSchemaExportsMatchPi, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/ai/src/providers/model-schema.ts",
@@ -242,22 +242,22 @@
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestModelSchemaExportsMatchPi",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "ai/providers/model-schema.js of the pinned Pi: TestModelSchemaExportsMatchPi compares every export with the Go schema tree, and the rendered models.schema.json is byte-equal to the schema Pi publishes (.upstream/current/packages/coding-agent/schemas/models.schema.json)",
-  "mutation": "internal/codingagent/configschema/model.go: replace `Optional(\"maxPerRequest\", Integer(Opt{\"minimum\", 1}` with `Optional(\"maxPerRequest\", Integer(Opt{\"minimum\", 0}`; TestModelSchemaExportsMatchPi, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/model.go: replace `Optional(\"maxPerRequest\", Integer(Opt{\"minimum\", 1}` with `Optional(\"maxPerRequest\", Integer(Opt{\"minimum\", 0}`; TestModelSchemaExportsMatchPi, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/ai/src/providers/model-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestModelSchemaExportsMatchPi",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "ai/providers/model-schema.js of the pinned Pi: TestModelSchemaExportsMatchPi compares every export with the Go schema tree, and the rendered models.schema.json is byte-equal to the schema Pi publishes (.upstream/current/packages/coding-agent/schemas/models.schema.json)",
-  "mutation": "internal/codingagent/configschema/model.go: replace `\"Maximum serialized provider request size in bytes.\"` with `\"Maximum serialized provider request size in kilobytes.\"`; TestModelSchemaExportsMatchPi, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/model.go: replace `\"Maximum serialized provider request size in bytes.\"` with `\"Maximum serialized provider request size in kilobytes.\"`; TestModelSchemaExportsMatchPi, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/ai/src/providers/model-schema.ts",
@@ -265,66 +265,66 @@
   "tests": [
    "TestCompatSchemaExportsMatchPi",
    "TestModelSchemaExportsMatchPi",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "ai/providers/model-schema.js of the pinned Pi: TestModelSchemaExportsMatchPi compares every export with the Go schema tree, and the rendered models.schema.json is byte-equal to the schema Pi publishes (.upstream/current/packages/coding-agent/schemas/models.schema.json)",
-  "mutation": "internal/codingagent/configschema/model.go: replace `P(\"inputTokensAbove\", Number(` with `Optional(\"inputTokensAbove\", Number(`; TestCompatSchemaExportsMatchPi, TestModelSchemaExportsMatchPi, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/model.go: replace `P(\"inputTokensAbove\", Number(` with `Optional(\"inputTokensAbove\", Number(`; TestCompatSchemaExportsMatchPi, TestModelSchemaExportsMatchPi, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/ai/src/providers/compat-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestCompatSchemaExportsMatchPi",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/ai/test/compat-schema.test.ts (TestCompatSchemasPreserveAPISpecificDefaults, TestProviderCompatSchemaAssignsNoAPISpecificDefaults); TestCompatSchemaExportsMatchPi compares every export of the pinned Pi's compat-schema.js, and the rendered models.schema.json is byte-equal to Pi's published schema",
-  "mutation": "internal/codingagent/configschema/compat_a.go: delete `Literal(\"openai-nosession\"), `; TestCompatSchemaExportsMatchPi, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/compat_a.go: delete `Literal(\"openai-nosession\"), `; TestCompatSchemaExportsMatchPi, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/ai/src/providers/compat-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestCompatSchemaExportsMatchPi",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/ai/test/compat-schema.test.ts (TestCompatSchemasPreserveAPISpecificDefaults, TestProviderCompatSchemaAssignsNoAPISpecificDefaults); TestCompatSchemaExportsMatchPi compares every export of the pinned Pi's compat-schema.js, and the rendered models.schema.json is byte-equal to Pi's published schema",
-  "mutation": "internal/codingagent/configschema/compat_a.go: replace `Literal(\"thinking_budget_tokens\")` with `Literal(\"thinking_budget_token\")`; TestCompatSchemaExportsMatchPi, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/compat_a.go: replace `Literal(\"thinking_budget_tokens\")` with `Literal(\"thinking_budget_token\")`; TestCompatSchemaExportsMatchPi, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/ai/src/providers/compat-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestCompatSchemaExportsMatchPi",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/ai/test/compat-schema.test.ts (TestCompatSchemasPreserveAPISpecificDefaults, TestProviderCompatSchemaAssignsNoAPISpecificDefaults); TestCompatSchemaExportsMatchPi compares every export of the pinned Pi's compat-schema.js, and the rendered models.schema.json is byte-equal to Pi's published schema",
-  "mutation": "internal/codingagent/configschema/compat_a.go: replace `Optional(\"p99\", Number(` with `Optional(\"p98\", Number(`; TestCompatSchemaExportsMatchPi, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/compat_a.go: replace `Optional(\"p99\", Number(` with `Optional(\"p98\", Number(`; TestCompatSchemaExportsMatchPi, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/ai/src/providers/compat-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestCompatSchemaExportsMatchPi",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/ai/test/compat-schema.test.ts (TestCompatSchemasPreserveAPISpecificDefaults, TestProviderCompatSchemaAssignsNoAPISpecificDefaults); TestCompatSchemaExportsMatchPi compares every export of the pinned Pi's compat-schema.js, and the rendered models.schema.json is byte-equal to Pi's published schema",
-  "mutation": "internal/codingagent/configschema/compat_a.go: replace `Union(literals(\"thinking.enabled\", \"thinking.effort\", \"thinking.budget\"))` with `Union(literals(\"thinking.enabled\", \"thinking.budget\"))`; TestCompatSchemaExportsMatchPi, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/compat_a.go: replace `Union(literals(\"thinking.enabled\", \"thinking.effort\", \"thinking.budget\"))` with `Union(literals(\"thinking.enabled\", \"thinking.budget\"))`; TestCompatSchemaExportsMatchPi, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/ai/src/providers/compat-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestCompatSchemaExportsMatchPi",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/ai/test/compat-schema.test.ts (TestCompatSchemasPreserveAPISpecificDefaults, TestProviderCompatSchemaAssignsNoAPISpecificDefaults); TestCompatSchemaExportsMatchPi compares every export of the pinned Pi's compat-schema.js, and the rendered models.schema.json is byte-equal to Pi's published schema",
-  "mutation": "internal/codingagent/configschema/compat_a.go: replace `Union([]*Schema{Number(), String()}, D(description))` with `Union([]*Schema{String(), Number()}, D(description))`; TestCompatSchemaExportsMatchPi, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/compat_a.go: replace `Union([]*Schema{Number(), String()}, D(description))` with `Union([]*Schema{String(), Number()}, D(description))`; TestCompatSchemaExportsMatchPi, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/ai/src/providers/compat-schema.ts",
@@ -379,252 +379,252 @@
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestCompatSchemaExportsMatchPi",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/ai/test/compat-schema.test.ts (TestCompatSchemasPreserveAPISpecificDefaults, TestProviderCompatSchemaAssignsNoAPISpecificDefaults); TestCompatSchemaExportsMatchPi compares every export of the pinned Pi's compat-schema.js, and the rendered models.schema.json is byte-equal to Pi's published schema",
-  "mutation": "internal/codingagent/configschema/compat_b.go (line 47): replace `Default(false)` with `Default(true)`; TestCompatSchemaExportsMatchPi, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/compat_b.go (line 47): replace `Default(false)` with `Default(true)`; TestCompatSchemaExportsMatchPi, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/ai/src/providers/compat-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestCompatSchemaExportsMatchPi",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/ai/test/compat-schema.test.ts (TestCompatSchemasPreserveAPISpecificDefaults, TestProviderCompatSchemaAssignsNoAPISpecificDefaults); TestCompatSchemaExportsMatchPi compares every export of the pinned Pi's compat-schema.js, and the rendered models.schema.json is byte-equal to Pi's published schema",
-  "mutation": "internal/codingagent/configschema/compat_a.go (line 108): replace `Default(true)` with `Default(false)`; TestCompatSchemaExportsMatchPi, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/compat_a.go (line 108): replace `Default(true)` with `Default(false)`; TestCompatSchemaExportsMatchPi, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts ported over the rendered settings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/settings.schema.json",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `Optional(\"keepRecentTokens\", nonNegativeSafeInteger(Default(d.compactionKeepRecentTokens)))` with `Optional(\"keepRecentTokens\", nonNegativeSafeInteger())`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/settings.go: replace `Optional(\"keepRecentTokens\", nonNegativeSafeInteger(Default(d.compactionKeepRecentTokens)))` with `Optional(\"keepRecentTokens\", nonNegativeSafeInteger())`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror",
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract",
    "TestSettingsSchemaRejectsWhatRuntimeAccessorsReject"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts ported over the rendered settings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/settings.schema.json",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `{\"minimum\", 0}, {\"maximum\", int64(1<<53 - 1)}` with `{\"minimum\", 1}, {\"maximum\", int64(1<<53 - 1)}`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror, TestSettingsSchemaRejectsWhatRuntimeAccessorsReject fail"
+  "mutation": "internal/codingagent/configschema/settings.go: replace `{\"minimum\", 0}, {\"maximum\", int64(1<<53 - 1)}` with `{\"minimum\", 1}, {\"maximum\", int64(1<<53 - 1)}`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract, TestSettingsSchemaRejectsWhatRuntimeAccessorsReject fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts ported over the rendered settings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/settings.schema.json",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `literals(\"auto\", \"sse\", \"websocket\", \"websocket-cached\")` with `literals(\"auto\", \"sse\", \"websocket\")`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/settings.go: replace `literals(\"auto\", \"sse\", \"websocket\", \"websocket-cached\")` with `literals(\"auto\", \"sse\", \"websocket\")`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts ported over the rendered settings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/settings.schema.json",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `literals(\"fork\", \"tree\", \"none\")` with `literals(\"fork\", \"tree\")`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/settings.go: replace `literals(\"fork\", \"tree\", \"none\")` with `literals(\"fork\", \"tree\")`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror",
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract",
    "TestSettingsSchemaRejectsWhatRuntimeAccessorsReject"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts ported over the rendered settings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/settings.schema.json",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `Optional(\"inlineBudget\", Number(Opt{\"minimum\", 0}, ` with `Optional(\"inlineBudget\", Number(`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror, TestSettingsSchemaRejectsWhatRuntimeAccessorsReject fail"
+  "mutation": "internal/codingagent/configschema/settings.go: replace `Optional(\"inlineBudget\", Number(Opt{\"minimum\", 0}, ` with `Optional(\"inlineBudget\", Number(`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract, TestSettingsSchemaRejectsWhatRuntimeAccessorsReject fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror",
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract",
    "TestSettingsSchemaRejectsWhatRuntimeAccessorsReject"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts ported over the rendered settings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/settings.schema.json",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `Union([]*Schema{Number(Opt{\"minimum\", 0}), Literal(\"disabled\")}, opts...)` with `Union([]*Schema{Number(), Literal(\"disabled\")}, opts...)`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror, TestSettingsSchemaRejectsWhatRuntimeAccessorsReject fail"
+  "mutation": "internal/codingagent/configschema/settings.go: replace `Union([]*Schema{Number(Opt{\"minimum\", 0}), Literal(\"disabled\")}, opts...)` with `Union([]*Schema{Number(), Literal(\"disabled\")}, opts...)`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract, TestSettingsSchemaRejectsWhatRuntimeAccessorsReject fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror",
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract",
    "TestRepresentativeDocumentsValidateAgainstTheGeneratedSchemas"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts ported over the rendered settings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/settings.schema.json",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `{\"additionalProperties\", true}` with `{\"additionalProperties\", false}`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror, TestRepresentativeDocumentsValidateAgainstTheGeneratedSchemas fail"
+  "mutation": "internal/codingagent/configschema/settings.go: replace `{\"additionalProperties\", true}` with `{\"additionalProperties\", false}`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract, TestRepresentativeDocumentsValidateAgainstTheGeneratedSchemas fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts ported over the rendered settings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/settings.schema.json",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `Optional(\"outputPad\", Union([]*Schema{Literal(0), Literal(1)}` with `Optional(\"outputPad\", Union([]*Schema{Literal(0), Literal(2)}`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/settings.go: replace `Optional(\"outputPad\", Union([]*Schema{Literal(0), Literal(1)}` with `Optional(\"outputPad\", Union([]*Schema{Literal(0), Literal(2)}`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts ported over the rendered settings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/settings.schema.json",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `literals(\"regular\", \"fullscreen\")` with `literals(\"fullscreen\")`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/settings.go: replace `literals(\"regular\", \"fullscreen\")` with `literals(\"fullscreen\")`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts ported over the rendered settings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/settings.schema.json",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `Boolean(Default(d.warningsAnthropicExtraUsage))` with `Boolean()`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/settings.go: replace `Boolean(Default(d.warningsAnthropicExtraUsage))` with `Boolean()`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-defaults.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "TestSettingsDefaultsMatchPiOnAnEmptySettingsManager reads every leaf of the pinned Pi's SETTINGS_DEFAULTS and the value Pi's SettingsManager getter returns on empty settings; TestCodemodeDefaultsAreThePinnedPiSettingsDefaults does the same for codemode; the rendered settings.schema.json defaults are byte-equal to Pi's published schema",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `compactionReserveTokens: 16384, compactionKeepRecentTokens: 20000` with `compactionReserveTokens: 16384, compactionKeepRecentTokens: 20001`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/settings.go: replace `compactionReserveTokens: 16384, compactionKeepRecentTokens: 20000` with `compactionReserveTokens: 16384, compactionKeepRecentTokens: 20001`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-defaults.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "TestSettingsDefaultsMatchPiOnAnEmptySettingsManager reads every leaf of the pinned Pi's SETTINGS_DEFAULTS and the value Pi's SettingsManager getter returns on empty settings; TestCodemodeDefaultsAreThePinnedPiSettingsDefaults does the same for codemode; the rendered settings.schema.json defaults are byte-equal to Pi's published schema",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `markdownMermaid: \"streaming\"` with `markdownMermaid: \"final\"`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/settings.go: replace `markdownMermaid: \"streaming\"` with `markdownMermaid: \"final\"`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts ported over the rendered settings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/settings.schema.json",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `Optional(\"fullscreenWheelScrollLines\", Union([]*Schema{Number(), Literal(\"auto\")}` with `Optional(\"fullscreenWheelScrollLines\", Union([]*Schema{Number(), Literal(\"manual\")}`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/configschema/settings.go: replace `Optional(\"fullscreenWheelScrollLines\", Union([]*Schema{Number(), Literal(\"auto\")}` with `Optional(\"fullscreenWheelScrollLines\", Union([]*Schema{Number(), Literal(\"manual\")}`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/keybindings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts (keybindings cases) over the rendered keybindings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/keybindings.schema.json",
-  "mutation": "internal/codingagent/keybindings_schema.go: replace `for _, id := range tui.TUIKeybindingOrder {` with `for _, id := range tui.TUIKeybindingOrder[1:] {`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/keybindings_schema.go: replace `for _, id := range tui.TUIKeybindingOrder {` with `for _, id := range tui.TUIKeybindingOrder[1:] {`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/keybindings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts (keybindings cases) over the rendered keybindings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/keybindings.schema.json",
-  "mutation": "internal/codingagent/keybindings_schema.go: replace `for _, id := range km.KeybindingIDs() {` with `for _, id := range km.KeybindingIDs()[1:] {`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/keybindings_schema.go: replace `for _, id := range km.KeybindingIDs() {` with `for _, id := range km.KeybindingIDs()[1:] {`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/keybindings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts (keybindings cases) over the rendered keybindings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/keybindings.schema.json",
-  "mutation": "internal/codingagent/keybindings_schema.go: replace `Name: \"KeybindingValue\"` with `Name: \"KeybindingValues\"`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/keybindings_schema.go: replace `Name: \"KeybindingValue\"` with `Name: \"KeybindingValues\"`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/keybindings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror",
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract",
    "TestRepresentativeDocumentsValidateAgainstTheGeneratedSchemas"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts (keybindings cases) over the rendered keybindings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/keybindings.schema.json",
-  "mutation": "internal/codingagent/keybindings_schema.go: replace `configschema.Union([]*configschema.Schema{keyIDSchema(), configschema.Array(keyIDSchema())}, opts...)` with `configschema.Union([]*configschema.Schema{keyIDSchema()}, opts...)`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror, TestRepresentativeDocumentsValidateAgainstTheGeneratedSchemas fail"
+  "mutation": "internal/codingagent/keybindings_schema.go: replace `configschema.Union([]*configschema.Schema{keyIDSchema(), configschema.Array(keyIDSchema())}, opts...)` with `configschema.Union([]*configschema.Schema{keyIDSchema()}, opts...)`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract, TestRepresentativeDocumentsValidateAgainstTheGeneratedSchemas fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/keybindings-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestKeybindingsSchemaValidatesKeySyntax",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts (keybindings cases) over the rendered keybindings.schema.json, judged by the pinned Pi's typebox; the rendered artifact is byte-equal to Pi's published schemas/keybindings.schema.json",
-  "mutation": "internal/codingagent/keybindings_schema.go: replace `Opt{K: \"pattern\", V: KeyIDPattern()}` with `Opt{K: \"pattern\", V: \"^.*$\"}`; TestKeybindingsSchemaValidatesKeySyntax, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/keybindings_schema.go: replace `Opt{K: \"pattern\", V: KeyIDPattern()}` with `Opt{K: \"pattern\", V: \"^.*$\"}`; TestKeybindingsSchemaValidatesKeySyntax, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/key-id-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestKeybindingsSchemaValidatesKeySyntax",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts 'validates keybinding syntax'; TestKeyIDValidationMatchesPiKeyIdSchema compares isKeyID and the keybindings.json value check with the pinned Pi's compiled KeyIdSchema and KeybindingValueSchema over every modifier run before every key; TestKeybindingsFileLoadingMatchesPi loads keybindings.json through Pi's KeybindingsManager",
-  "mutation": "internal/codingagent/key_id_schema.go: replace `\"ctrl\", \"shift\", \"alt\", \"super\"` with `\"ctrl\", \"shift\", \"alt\"`; TestKeybindingsSchemaValidatesKeySyntax, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/key_id_schema.go: replace `\"ctrl\", \"shift\", \"alt\", \"super\"` with `\"ctrl\", \"shift\", \"alt\"`; TestKeybindingsSchemaValidatesKeySyntax, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/key-id-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestKeybindingsSchemaValidatesKeySyntax",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts 'validates keybinding syntax'; TestKeyIDValidationMatchesPiKeyIdSchema compares isKeyID and the keybindings.json value check with the pinned Pi's compiled KeyIdSchema and KeybindingValueSchema over every modifier run before every key; TestKeybindingsFileLoadingMatchesPi loads keybindings.json through Pi's KeybindingsManager",
-  "mutation": "internal/codingagent/key_id_schema.go (line 53): replace `{0,4}` with `{0,3}`; TestKeybindingsSchemaValidatesKeySyntax, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/key_id_schema.go (line 53): replace `{0,4}` with `{0,3}`; TestKeybindingsSchemaValidatesKeySyntax, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/key-id-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
    "TestKeybindingsSchemaValidatesKeySyntax",
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror",
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract",
    "TestRepresentativeDocumentsValidateAgainstTheGeneratedSchemas"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts 'validates keybinding syntax'; TestKeyIDValidationMatchesPiKeyIdSchema compares isKeyID and the keybindings.json value check with the pinned Pi's compiled KeyIdSchema and KeybindingValueSchema over every modifier run before every key; TestKeybindingsFileLoadingMatchesPi loads keybindings.json through Pi's KeybindingsManager",
-  "mutation": "internal/codingagent/key_id_schema.go (line 53): replace `\"|\") + \"))(` with `\"|\") + \")))(`; TestKeybindingsSchemaValidatesKeySyntax, TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror, TestRepresentativeDocumentsValidateAgainstTheGeneratedSchemas fail"
+  "mutation": "internal/codingagent/key_id_schema.go (line 53): replace `\"|\") + \"))(` with `\"|\") + \")))(`; TestKeybindingsSchemaValidatesKeySyntax, TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract, TestRepresentativeDocumentsValidateAgainstTheGeneratedSchemas fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/key-id-schema.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
   "upstream_reference": "packages/coding-agent/test/config-schemas.test.ts 'validates keybinding syntax'; TestKeyIDValidationMatchesPiKeyIdSchema compares isKeyID and the keybindings.json value check with the pinned Pi's compiled KeyIdSchema and KeybindingValueSchema over every modifier run before every key; TestKeybindingsFileLoadingMatchesPi loads keybindings.json through Pi's KeybindingsManager",
-  "mutation": "internal/codingagent/key_id_schema.go: replace `k.Escape, k.Esc, ` with `k.Esc, `; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "mutation": "internal/codingagent/key_id_schema.go: replace `k.Escape, k.Esc, ` with `k.Esc, `; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/key-id-schema.ts",
@@ -859,31 +859,31 @@
   "upstream": "packages/coding-agent/src/core/settings-defaults.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
-  "upstream_reference": "TestSettingsDefaultsMatchPiOnAnEmptySettingsManager reads every leaf of the pinned Pi's SETTINGS_DEFAULTS and the value Pi's SettingsManager getter returns on empty settings; TestCodemodeDefaultsAreThePinnedPiSettingsDefaults does the same for codemode; the rendered settings.schema.json defaults are byte-equal to Pi's published schema",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `compactionReserveTokens: 16384,` with `compactionReserveTokens: 16385,`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "upstream_reference": "TestSettingsDefaultsMatchPiOnAnEmptySettingsManager reads every leaf of the pinned Pi's SETTINGS_DEFAULTS and the value Pi's SettingsManager getter returns on empty settings; TestCodemodeDefaultsAreThePinnedPiSettingsDefaults does the same for codemode; the settings schema preserves pinned Pi defaults alongside SPEC-0004 D2's reload budget",
+  "mutation": "internal/codingagent/configschema/settings.go: replace `compactionReserveTokens: 16384,` with `compactionReserveTokens: 16385,`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-defaults.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
-  "upstream_reference": "TestSettingsDefaultsMatchPiOnAnEmptySettingsManager reads every leaf of the pinned Pi's SETTINGS_DEFAULTS and the value Pi's SettingsManager getter returns on empty settings; TestCodemodeDefaultsAreThePinnedPiSettingsDefaults does the same for codemode; the rendered settings.schema.json defaults are byte-equal to Pi's published schema",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `transport: \"auto\", sessionShareDestination: \"auto\"` with `transport: \"sse\", sessionShareDestination: \"auto\"`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "upstream_reference": "TestSettingsDefaultsMatchPiOnAnEmptySettingsManager reads every leaf of the pinned Pi's SETTINGS_DEFAULTS and the value Pi's SettingsManager getter returns on empty settings; TestCodemodeDefaultsAreThePinnedPiSettingsDefaults does the same for codemode; the settings schema preserves pinned Pi defaults alongside SPEC-0004 D2's reload budget",
+  "mutation": "internal/codingagent/configschema/settings.go: replace `transport: \"auto\", sessionShareDestination: \"auto\"` with `transport: \"sse\", sessionShareDestination: \"auto\"`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-defaults.ts",
   "package": "./internal/codingagent/configschema",
   "tests": [
-   "TestRenderedSchemasAreByteEqualToThePinnedPiPackage",
-   "TestRenderedSchemasAreByteEqualToTheUpstreamMirror"
+   "TestRenderedSchemasMatchPinnedOriginAndForkContract",
+   "TestRenderedSchemasMatchUpstreamMirrorAndForkContract"
   ],
-  "upstream_reference": "TestSettingsDefaultsMatchPiOnAnEmptySettingsManager reads every leaf of the pinned Pi's SETTINGS_DEFAULTS and the value Pi's SettingsManager getter returns on empty settings; TestCodemodeDefaultsAreThePinnedPiSettingsDefaults does the same for codemode; the rendered settings.schema.json defaults are byte-equal to Pi's published schema",
-  "mutation": "internal/codingagent/configschema/settings.go: replace `codemodeMode:                \"on\", codemodeInlineBudget: 3000,` with `codemodeMode:                \"on\", codemodeInlineBudget: 3001,`; TestRenderedSchemasAreByteEqualToThePinnedPiPackage, TestRenderedSchemasAreByteEqualToTheUpstreamMirror fail"
+  "upstream_reference": "TestSettingsDefaultsMatchPiOnAnEmptySettingsManager reads every leaf of the pinned Pi's SETTINGS_DEFAULTS and the value Pi's SettingsManager getter returns on empty settings; TestCodemodeDefaultsAreThePinnedPiSettingsDefaults does the same for codemode; the settings schema preserves pinned Pi defaults alongside SPEC-0004 D2's reload budget",
+  "mutation": "internal/codingagent/configschema/settings.go: replace `codemodeMode:                \"on\", codemodeInlineBudget: 3000,` with `codemodeMode:                \"on\", codemodeInlineBudget: 3001,`; TestRenderedSchemasMatchPinnedOriginAndForkContract, TestRenderedSchemasMatchUpstreamMirrorAndForkContract fail"
  },
  {
   "upstream": "packages/coding-agent/src/core/settings-defaults.ts",

@@ -21,7 +21,7 @@ func TestReloadNodeFactoryDiagnosticMessages(t *testing.T) {
 			host := NewHostWithConfigRoot(root, filepath.Join(root, "config"))
 			t.Cleanup(func() { host.Shutdown("test done") })
 			host.SetConfigLoader(func() ([]ExtConfig, error) { return []ExtConfig{cfg}, nil })
-			if loaded, err := host.Reload(t.Context()); err != nil || len(loaded) != 0 {
+			if loaded, err := host.Reload(t.Context()); err == nil || len(loaded) != 0 {
 				t.Fatalf("reload = %v, %v", loaded, err)
 			}
 			message := "Failed to load extension: reload boom"

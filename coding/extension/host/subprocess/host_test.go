@@ -731,7 +731,7 @@ func TestHost_Reload_Extension(t *testing.T) {
 
 // Upstream reload does not keep a failed extension's previous runtime: the
 // extension is not loaded and its failure is reported.
-func TestHost_Reload_FailedReplacementDropsOldExtension(t *testing.T) {
+func TestHost_Reload_FailedReplacementKeepsOldExtension(t *testing.T) {
 	binPath := buildFixtureExt(t)
 	cwd := t.TempDir()
 	configs := []ExtConfig{{Name: "fixture", Path: binPath, Enabled: true}}
@@ -746,17 +746,24 @@ func TestHost_Reload_FailedReplacementDropsOldExtension(t *testing.T) {
 		t.Fatalf("initial load: %v", err)
 	}
 
+	h.mu.Lock()
+	old := h.exts["fixture"]
+	h.mu.Unlock()
 	missing := filepath.Join(t.TempDir(), "does-not-exist")
 	configs = []ExtConfig{{Name: "fixture", Path: missing, Enabled: true}}
-	if _, err := h.Reload(ctx); err != nil {
-		t.Fatalf("reload failed as a whole: %v", err)
+	_, reloadErr := h.Reload(ctx)
+	if reloadErr == nil {
+		t.Error("reload did not return the replacement failure")
 	}
 
 	h.mu.Lock()
 	got := h.exts["fixture"]
 	h.mu.Unlock()
-	if got != nil {
-		t.Fatal("old extension kept after its replacement failed to load")
+	if got != old {
+		t.Fatal("failed replacement discarded the serving generation")
+	}
+	if _, err := got.connection().Request(ctx, &Envelope{Type: MsgRequest, Request: &RequestPayload{Method: "tool_call", Tool: "echo", Args: json.RawMessage(`{"message":"still serving"}`)}}); err != nil {
+		t.Fatalf("old generation no longer serves requests: %v", err)
 	}
 	if rep := h.LastReloadReport(); len(rep.Issues) != 1 || !strings.HasPrefix(rep.Issues[0], missing+": Failed to load extension: ") {
 		t.Fatalf("issues = %q", rep.Issues)

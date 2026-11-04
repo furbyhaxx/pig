@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 )
@@ -72,12 +73,15 @@ func TestReloadAfterNodeCellCrashNoticeRefusesUnreapedProcess(t *testing.T) {
 		}
 	}
 	h.armPackedProcessGenerations()
+	share.admitWorkers.Wait()
 	retention.mu.Lock()
 	share.exitCh = make(chan struct{})
-	retention.mu.Unlock()
-	share.admitMu.Lock()
 	share.admit = discardAdmitWriter{io.Discard}
-	share.admitMu.Unlock()
+	share.admitOnce = sync.Once{}
+	share.admitQueue = make(chan admissionWrite)
+	share.admitStopped = make(chan struct{})
+	share.admitWorkers = sync.WaitGroup{}
+	retention.mu.Unlock()
 	h.transitionMu.Unlock()
 
 	loaded, err := h.Reload(ctx)

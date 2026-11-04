@@ -61,6 +61,8 @@ A process on a slot runtime can also fail after it started: it exits, or an exte
 
 An extension whose module fails to evaluate or exports no factory on a slot runtime, before its factory is called, starts again on the next runtime too, because it may import an API that runtime lacks. Its module's top-level code then runs again on the next runtime. An extension whose factory throws reports that error on any runtime, as Pi does: the factory ran, and Pi runs it once. A later member of a packed cell is the exception described above: its failure is a load error and the record moves the set to Node. If it then starts on Node, PiG records the set in `<slot>/.node-only/<set key>.json` and later launches run the set on Node without trying the slot runtimes again, with the reason `node_only` in `pig extensions runtime status`. The record lasts until the entry file or the nearest `package.json` of a member changes, or seven days. An extension whose module fails on Node too reports its own error and no record is written.
 
+Cancellation and a reload handshake deadline do not trigger runtime fallback or a Node-only record. A timed-out factory is a failed admission, not evidence that the selected runtime is incompatible (SPEC-0004 D2).
+
 A reload does not reuse a retained process that runs an executable runtime's host when the set no longer resolves to that host. A compiled host does not re-read edited sources, so a changed source makes the image `stale` and `/reload` starts the set on the fallback runtime.
 
 ## The runtime slot

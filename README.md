@@ -30,7 +30,7 @@ PiG is [Pi](https://github.com/earendil-works/pi), the minimal and extensible co
 
 PiG is a pre-stable 0.x release. Core paths are ported and checked against Pi 1.4.0+6c384aa3 with paired parity scenarios; edge cases are still hardening. See the [port status](test/parity/coverage.md) and [file map](docs/parity/PORT_MAP.md) for current scope and evidence.
 
-If PiG behaves differently from Pi, that is either a bug or a documented divergence. Windows support is a preview.
+This personal fork keeps Pi and upstream PiG compatibility while it does not limit correctness, performance or the owner's requirements; compatibility is not a requirement. See the [fork policy](docs/personal-fork.md). Windows support is a preview.
 
 ## Install
 

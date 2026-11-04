@@ -336,6 +336,13 @@
       },
       "description": "Local extension file paths or directories."
     },
+    "extensionsReloadHandshakeMs": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9223372036854,
+      "default": 15000,
+      "description": "Global reload-only connect/register budget in milliseconds; build time is excluded."
+    },
     "deviceId": {
       "type": "string",
       "description": "Stable installation UUID, generated when authentication first needs it. Global only."

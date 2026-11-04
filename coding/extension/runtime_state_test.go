@@ -9,6 +9,28 @@ import (
 	"github.com/MichaelKinsy/PiG/ai"
 )
 
+func TestReloadVirtualModelDeclarationWaitsForTheNextBinding(t *testing.T) {
+	runtime := CreateExtensionRuntime()
+	var published []string
+	actions := ProviderActions{RegisterVirtualModel: func(model VirtualModelDefinition) error {
+		published = append(published, model.ID)
+		return nil
+	}}
+	runtime.BindProviderActions(actions, nil)
+	runtime.QueueVirtualModelRegistration(VirtualModelDefinition{
+		Provider: "test", ID: "staged", Name: "Staged",
+		Route: func(context.Context, ModelRouteRequest) (ModelRoute, error) { return ModelRoute{}, nil },
+	}, "extension-path")
+	if len(published) != 0 {
+		t.Fatalf("staged declaration published before binding: %v", published)
+	}
+	runtime.BindProviderActions(actions, nil)
+	runtime.BindProviderActions(actions, nil)
+	if !slices.Equal(published, []string{"staged"}) {
+		t.Fatalf("binding did not publish the declaration exactly once: %v", published)
+	}
+}
+
 // upstream: loader.ts:163-200 assertActive throws the stale message after invalidate; only the first invalidate sets it and an omitted message selects the default.
 func TestRuntimeInvalidateMakesItStale(t *testing.T) {
 	runtime := CreateExtensionRuntime()

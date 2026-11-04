@@ -1,6 +1,6 @@
 # AGENTS.md — docs/parity
 
-Parity maintenance authorities.
+Pi-comparison machinery only; these ledger rules do not govern fork behavior decisions. Fork changes use `.project/specs/` under the root policy.
 
 | File | What | Edit |
 |---|---|---|

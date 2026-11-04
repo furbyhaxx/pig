@@ -1,6 +1,12 @@
 package configschema
 
-import "github.com/MichaelKinsy/PiG/ai"
+import (
+	"math"
+	"time"
+
+	"github.com/MichaelKinsy/PiG/ai"
+	"github.com/MichaelKinsy/PiG/coding/extension"
+)
 
 // Ports packages/coding-agent/src/core/settings-schema.ts and settings-defaults.ts.
 
@@ -155,6 +161,7 @@ func settingsSchema() *Schema {
 		Optional("trackingId", String(D("Analytics tracking identifier, generated when analytics is enabled."))),
 		Optional("packages", Array(packageSource, D("npm or git package sources, as strings or objects with resource filtering."))),
 		Optional("extensions", stringArray(D("Local extension file paths or directories."))),
+		Optional("extensionsReloadHandshakeMs", Integer(Opt{"minimum", 1}, Opt{"maximum", math.MaxInt64 / int64(time.Millisecond)}, Default(int(extension.DefaultReloadHandshakeTimeout/time.Millisecond)), D("Global reload-only connect/register budget in milliseconds; build time is excluded."))),
 		Optional("deviceId", String(D("Stable installation UUID, generated when authentication first needs it. Global only."))),
 		Optional("skills", skillsInput),
 		Optional("prompts", stringArray(D("Local prompt template file paths or directories."))),

@@ -276,20 +276,31 @@ func (h *Host) registerOAuthProvider(me *managedExt, name string, config json.Ra
 }
 
 // registerOAuthProviderUndoable is registerOAuthProvider that also returns undo, which restores the OAuth provider the id had before (a built-in or another extension's) if this registration is still the one in place. undo is never nil.
-func (h *Host) registerOAuthProviderUndoable(me *managedExt, name string, config json.RawMessage) (undo func(), err error) {
-	undo = func() {}
+func decodeProviderOAuth(name string, config json.RawMessage) (*ProviderOAuthConfig, error) {
 	var probe struct {
 		OAuth *ProviderOAuthConfig `json:"oauth"`
 	}
 	if err := json.Unmarshal(config, &probe); err != nil {
-		return undo, fmt.Errorf("provider %s: decode oauth config: %w", name, err)
+		return nil, fmt.Errorf("provider %s: decode oauth config: %w", name, err)
 	}
-	if probe.OAuth == nil {
-		return undo, nil
+	return probe.OAuth, nil
+}
+
+func (h *Host) registerOAuthProviderUndoable(me *managedExt, name string, config json.RawMessage) (func(), error) {
+	oauth, err := decodeProviderOAuth(name, config)
+	if err != nil {
+		return func() {}, err
 	}
-	base := &oauthProxy{host: h, me: me, name: name, cfg: *probe.OAuth}
+	return h.registerPreparedOAuthProvider(me, name, oauth), nil
+}
+
+func (h *Host) registerPreparedOAuthProvider(me *managedExt, name string, oauth *ProviderOAuthConfig) func() {
+	if oauth == nil {
+		return func() {}
+	}
+	base := &oauthProxy{host: h, me: me, name: name, cfg: *oauth}
 	var provider ai.OAuthProviderInterface = base
-	if probe.OAuth.HasCredentialStore {
+	if oauth.HasCredentialStore {
 		provider = &oauthProxyWithStore{oauthProxy: base}
 	}
 	previous, hadPrevious := ai.GetOAuthProvider(name)
@@ -308,7 +319,7 @@ func (h *Host) registerOAuthProviderUndoable(me *managedExt, name string, config
 		if restored, ok := ai.GetOAuthProvider(name); hadPrevious && (!ok || !sameOAuthProvider(restored, previous)) {
 			ai.RegisterOAuthProvider(name, previous)
 		}
-	}, nil
+	}
 }
 
 // sameOAuthProvider reports whether a and b are the same provider value; a value of an incomparable type is never the same as another.

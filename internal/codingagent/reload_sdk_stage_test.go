@@ -352,8 +352,8 @@ func TestReloadListsAFailingExtensionOnce(t *testing.T) {
 	})
 	m := reloadTestMode(InteractiveModeOptions{SubprocessHost: host})
 	slash := m.buildSlashContext(context.Background())
-	if err := slash.Reload(); err != nil {
-		t.Fatal(err)
+	if err := slash.Reload(); err == nil || !strings.Contains(err.Error(), "register boom") {
+		t.Fatalf("reload error = %v, want the factory failure", err)
 	}
 	count := 0
 	for _, d := range m.extensionDiagnostics() {

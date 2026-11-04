@@ -4,6 +4,7 @@ package subprocess
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"os/exec"
@@ -14,11 +15,48 @@ import (
 	"time"
 )
 
-// Upstream loadExtensions records each failing extension and keeps loading the
-// rest; /reload shows the failures under [Extension issues]. An unresolved
-// config must not fail the reload or stop a healthy sibling, and it must be
-// reported exactly once.
-func TestReloadReportsUnresolvedConfigsWithoutFailing(t *testing.T) {
+func TestReloadReadyFailureKeepsServingGeneration(t *testing.T) {
+	cfg := startupNodeFixture(t, t.TempDir(), "ready-rollback", `export default function (pi) {
+pi.registerTool({name:"probe",label:"Probe",description:"Probe",parameters:{type:"object",properties:{}},async execute() { return {content:[{type:"text",text:"serving"}]}; }});
+}`)
+	h := NewHostWithConfigRoot(t.TempDir(), t.TempDir())
+	t.Cleanup(func() { h.Shutdown("test done") })
+	h.SetConfigLoader(func() ([]ExtConfig, error) { return []ExtConfig{cfg}, nil })
+	if _, errs := h.LoadAll(t.Context(), []ExtConfig{cfg}); len(errs) != 0 {
+		t.Fatal(errs)
+	}
+	old := h.exts[cfg.Name]
+	h.SetStartupTrace(func(label string) {
+		if !strings.HasSuffix(label, ".handshake-done") {
+			return
+		}
+		h.mu.Lock()
+		var staged *managedExt
+		for _, process := range h.packedProcesses {
+			for _, member := range process.members {
+				if member.config.Name == cfg.Name && member != old {
+					staged = member
+				}
+			}
+		}
+		h.mu.Unlock()
+		if staged != nil {
+			_ = staged.connection().Close("lose the transport before ready")
+		}
+	})
+	if _, err := h.Reload(t.Context()); err == nil || !strings.Contains(err.Error(), "send_ready_failed") {
+		t.Fatalf("ready failure = %v", err)
+	}
+	if h.exts[cfg.Name] != old {
+		t.Fatal("ready failure discarded the serving generation")
+	}
+	result, err := old.ext.Tools["probe"].Definition.Execute(t.Context(), "after-failed-ready", json.RawMessage(`{}`), nil)
+	if err != nil || result.Text() != "serving" {
+		t.Fatalf("serving tool = %v, %v", result, err)
+	}
+}
+
+func TestReloadReportsUnresolvedConfigsAndKeepsServingGenerations(t *testing.T) {
 	if _, err := exec.LookPath("node"); err != nil {
 		t.Fatalf("node is required for the extension fixture: %v", err)
 	}
@@ -34,8 +72,8 @@ func TestReloadReportsUnresolvedConfigsWithoutFailing(t *testing.T) {
 	t.Cleanup(func() { h.Shutdown("test done") })
 
 	loaded, err := h.Reload(t.Context())
-	if err != nil {
-		t.Fatalf("reload with an unresolved config failed: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "no factory") {
+		t.Fatalf("unresolved config error = %v", err)
 	}
 	if len(loaded) != 1 || loaded[0].Name != "ctx-mode" {
 		t.Fatalf("loaded = %#v, want the healthy sibling", loaded)
@@ -45,15 +83,14 @@ func TestReloadReportsUnresolvedConfigsWithoutFailing(t *testing.T) {
 		t.Fatalf("issues = %q, want [%q]", report.Issues, want)
 	}
 
-	// The healthy extension's source stops resolving: reload drops it and
-	// reports it instead of failing.
+	// Source resolution failure must not discard its serving generation.
 	configs = []ExtConfig{UnresolvedExtConfig(fixture, errors.New("broken")), bad}
 	loaded, err = h.Reload(t.Context())
-	if err != nil {
-		t.Fatalf("reload after the source broke failed: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "broken") {
+		t.Fatalf("source resolution error = %v", err)
 	}
-	if len(loaded) != 0 {
-		t.Fatalf("loaded = %#v, want none", loaded)
+	if len(loaded) != 1 || loaded[0].Name != "ctx-mode" {
+		t.Fatalf("loaded = %#v, want the serving generation", loaded)
 	}
 	if report := h.LastReloadReport(); len(report.Issues) != 2 || report.Issues[0] != fixture+": Failed to load extension: broken" {
 		t.Fatalf("issues = %q", report.Issues)
@@ -63,9 +100,6 @@ func TestReloadReportsUnresolvedConfigsWithoutFailing(t *testing.T) {
 	}
 }
 
-// Upstream reload loads each extension on its own: one that fails to build or
-// register is reported and not loaded, and every other extension loads. The
-// failing extension's previous runtime is not kept.
 func TestReloadIsolatesExtensionLoadFailures(t *testing.T) {
 	if _, err := exec.LookPath("node"); err != nil {
 		t.Fatalf("node is required for the extension fixture: %v", err)
@@ -89,35 +123,32 @@ func TestReloadIsolatesExtensionLoadFailures(t *testing.T) {
 
 	configs = []ExtConfig{healthy, {Name: "broken", Source: broken, Enabled: true}}
 	loaded, err := h.Reload(t.Context())
-	if err != nil {
-		t.Fatalf("reload with a failing extension failed as a whole: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "register boom") {
+		t.Fatalf("factory failure error = %v", err)
 	}
 	if len(loaded) != 1 || loaded[0].Name != "ctx-mode" {
 		t.Fatalf("loaded = %#v, want the healthy extension", loaded)
 	}
 	report := h.LastReloadReport()
-	if report.Error != "" || len(report.Issues) != 1 || !strings.HasPrefix(report.Issues[0], broken+": Failed to load extension: ") {
+	if report.Error == "" || len(report.Issues) != 1 || !strings.HasPrefix(report.Issues[0], broken+": Failed to load extension: ") {
 		t.Fatalf("report error = %q, issues = %q", report.Error, report.Issues)
 	}
 
-	// The healthy extension's source now fails to register: its previous
-	// runtime is stopped and the failure is reported.
+	// A replacement that cannot register leaves the previous generation serving.
 	configs = []ExtConfig{{Name: "ctx-mode", Source: broken, Enabled: true}}
 	loaded, err = h.Reload(t.Context())
-	if err != nil {
-		t.Fatalf("reload after the source broke failed as a whole: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "register boom") {
+		t.Fatalf("replacement failure error = %v", err)
 	}
-	if len(loaded) != 0 {
-		t.Fatalf("loaded = %#v, want the failed extension dropped", loaded)
+	if len(loaded) != 1 || loaded[0].Name != "ctx-mode" {
+		t.Fatalf("loaded = %#v, want the previous generation", loaded)
 	}
-	if report := h.LastReloadReport(); len(report.Issues) != 1 || !slices.Contains(report.Removed, "ctx-mode") {
+	if report := h.LastReloadReport(); len(report.Issues) != 1 || slices.Contains(report.Removed, "ctx-mode") {
 		t.Fatalf("issues = %q, removed = %q", report.Issues, report.Removed)
 	}
 }
 
-// A packed cell that fails because of one member must not take the other
-// members down: each member is loaded and reported on its own.
-func TestPackedCellFailureIsolatesFailingMember(t *testing.T) {
+func TestPackedCellStartupIsolatesFailuresButReloadRollsBackTheCell(t *testing.T) {
 	rootA := writePackedFactoryModule(t, "example.com/isolate/a", "iso-a", "tool_a")
 	rootB := writePackedFactoryModule(t, "example.com/isolate/b", "iso-b", "tool_b")
 	if err := os.WriteFile(filepath.Join(rootB, "ext.go"), []byte("package ext\n\nfunc Extension() { this does not compile }\n"), 0o644); err != nil {
@@ -150,13 +181,13 @@ func TestPackedCellFailureIsolatesFailingMember(t *testing.T) {
 	t.Cleanup(func() { reloadHost.Shutdown("test done") })
 	reloadHost.SetConfigLoader(func() ([]ExtConfig, error) { return configs, nil })
 	loaded, err := reloadHost.Reload(ctx)
-	if err != nil {
-		t.Fatalf("reload failed as a whole: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "go build") {
+		t.Fatalf("cell build error = %v", err)
 	}
-	if len(loaded) != 1 || loaded[0].Name != "iso-a" {
-		t.Fatalf("reloaded = %#v, want the healthy member", loaded)
+	if len(loaded) != 0 {
+		t.Fatalf("reloaded = %#v, want no partial cell", loaded)
 	}
-	if report := reloadHost.LastReloadReport(); len(report.Issues) != 1 || !strings.HasPrefix(report.Issues[0], rootB+": Failed to load extension: ") {
+	if report := reloadHost.LastReloadReport(); len(report.Issues) != 1 || !IsBuildFailureGroupMessage(report.Issues[0]) || !strings.Contains(report.Issues[0], "iso-a, iso-b") {
 		t.Fatalf("issues = %q", report.Issues)
 	}
 }
@@ -175,8 +206,8 @@ func TestUnresolvedConfigIsEnabledButNeverPlanned(t *testing.T) {
 	h := NewHost(t.TempDir())
 	t.Cleanup(func() { h.Shutdown("test done") })
 	h.SetConfigLoader(func() ([]ExtConfig, error) { return []ExtConfig{bad}, nil })
-	if _, err := h.Reload(t.Context()); err != nil {
-		t.Fatal(err)
+	if _, err := h.Reload(t.Context()); err == nil || !strings.Contains(err.Error(), "no factory") {
+		t.Fatalf("unresolved config error = %v", err)
 	}
 	if report := h.LastReloadReport(); len(report.Issues) != 1 || len(report.Cells) != 0 {
 		t.Fatalf("issues = %q, cells = %#v", report.Issues, report.Cells)

@@ -412,11 +412,12 @@ func (f *esmReloadFixture) write(name, content string) {
 }
 
 // reload reloads every extension and returns the reload's issues.
-func (f *esmReloadFixture) reload() []string {
+func (f *esmReloadFixture) reload(wantError ...bool) []string {
 	f.t.Helper()
 	reloaded, err := f.host.Reload(f.t.Context())
-	if err != nil {
-		f.t.Fatal(err)
+	expectError := len(wantError) != 0 && wantError[0]
+	if (err != nil) != expectError {
+		f.t.Fatalf("reload error = %v, want error = %v", err, expectError)
 	}
 	f.current = reloaded
 	return f.host.LastReloadReport().Issues
@@ -469,7 +470,7 @@ export default function (pi) {
 
 const esmSharedCounter = "let hits = 0;\nexport function hit() { return ++hits; }\nexport const SHARED = %q;\n"
 
-// A reload decides once which modules to evaluate again, from the source each module's current evaluation loaded: when one importer of an edited shared module fails to load and is fixed by the next reload, it joins the evaluation its sibling already shares (D93).
+// A failed cell keeps its handlers; a repaired importer publishes one shared evaluation.
 func TestHostReloadKeepsOneSharedEvaluationAcrossAFailedImporter(t *testing.T) {
 	t.Parallel()
 	shared := `import { hit, SHARED } from "./shared.mjs";`
@@ -482,11 +483,11 @@ func TestHostReloadKeepsOneSharedEvaluationAcrossAFailedImporter(t *testing.T) {
 
 	f.write("shared.mjs", fmt.Sprintf(esmSharedCounter, "s2"))
 	f.write("b.mjs", "export default function (pi) { pi.on(\"tool_call\", () => {\n")
-	if issues := f.reload(); len(issues) != 1 {
+	if issues := f.reload(true); len(issues) != 1 {
 		t.Fatalf("reload with b broken: issues = %q, want b's load failure", issues)
 	}
-	if got := f.emit(); got["a"][2] != "1" || got["a"][3] != "s2" {
-		t.Fatalf("after the edit of shared.mjs: a = %q, want the new shared module's first hit", got["a"])
+	if got := f.emit(); got["a"][3] != "s1" || got["b"][3] != "s1" {
+		t.Fatalf("failed cell replaced its serving handlers: %q", got)
 	}
 
 	f.write("b.mjs", strings.ReplaceAll(esmLogger("b", shared, "hit(), SHARED"), "MARKER", strconv.Quote(f.marker)))
@@ -496,8 +497,8 @@ func TestHostReloadKeepsOneSharedEvaluationAcrossAFailedImporter(t *testing.T) {
 	got := f.emit()
 	pair := []string{got["a"][2], got["b"][2]}
 	slices.Sort(pair)
-	if strings.Join(pair, ",") != "2,3" || got["b"][3] != "s2" {
-		t.Fatalf("after fixing b: %q, want b sharing a's evaluation of shared.mjs at hits 2,3", got)
+	if strings.Join(pair, ",") != "1,2" || got["a"][3] != "s2" || got["b"][3] != "s2" {
+		t.Fatalf("after fixing b: %q, want one shared evaluation at hits 1,2", got)
 	}
 }
 

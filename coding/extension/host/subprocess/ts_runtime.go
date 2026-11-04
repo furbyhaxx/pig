@@ -200,6 +200,9 @@ func (e *errStartOnNextRuntime) Unwrap() error { return e.err }
 // start failure code, a module that failed to evaluate or exported no factory before its factory was called, a Node cell that exited before admitting a member or whose admission write failed, or a
 // packed cell whose every failed member failed so.
 func isStartFailure(err error) bool {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
 	if _, ok := errors.AsType[*admissionWriteError](err); ok || errors.Is(err, errNodeCellExitedBeforeAdmission) {
 		return true
 	}

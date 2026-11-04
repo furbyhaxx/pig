@@ -257,11 +257,9 @@ func TestReloadRefreshesRealSubprocessShortcuts(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(source, "main.ts"), []byte("export default function register(pi) { pi.registerShortcut(\"ctrl+shift+right\", { handler: () => {\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	// Like upstream reload, an extension whose replacement fails to load is
-	// not kept: its shortcut goes away and the failure is reported.
 	reloaded, err = host.Reload(ctx)
-	if err != nil {
-		t.Fatalf("reload failed as a whole on one failing extension: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "Failed to load extension") {
+		t.Fatalf("reload error = %v, want the replacement failure", err)
 	}
 	if report := host.LastReloadReport(); len(report.Issues) != 1 || !strings.Contains(report.Issues[0], "Failed to load extension: ") {
 		t.Fatalf("reload issues = %q, want the failing extension", report.Issues)
@@ -269,9 +267,10 @@ func TestReloadRefreshesRealSubprocessShortcuts(t *testing.T) {
 	if errs := m.replaceExtensionRunner(reloaded); len(errs) != 0 {
 		t.Fatalf("replace after failed extension = %v", errs)
 	}
-	if m.notifyTerminalInput("\x1b[1;6C") {
-		t.Fatal("failed extension's previous shortcut is still consumed")
+	if !m.notifyTerminalInput("\x1b[1;6C") {
+		t.Fatal("failed replacement discarded the serving shortcut")
 	}
+	waitFileContains(t, output, "old\nnew\nnew")
 	writeNodeShortcutExtension(t, source, "fixed")
 	reloaded, err = host.Reload(ctx)
 	if err != nil {
@@ -283,7 +282,7 @@ func TestReloadRefreshesRealSubprocessShortcuts(t *testing.T) {
 	if !m.notifyTerminalInput("\x1b[1;6C") {
 		t.Fatal("repaired extension shortcut was not consumed")
 	}
-	waitFileContains(t, output, "old\nnew\nfixed")
+	waitFileContains(t, output, "old\nnew\nnew\nfixed")
 
 	host.SetConfigLoader(func() ([]subprocess.ExtConfig, error) { return nil, nil })
 	reloaded, err = host.Reload(ctx)

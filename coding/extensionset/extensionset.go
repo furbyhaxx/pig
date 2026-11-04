@@ -20,6 +20,8 @@ type LoadError struct{ Path, Error string }
 // Loader runs the extension factories of one cwd.
 type Loader struct {
 	CWD string
+	// Previous supplies serving generations retained when a replacement factory fails.
+	Previous []extension.Extension
 	// Inline are the extensionFactories: built-in and inline extensions.
 	Inline []extension.InlineExtension
 	// Runtime is the runtime the factories register against. Nil: the loader creates one, which factoryRuntime returns.
@@ -66,6 +68,9 @@ func (l *Loader) LoadInline() ([]extension.Extension, []LoadError) {
 		ext, err := l.runExtensionFactory(factory, name, path, icodingagent.CreateSyntheticSourceInfo(path, icodingagent.SyntheticSourceInfoOptions{Source: icodingagent.SyntheticPathSource(path)}))
 		if err != nil {
 			errs = append(errs, LoadError{Path: path, Error: err.Error()})
+			if ext.Path != "" {
+				extensions = append(extensions, ext)
+			}
 			continue
 		}
 		ext.Hidden = isNamed && named.Hidden
@@ -98,6 +103,9 @@ func (l *Loader) LoadBuiltin(paths []string) ([]extension.Extension, []LoadError
 		ext, err := l.runExtensionFactory(builtin.Factory, builtin.Name, path, icodingagent.CreateSyntheticSourceInfo(path, icodingagent.SyntheticSourceInfoOptions{Source: icodingagent.SyntheticPathSource(path)}))
 		if err != nil {
 			errs = append(errs, LoadError{Path: path, Error: err.Error()})
+			if ext.Path != "" {
+				extensions = append(extensions, ext)
+			}
 			continue
 		}
 		ext.Hidden = true
@@ -113,6 +121,11 @@ func (l *Loader) LoadBuiltin(paths []string) ([]extension.Extension, []LoadError
 func (l *Loader) runExtensionFactory(factory extension.ExtensionFactory, name, path string, info icodingagent.PiSourceInfo) (extension.Extension, error) {
 	ext, err := factoryload.LoadExtensionFromFactory(factory, l.CWD, l.bus(), l.factoryRuntime(), path, factoryload.WithSourceInfo(info))
 	if err != nil {
+		for _, previous := range l.Previous {
+			if previous.Path == path {
+				return previous, err
+			}
+		}
 		return extension.Extension{}, err
 	}
 	ext.Name, ext.Path, ext.ResolvedPath = name, path, path

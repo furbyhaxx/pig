@@ -460,6 +460,9 @@ func (b *cliRuntimeBuilder) buildResources(ctx context.Context, in cliBuildInput
 		// A host created for /reload has loaded nothing; binding it applies what a reload registers.
 		registrationDiagnostics = append(registrationDiagnostics, flushExtensionHostRegistrations(build.Host, registry)...)
 	}
+	if build.Host != nil {
+		build.Host.SetReloadHandshakeTimeoutFunc(services.SettingsManager().GetExtensionsReloadHandshakeTimeout)
+	}
 	// An extension's createAgentSession builds a child over this build's model runtime, in every mode.
 	BindChildSessions(build.Bridge, services)
 	if in.StartupExtensions == nil {

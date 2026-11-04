@@ -16,6 +16,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -337,6 +338,7 @@ type settingsWire struct {
 	MaskSecretInput             *bool                   `json:"maskSecretInput,omitempty"`
 	ExtensionsAutoUpgrade       *bool                   `json:"extensionsAutoUpgrade,omitempty"`
 	ExtensionsTypescriptRuntime *string                 `json:"extensionsTypescriptRuntime,omitempty"`
+	ExtensionsReloadHandshakeMs *int                    `json:"extensionsReloadHandshakeMs,omitempty"`
 	Theme                       *string                 `json:"theme,omitempty"`
 	Compaction                  *CompactionSettingsJSON `json:"compaction,omitempty"`
 	BranchSummary               *branchSummaryWire      `json:"branchSummary,omitempty"`
@@ -638,6 +640,9 @@ type Settings struct {
 	// ExtensionsTypescriptRuntime names the runtime that runs TypeScript and JavaScript extensions: "node" (the default) or a runtime an extension or Piglet installed into the runtime slot. PIG_TS_RUNTIME overrides it. Global setting only.
 	// pig additive (D19): Pi runs extensions inside its own Node process. Pi's `extensions` setting is an array, so the key cannot nest under it.
 	ExtensionsTypescriptRuntime *string `json:"extensionsTypescriptRuntime,omitempty"`
+
+	// ExtensionsReloadHandshakeMs bounds reload connection and registration; nil means 15000 milliseconds. Global setting only.
+	ExtensionsReloadHandshakeMs *int `json:"extensionsReloadHandshakeMs,omitempty"`
 
 	// CollapseChangelog shows condensed startup update notices. The /changelog command always shows every released entry.
 	CollapseChangelog    bool `json:"collapseChangelog,omitempty"`
@@ -1020,6 +1025,7 @@ func cloneSettings(s Settings) Settings {
 		MaskSecretInput:                cloneBoolPtr(s.MaskSecretInput),
 		ExtensionsAutoUpgrade:          cloneBoolPtr(s.ExtensionsAutoUpgrade),
 		ExtensionsTypescriptRuntime:    cloneStringPtr(s.ExtensionsTypescriptRuntime),
+		ExtensionsReloadHandshakeMs:    cloneIntPtr(s.ExtensionsReloadHandshakeMs),
 		CollapseChangelog:              s.CollapseChangelog,
 		collapseChangelogSet:           s.collapseChangelogSet,
 		ShowCacheMissNotices:           s.ShowCacheMissNotices,
@@ -1083,6 +1089,7 @@ func (s Settings) MarshalJSON() ([]byte, error) {
 		MaskSecretInput:             s.MaskSecretInput,
 		ExtensionsAutoUpgrade:       s.ExtensionsAutoUpgrade,
 		ExtensionsTypescriptRuntime: s.ExtensionsTypescriptRuntime,
+		ExtensionsReloadHandshakeMs: s.ExtensionsReloadHandshakeMs,
 		Theme:                       s.themeSetting(),
 		Compaction:                  s.Compaction,
 		Retry:                       s.Retry,
@@ -1247,6 +1254,7 @@ func (s *Settings) UnmarshalJSON(data []byte) error {
 	s.MaskSecretInput = w.MaskSecretInput
 	s.ExtensionsAutoUpgrade = w.ExtensionsAutoUpgrade
 	s.ExtensionsTypescriptRuntime = w.ExtensionsTypescriptRuntime
+	s.ExtensionsReloadHandshakeMs = w.ExtensionsReloadHandshakeMs
 	s.Theme = ""
 	s.themeEmpty = w.Theme != nil && *w.Theme == ""
 	s.themeNonString = themePresent && !themeIsString
@@ -3165,6 +3173,18 @@ func (sm *SettingsManager) GetExtensionsTypescriptRuntime() string {
 		return *runtime
 	}
 	return ""
+}
+
+// GetExtensionsReloadHandshakeTimeout returns the global reload budget, rejecting non-positive or overflowing durations.
+func (sm *SettingsManager) GetExtensionsReloadHandshakeTimeout() (time.Duration, error) {
+	ms := int(extension.DefaultReloadHandshakeTimeout / time.Millisecond)
+	if value := sm.GetGlobalSettings().ExtensionsReloadHandshakeMs; value != nil {
+		ms = *value
+	}
+	if ms <= 0 || int64(ms) > math.MaxInt64/int64(time.Millisecond) {
+		return 0, fmt.Errorf("extensionsReloadHandshakeMs must be a positive integer no greater than %d", math.MaxInt64/int64(time.Millisecond))
+	}
+	return time.Duration(ms) * time.Millisecond, nil
 }
 
 // GetExtensionsAutoUpgrade reports whether the global settings turn on the automatic Go extension upgrade. It is off unless set, and a project file cannot turn it on.

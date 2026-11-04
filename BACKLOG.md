@@ -1,1 +1,2 @@
 - B-0001 feature P3 — Native verification of fork release targets → .project/backlog/B-0001-native-release-verification.md
+- B-0004 bug P1 — Resolve remaining host-gap full-check failures → .project/backlog/B-0004-host-gap-full-gate-failures.md

@@ -50208,7 +50208,7 @@
         "call:ai/compat.go#GetAPIProvider"
       ],
       "evidence": [
-        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsAPIProvidersBeforeTheExtensionsLoad",
+        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsPriorAPIProvidersAndKeepsLoadRegistrations",
         "test:ai/compat_registry_test.go#TestCompatCompleteDispatchesThroughTheRegistryAndFillsTheEnvironmentKey",
         "test:ai/compat_registry_test.go#TestCompatDispatchErrors"
       ]
@@ -50227,10 +50227,10 @@
         "shape": "complete"
       },
       "production": [
-        "call:ai/compat.go#registerAPIProviderLocked"
+        "call:ai/compat.go#ResetAPIProvidersKeepingChanges"
       ],
       "evidence": [
-        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsAPIProvidersBeforeTheExtensionsLoad",
+        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsPriorAPIProvidersAndKeepsLoadRegistrations",
         "test:ai/compat_registry_test.go#TestCompatCompleteDispatchesThroughTheRegistryAndFillsTheEnvironmentKey",
         "test:ai/compat_registry_test.go#TestCompatDispatchErrors"
       ]
@@ -59332,7 +59332,7 @@
         "call:ai/compat.go#GetAPIProvider"
       ],
       "evidence": [
-        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsAPIProvidersBeforeTheExtensionsLoad",
+        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsPriorAPIProvidersAndKeepsLoadRegistrations",
         "test:ai/compat_registry_test.go#TestCompatDispatchErrors",
         "test:ai/compat_registry_test.go#TestCompatRegistryOrderReplacementAndReset"
       ]
@@ -59354,7 +59354,7 @@
         "call:ai/compat.go#GetAPIProvider"
       ],
       "evidence": [
-        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsAPIProvidersBeforeTheExtensionsLoad",
+        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsPriorAPIProvidersAndKeepsLoadRegistrations",
         "test:ai/compat_registry_test.go#TestCompatDispatchErrors",
         "test:ai/compat_registry_test.go#TestCompatRegistryOrderReplacementAndReset"
       ]
@@ -59369,15 +59369,16 @@
       ],
       "layers": {
         "behavior": "complete",
-        "production": "public-api-tested",
+        "production": "complete",
         "shape": "complete"
       },
       "production": [
-        "public-api:ai/compat.go#GetAPIProviders"
+        "call:ai/compat.go#GetAPIProviders"
       ],
       "evidence": [
         "test:ai/compat_registry_test.go#TestCompatRegistryOrderReplacementAndReset",
-        "test:ai/compat_registry_test.go#TestFirstRegisterAPIProviderOverridesTheBuiltInForCatalogModels"
+        "test:ai/compat_registry_test.go#TestFirstRegisterAPIProviderOverridesTheBuiltInForCatalogModels",
+        "test:ai/compat_registry_test.go#TestResetAPIProvidersKeepingChanges"
       ]
     },
     {
@@ -59390,15 +59391,16 @@
       ],
       "layers": {
         "behavior": "complete",
-        "production": "public-api-tested",
+        "production": "complete",
         "shape": "complete"
       },
       "production": [
-        "public-api:ai/compat.go#GetAPIProviders"
+        "call:ai/compat.go#GetAPIProviders"
       ],
       "evidence": [
         "test:ai/compat_registry_test.go#TestCompatRegistryOrderReplacementAndReset",
-        "test:ai/compat_registry_test.go#TestFirstRegisterAPIProviderOverridesTheBuiltInForCatalogModels"
+        "test:ai/compat_registry_test.go#TestFirstRegisterAPIProviderOverridesTheBuiltInForCatalogModels",
+        "test:ai/compat_registry_test.go#TestResetAPIProvidersKeepingChanges"
       ]
     },
     {
@@ -75513,7 +75515,7 @@
         "public-api:ai/compat.go#RegisterAPIProvider"
       ],
       "evidence": [
-        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsAPIProvidersBeforeTheExtensionsLoad",
+        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsPriorAPIProvidersAndKeepsLoadRegistrations",
         "test:ai/compat_registry_test.go#TestCompatCompleteDispatchesThroughTheRegistryAndFillsTheEnvironmentKey",
         "test:ai/compat_registry_test.go#TestCompatDispatchErrors"
       ]
@@ -75535,7 +75537,7 @@
         "public-api:ai/compat.go#RegisterAPIProvider"
       ],
       "evidence": [
-        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsAPIProvidersBeforeTheExtensionsLoad",
+        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsPriorAPIProvidersAndKeepsLoadRegistrations",
         "test:ai/compat_registry_test.go#TestCompatCompleteDispatchesThroughTheRegistryAndFillsTheEnvironmentKey",
         "test:ai/compat_registry_test.go#TestCompatDispatchErrors"
       ]
@@ -75984,14 +75986,14 @@
       ],
       "layers": {
         "behavior": "complete",
-        "production": "complete",
+        "production": "public-api-tested",
         "shape": "complete"
       },
       "production": [
-        "call:ai/compat.go#ResetAPIProviders"
+        "public-api:ai/compat.go#ResetAPIProviders"
       ],
       "evidence": [
-        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsAPIProvidersBeforeTheExtensionsLoad",
+        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsPriorAPIProvidersAndKeepsLoadRegistrations",
         "test:ai/compat_registry_test.go#TestCompatRegistryOrderReplacementAndReset",
         "test:ai/compat_registry_test.go#TestFirstRegisterAPIProviderOverridesTheBuiltInForCatalogModels"
       ]
@@ -76006,14 +76008,14 @@
       ],
       "layers": {
         "behavior": "complete",
-        "production": "complete",
+        "production": "public-api-tested",
         "shape": "complete"
       },
       "production": [
-        "call:ai/compat.go#ResetAPIProviders"
+        "public-api:ai/compat.go#ResetAPIProviders"
       ],
       "evidence": [
-        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsAPIProvidersBeforeTheExtensionsLoad",
+        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsPriorAPIProvidersAndKeepsLoadRegistrations",
         "test:ai/compat_registry_test.go#TestCompatRegistryOrderReplacementAndReset",
         "test:ai/compat_registry_test.go#TestFirstRegisterAPIProviderOverridesTheBuiltInForCatalogModels"
       ]
@@ -80169,7 +80171,8 @@
         "public-api:ai/compat.go#UnregisterAPIProviders"
       ],
       "evidence": [
-        "test:ai/compat_registry_test.go#TestCompatRegistryOrderReplacementAndReset"
+        "test:ai/compat_registry_test.go#TestCompatRegistryOrderReplacementAndReset",
+        "test:ai/compat_registry_test.go#TestResetAPIProvidersKeepingChanges"
       ]
     },
     {
@@ -80189,7 +80192,8 @@
         "public-api:ai/compat.go#UnregisterAPIProviders"
       ],
       "evidence": [
-        "test:ai/compat_registry_test.go#TestCompatRegistryOrderReplacementAndReset"
+        "test:ai/compat_registry_test.go#TestCompatRegistryOrderReplacementAndReset",
+        "test:ai/compat_registry_test.go#TestResetAPIProvidersKeepingChanges"
       ]
     },
     {
@@ -131619,7 +131623,7 @@
       "evidence": [
         "test:coding/builtin_tool_definitions_oracle_test.go#TestSessionRegistersBuiltInToolDefinitionsAsPiDoes",
         "test:test/extension-conformance/dynamic_tools_test.go#TestDynamicToolRegistrationAcrossSDKs",
-        "test:coding/session_strict_tools_port_test.go#TestBuiltinStrictOptOutPort"
+        "test:coding/session_reload_context_test.go#TestSessionReloadPublishesPartialCellSuccessAndReturnsTheFailure"
       ]
     },
     {
@@ -131641,7 +131645,7 @@
       "evidence": [
         "test:coding/builtin_tool_definitions_oracle_test.go#TestSessionRegistersBuiltInToolDefinitionsAsPiDoes",
         "test:test/extension-conformance/dynamic_tools_test.go#TestDynamicToolRegistrationAcrossSDKs",
-        "test:coding/session_strict_tools_port_test.go#TestBuiltinStrictOptOutPort"
+        "test:coding/session_reload_context_test.go#TestSessionReloadPublishesPartialCellSuccessAndReturnsTheFailure"
       ]
     },
     {
@@ -132172,7 +132176,7 @@
       "evidence": [
         "test:coding/session_bind_extensions_upstream_test.go#TestReloadReplaysSessionStartOnlyForRealBindings",
         "test:coding/session_reload_upstream_test.go#TestSessionReloadRebuildsTheRunnerFromTheResourceLoader",
-        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsAPIProvidersBeforeTheExtensionsLoad"
+        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsPriorAPIProvidersAndKeepsLoadRegistrations"
       ],
       "asyncContract": "An awaited Promise is a blocking Go call that returns the value or error; AbortSignal is the context.Context argument; no detached goroutine."
     },
@@ -132195,7 +132199,7 @@
       "evidence": [
         "test:coding/session_bind_extensions_upstream_test.go#TestReloadReplaysSessionStartOnlyForRealBindings",
         "test:coding/session_reload_upstream_test.go#TestSessionReloadRebuildsTheRunnerFromTheResourceLoader",
-        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsAPIProvidersBeforeTheExtensionsLoad"
+        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsPriorAPIProvidersAndKeepsLoadRegistrations"
       ],
       "asyncContract": "An awaited Promise is a blocking Go call that returns the value or error; AbortSignal is the context.Context argument; no detached goroutine."
     },
@@ -168816,7 +168820,7 @@
       ],
       "evidence": [
         "test:coding/session_reload_upstream_test.go#TestSessionReloadRebuildsTheRunnerFromTheResourceLoader",
-        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsAPIProvidersBeforeTheExtensionsLoad",
+        "test:coding/session_reload_upstream_test.go#TestSessionReloadResetsPriorAPIProvidersAndKeepsLoadRegistrations",
         "test:coding/resource_loader_extension_files_test.go#TestDefaultResourceLoaderExtensionsOutliveTheContextOfTheReload"
       ]
     },

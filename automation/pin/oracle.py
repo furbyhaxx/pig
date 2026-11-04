@@ -267,11 +267,16 @@ def closure_workspaces(source: Path, root: str | None = None) -> list[str]:
 
 
 def pack(source: Path, destination: Path, root: str | None = None) -> dict[str, Path]:
-    """Pack each workspace package the oracle installs (those `root` needs).
+    """Pack each workspace package the oracle installs (those `root` needs), requiring the Node runtime in `.node-version`.
 
     npm pack records each file's mode, and Windows has no execute bit: the build's chmod +x (coding-agent's dist/cli.js and
     bundle launchers) made the packs, and so the frozen integrity, differ by OS. Each package is packed from a copy whose
     files are all 0644, so every OS packs the same bytes; npm marks bin targets executable when it installs them."""
+    expected_node = "v" + (ROOT / ".node-version").read_text().strip()
+    node = shutil.which("node") or "node"
+    actual_node = subprocess.run([node, "--version"], check=True, capture_output=True, text=True, timeout=30).stdout.strip()
+    if actual_node != expected_node:
+        raise PinError(f"Node {actual_node} cannot pack the frozen oracle; use Node {expected_node} from .node-version (archive bytes depend on the runtime)")
     workspaces = workspace_names(source)
     shutil.rmtree(destination, ignore_errors=True)
     destination.mkdir(parents=True)

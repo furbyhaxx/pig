@@ -143,7 +143,7 @@ func TestReplacedGenerationCallsFailWithThePiStaleMessage(t *testing.T) {
 			old := withConn(&managedExt{config: ExtConfig{Name: "busy"}, host: h}, conn)
 			if node {
 				old.packedProcess = &packedProcessState{node: true, key: "cell", generation: 1}
-				h.packedCellGeneration = map[string]int{"cell": 2}
+				h.packedCellActiveGeneration = map[string]int{"cell": 2}
 			}
 			h.exts["busy"] = old
 			old.commands.begin()

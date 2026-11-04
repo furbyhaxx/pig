@@ -4,6 +4,7 @@ package coding
 
 import (
 	"context"
+	"errors"
 	"maps"
 	"path/filepath"
 	"slices"
@@ -167,7 +168,7 @@ func (l *DefaultResourceLoader) loadExtensions(ctx context.Context, request Exte
 // loadFinalExtensions loads the extension set of a reload, applies ExtensionsOverride and gives an extension that has no source info the one its path yields.
 func (l *DefaultResourceLoader) loadFinalExtensions(ctx context.Context, preTrust *LoadExtensionsResult) (LoadExtensionsResult, error) {
 	result, err := l.loadExtensions(ctx, ExtensionLoadRequest{PreTrust: preTrust})
-	if err != nil {
+	if err != nil && !errors.Is(err, extension.ErrReloadPartiallyApplied) {
 		return LoadExtensionsResult{}, err
 	}
 	if l.options.ExtensionsOverride != nil {
@@ -196,7 +197,7 @@ func (l *DefaultResourceLoader) loadFinalExtensions(ctx context.Context, preTrus
 			ext.Tools[name] = tool
 		}
 	}
-	return result, nil
+	return result, err
 }
 
 func (l *DefaultResourceLoader) loadThemes(resolved []icodingagent.ResolvedResource, metadata *pathMetadataIndex, sources *extensionSources) (ThemesResult, []string, error) {

@@ -364,6 +364,61 @@ func TestDefaultResourceLoaderOmitsAReplacedBuiltin(t *testing.T) {
 // (resource-loader.ts:765, preTrustExtensions?.runtime): every reload starts from a new runtime, so a factory's registrations from an earlier
 // reload are not carried into the next one.
 // mutation-checked: keeping the previous reload's runtime fails it.
+func TestDefaultResourceLoaderPublishesHealthyFactoriesAndKeepsFailedGenerations(t *testing.T) {
+	for _, supplied := range []bool{false, true} {
+		t.Run(strconv.FormatBool(supplied), func(t *testing.T) {
+			root := t.TempDir()
+			var runtime *extension.ExtensionRuntime
+			if supplied {
+				runtime = extension.CreateExtensionRuntime()
+			}
+			broken := false
+			generation := 0
+			loader := NewDefaultResourceLoader(DefaultResourceLoaderOptions{CWD: root, AgentDir: filepath.Join(root, "agent"), NoExtensions: true, NoSkills: true, NoThemes: true, NoPromptTemplates: true, NoContextFiles: true, Runtime: runtime, ExtensionFactories: []extension.InlineExtension{
+				extension.NamedInlineExtension{Name: "healthy", Factory: func(pi extension.API) error {
+					generation++
+					return commandFactory("healthy_"+strconv.Itoa(generation), nil)(pi)
+				}},
+				extension.NamedInlineExtension{Name: "failed", Factory: func(pi extension.API) error {
+					if broken {
+						return errors.New("replacement failed")
+					}
+					return commandFactory("serving", nil)(pi)
+				}},
+			}})
+			t.Cleanup(loader.Close)
+			if err := loader.ReloadWith(t.Context()); err != nil {
+				t.Fatal(err)
+			}
+			first := loader.GetExtensions()
+			host := loader.files.host
+			broken = true
+			if err := loader.ReloadWith(t.Context()); !errors.Is(err, extension.ErrReloadPartiallyApplied) {
+				t.Fatalf("reload error = %v, want partial publication", err)
+			}
+			loaded := loader.GetExtensions()
+			var commands []string
+			for _, ext := range loaded.Extensions {
+				for _, command := range ext.RegisteredCommands() {
+					commands = append(commands, command.Name)
+				}
+			}
+			if !slices.Equal(commands, []string{"healthy_2", "serving"}) {
+				t.Fatalf("commands = %v", commands)
+			}
+			if host == nil || loader.files.host != host {
+				t.Fatal("reload did not retain its Host")
+			}
+			if supplied && loaded.Runtime != runtime {
+				t.Fatal("caller-supplied runtime ownership changed")
+			}
+			if !supplied && loaded.Runtime == first.Runtime {
+				t.Fatal("reload reused the previous aggregate runtime snapshot")
+			}
+		})
+	}
+}
+
 func TestDefaultResourceLoaderEachReloadStartsANewRuntime(t *testing.T) {
 	loader, _ := extensionFileLoaderFixture(t, DefaultResourceLoaderOptions{NoExtensions: true, ExtensionFactories: []extension.InlineExtension{commandFactory("inline", nil)}})
 	if err := loader.Reload(); err != nil {

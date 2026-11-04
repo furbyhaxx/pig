@@ -9,9 +9,6 @@ import (
 	"testing"
 )
 
-// TestReload_MixedCellFailureIsolatesFailingExtension verifies that when one
-// cell fails to stage, the other cells still reload and the failure is
-// reported, as upstream reload loads each extension on its own.
 func TestReload_MixedCellFailureIsolatesFailingExtension(t *testing.T) {
 	rootA := writePackedFactoryModule(t, "example.com/mixfail/a", "mix-a", "tool_a")
 	rootB := writePackedFactoryModule(t, "example.com/mixfail/b", "mix-b", "tool_b")
@@ -43,8 +40,8 @@ func TestReload_MixedCellFailureIsolatesFailingExtension(t *testing.T) {
 	bad = append(bad, ExtConfig{Name: "ghost", Enabled: true, Path: ghostPath})
 	h.SetConfigLoader(func() ([]ExtConfig, error) { return bad, nil })
 
-	if _, err := h.Reload(ctx); err != nil {
-		t.Fatalf("reload failed as a whole on one failing extension: %v", err)
+	if _, err := h.Reload(ctx); err == nil || !strings.Contains(err.Error(), ghostPath) {
+		t.Fatalf("missing binary error = %v", err)
 	}
 
 	h.mu.Lock()
@@ -69,8 +66,8 @@ func TestReload_MixedCellFailureIsolatesFailingExtension(t *testing.T) {
 	if rep == nil {
 		t.Fatal("nil LastReloadReport after reload")
 	}
-	if rep.Error != "" {
-		t.Errorf("ReloadReport.Error = %q, want empty", rep.Error)
+	if rep.Error == "" {
+		t.Error("ReloadReport.Error omitted the cell failure")
 	}
 	if len(rep.Issues) != 1 || !strings.HasPrefix(rep.Issues[0], ghostPath+": Failed to load extension: ") {
 		t.Errorf("ReloadReport.Issues = %q, want the ghost failure", rep.Issues)

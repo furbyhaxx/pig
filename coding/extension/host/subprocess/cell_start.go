@@ -20,6 +20,11 @@ func nodeReadyDeferred(ctx context.Context) bool {
 	return deferred
 }
 
+// WithRuntimeParent separates an admission's cancellation from the lifetime of its processes.
+func WithRuntimeParent(ctx, parent context.Context) context.Context {
+	return context.WithValue(ctx, runtimeParentKey{}, parent)
+}
+
 func runtimeParent(ctx context.Context) context.Context {
 	if parent, ok := ctx.Value(runtimeParentKey{}).(context.Context); ok {
 		return parent

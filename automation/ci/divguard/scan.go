@@ -243,7 +243,7 @@ func (fc *fileCtx) markerLines(pos token.Pos, stack []ast.Node) []int {
 }
 
 // hit builds a Hit at pos. It reports false when a recorded divergence
-// marker (`// pig divergence (D<N>)` or `// pig additive (D<N>)`) sits on
+// or fork marker citing an existing spec sits on
 // the flagged line, directly above it, or directly above an enclosing
 // statement or declaration (stack holds pos's ancestors, outermost first).
 // For every check but magic-literal, which also verifies the value, an
@@ -251,7 +251,7 @@ func (fc *fileCtx) markerLines(pos token.Pos, stack []ast.Node) []int {
 // when the mirror file exists and contains the symbol.
 func (fc *fileCtx) hit(check string, pos token.Pos, stack []ast.Node, msg string) (Hit, bool) {
 	lines := fc.markerLines(pos, stack)
-	if fc.dnMarked(lines...) || (check != magicLiteralName && fc.refAllowed(lines)) {
+	if fc.forkMarked(lines) || fc.dnMarked(lines...) || (check != magicLiteralName && fc.refAllowed(lines)) {
 		return Hit{}, false
 	}
 	ln := fc.line(pos)
@@ -289,6 +289,35 @@ func (fc *fileCtx) commentsNear(ln int) []string {
 		}
 	}
 	return out
+}
+
+var forkMarkerRe = regexp.MustCompile(`fork \((SPEC-([0-9]{4}))\)(.*)$`)
+
+func (fc *fileCtx) forkMarked(lines []int) bool {
+	for _, ln := range lines {
+		for _, c := range fc.commentsNear(ln) {
+			for _, m := range forkMarkerRe.FindAllStringSubmatch(c, -1) {
+				reason, ok := strings.CutPrefix(m[3], ":")
+				if !ok || strings.TrimSpace(reason) == "" {
+					fc.problem(fmt.Sprintf("%s:%d: %s marker needs a reason after ':'", fc.Rel, ln, m[1]))
+					continue
+				}
+				paths, err := filepath.Glob(filepath.Join(fc.Env.Root, ".project", "specs", m[2]+"-*.md"))
+				if err != nil {
+					fc.problem(fmt.Sprintf("%s:%d: resolve %s: %v", fc.Rel, ln, m[1], err))
+					continue
+				}
+				for _, path := range paths {
+					info, err := os.Stat(path)
+					if err == nil && info.Mode().IsRegular() {
+						return true
+					}
+				}
+				fc.problem(fmt.Sprintf("%s:%d: marker names %s, which has no .project/specs/%s-*.md file", fc.Rel, ln, m[1], m[2]))
+			}
+		}
+	}
+	return false
 }
 
 var dnMarkerRe = regexp.MustCompile(`pig (?:divergence|additive) \((D[0-9]+)\)`)

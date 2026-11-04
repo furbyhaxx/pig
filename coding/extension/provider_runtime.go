@@ -34,10 +34,14 @@ type ExtensionRuntime struct {
 	// upstream: types.ts ExtensionRuntimeState.flagValues
 	FlagValues map[string]any
 
+	*providerRuntimeState
+	staleMessage          string
+	eventBusUnsubscribers []*eventBusSubscription
+}
+
+type providerRuntimeState struct {
 	mu                           sync.Mutex
 	pendingNativeProviders       []PendingNativeProviderRegistration
-	staleMessage                 string
-	eventBusUnsubscribers        []*eventBusSubscription
 	factoryAPIs                  map[string]func(message string)
 	nativeBound                  bool
 	pendingProviderRegistrations *providerRegistrationQueue
@@ -83,7 +87,7 @@ func (r *ExtensionRuntime) ReportError(err *ExtensionError) bool {
 
 // CreateExtensionRuntime creates the pre-bind provider registration state.
 func CreateExtensionRuntime() *ExtensionRuntime {
-	return &ExtensionRuntime{FlagValues: map[string]any{}, pendingProviderRegistrations: &providerRegistrationQueue{}, pendingVirtualModelRegistrations: &virtualModelRegistrationQueue{}, mcpServers: NewMcpServerRegistry()}
+	return &ExtensionRuntime{FlagValues: map[string]any{}, providerRuntimeState: &providerRuntimeState{factoryAPIs: map[string]func(string){}, pendingProviderRegistrations: &providerRegistrationQueue{}, pendingVirtualModelRegistrations: &virtualModelRegistrationQueue{}, mcpServers: NewMcpServerRegistry()}}
 }
 
 // PendingProviderRegistrations returns the current queue in registration order. Repeated provider names remain separate entries.

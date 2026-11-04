@@ -54,7 +54,7 @@ func (h *Host) acceptsNodeGeneration(me *managedExt) bool {
 	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	return !p.stopping.Load() && h.packedCellGeneration[p.key] == p.generation
+	return !p.stopping.Load() && h.packedCellActiveGeneration[p.key] == p.generation
 }
 
 // planCells preserves explicit isolation and applies host-owned crash partitions only to shareable Node factories. transitionMu owns the diagnostic maps.
@@ -115,7 +115,7 @@ func (h *Host) recoverNodeProcess(failed *packedProcessState, reason string) {
 	h.transitionMu.Lock()
 	defer h.transitionMu.Unlock()
 	h.mu.Lock()
-	if h.shuttingDown.Load() || failed.stopping.Load() || h.packedCellGeneration[failed.key] != failed.generation {
+	if h.shuttingDown.Load() || failed.stopping.Load() || h.packedCellActiveGeneration[failed.key] != failed.generation {
 		h.mu.Unlock()
 		return
 	}
@@ -123,7 +123,7 @@ func (h *Host) recoverNodeProcess(failed *packedProcessState, reason string) {
 	configured := map[string]ExtConfig{}
 	var members []*managedExt
 	for key, p := range h.packedProcesses {
-		if !p.node || p.stopping.Load() || h.packedCellGeneration[key] != p.generation {
+		if !p.node || p.stopping.Load() || h.packedCellActiveGeneration[key] != p.generation {
 			continue
 		}
 		processes = append(processes, p)
@@ -135,7 +135,7 @@ func (h *Host) recoverNodeProcess(failed *packedProcessState, reason string) {
 	slices.SortFunc(members, func(a, b *managedExt) int { return h.loadOrder[a.config.Name] - h.loadOrder[b.config.Name] })
 	// Invalidate every old process before any replacement may register. Old sockets retain no UI/provider authority.
 	for _, p := range processes {
-		h.packedCellGeneration[p.key]++
+		h.advancePackedCellGenerationLocked(p.key)
 		p.stopping.Store(true)
 	}
 	for _, me := range members {

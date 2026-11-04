@@ -342,10 +342,10 @@ type Host struct {
 	sockRuntimeDir  string
 	sockRuntimeErr  error
 
-	// sockNames maps an extension name to its short, stable socket leaf within
-	// sockRuntimeDir (guarded by sockMu).
-	sockMu    sync.Mutex
-	sockNames map[string]string
+	// Socket identities are stable by name; each start gets a distinct generation, guarded by sockMu.
+	sockMu         sync.Mutex
+	sockNames      map[string]string
+	sockGeneration uint64
 
 	// shuttingDown is set when Shutdown is called. Crash handlers check
 	// this to suppress "connection closed" noise during normal exit.
@@ -391,7 +391,8 @@ type Host struct {
 
 	// configLoader supplies the authoritative normalized startup resolver for
 	// Reload. Startup and reload must use the same extension inputs.
-	configLoader func() ([]ExtConfig, error)
+	configLoader           func() ([]ExtConfig, error)
+	reloadHandshakeTimeout func() (time.Duration, error)
 
 	providerRuntime       *extension.ExtensionRuntime
 	nativeProviders       map[*Conn]map[string]*nativeProviderProxy
@@ -434,29 +435,11 @@ type Host struct {
 	// reentrant).
 	packedCellSupervisors   map[string]*Supervisor
 	packedCellSupervisorsMu sync.Mutex
-	// packedCellGeneration counts, per packed cell key, how many processes
-	// have ever been spawned for that key (nextPackedCellGeneration). Each
-	// packedProcessState records the generation it claimed when spawned;
-	// watchPackedProcess only quarantines on a crash report whose generation
-	// is still the latest claimed for that key, so an async report for an
-	// already-superseded process (a later Reload already started a fresh
-	// process under the same content-derived key) cannot tear the new one
-	// down (CNC-002).
-	packedCellGeneration map[string]int
-	// packedProcesses records every packed cell key this Host has ever
-	// spawned a process for (startGoPackedCell). Reload's
-	// armPackedProcessGenerations (CNC-002) reads its keys to bump each
-	// one's packedCellGeneration up front, even after
-	// quarantinePackedCellGeneration/disablePackedMember have already
-	// removed that process's managedExts from h.exts (which normally
-	// happens well before an explicit Reload, since per-extension crash
-	// detection is independent of and typically faster than the
-	// packed-process-level watcher).
-	packedProcesses map[string]*packedProcessState
-	// watchedPacked holds every started packed process until its watcher
-	// has released its cache usage lease. Reload stops a replaced process
-	// without waiting for it, so Shutdown drains these as well as the
-	// processes of the extensions still registered.
+	// Allocation remains monotonic when rollback republishes an earlier serving generation.
+	packedCellGeneration       map[string]int
+	packedCellActiveGeneration map[string]int
+	packedProcesses            map[string]*packedProcessState
+	// Watchers can outlive retired generations while their shared process remains alive.
 	watchedPacked map[*packedProcessState]struct{}
 
 	lastReload *ReloadReport
@@ -674,27 +657,31 @@ type managedExt struct {
 	// state ahead of the host (thinking level, editor text), so
 	// a push the host would otherwise skip still corrects the runtime. A cache
 	// from an older generation is not trusted.
-	runtimeStateGen    atomic.Uint64
-	providerNames      []string
-	mcpServerNames     []string          // MCP servers this extension registered, guarded by Host.mu
-	virtualModels      []VirtualModelRef // virtual models this extension registered, guarded by Host.mu
-	oauthProviderNames []string          // subset of providerNames that also registered a bridged OAuth provider
-	stderrLogPath      string
-	stderrLog          *processStderrLog
-	sockPath           string               // Socket file path (for cleanup)
-	packedCellKey      string               // Non-empty when hosted by a packed runtime cell
-	packedProcess      *packedProcessState  // Shared process authority for packed-member sockets.
-	shuttingDown       atomic.Bool          // True when graceful shutdown was initiated
-	inProcServe        func(net.Conn) error // Non-nil for a fused in-process extension (D31)
-	nodeRealm          bool                 // Hosted by a Node process, which is one xref realm
-	releaseLiveness    func()               // Releases heartbeat ownership for live provider state.
-	livenessOwnerMu    sync.Mutex
-	cacheLease         *runtimecell.UsageLease
+	runtimeStateGen     atomic.Uint64
+	providerNames       []string
+	pendingProviders    []loadedProvider
+	pendingRegistration *RegisterPayload
+	pendingMcpServers   []extension.RegisteredMcpServer
+	mcpServerNames      []string          // MCP servers this extension registered, guarded by Host.mu
+	virtualModels       []VirtualModelRef // virtual models this extension registered, guarded by Host.mu
+	oauthProviderNames  []string          // subset of providerNames that also registered a bridged OAuth provider
+	stderrLogPath       string
+	stderrLog           *processStderrLog
+	sockPath            string               // Socket file path (for cleanup)
+	packedCellKey       string               // Non-empty when hosted by a packed runtime cell
+	packedProcess       *packedProcessState  // Shared process authority for packed-member sockets.
+	shuttingDown        atomic.Bool          // True when graceful shutdown was initiated
+	inProcServe         func(net.Conn) error // Non-nil for a fused in-process extension (D31)
+	nodeRealm           bool                 // Hosted by a Node process, which is one xref realm
+	releaseLiveness     func()               // Releases heartbeat ownership for live provider state.
+	livenessOwnerMu     sync.Mutex
+	cacheLease          *runtimecell.UsageLease
 	// share counts the extensions hosted by this isolated Node process, which Pi's loader re-invokes factories in across reloads. procOwner is the extension that spawned it, and retainedFrom the process a pending start will re-invoke its factory in.
-	share         *processShare
-	shareReleased atomic.Bool
-	procOwner     *managedExt
-	retainedFrom  *processShare
+	share             *processShare
+	shareReleased     atomic.Bool
+	procOwner         *managedExt
+	retainedFrom      *processShare
+	handshakeDeadline time.Time
 
 	// toolRendererResolvers is the extension's pi.registerToolRenderer state.
 	toolRendererResolvers toolRendererResolvers
@@ -2586,13 +2573,7 @@ func (h *Host) ensureSockRuntimeDir() (string, error) {
 	return h.sockRuntimeDir, h.sockRuntimeErr
 }
 
-// sockPathFor returns this Host's socket path for the named extension. Names are
-// short and stable per Host (e-0.sock, e-1.sock, ...) rather than derived from
-// the extension name: the runtime directory is private, so a counter is unique,
-// and a short leaf keeps the full path well under the platform sun_path limit
-// (104 bytes on macOS) that a long extension name plus a deep $TMPDIR could
-// otherwise exceed. The mapping is stable across reloads so a reload rebinds the
-// same path.
+// sockPathFor allocates a socket path unique to this start so retiring a generation cannot unlink its successor's socket.
 func (h *Host) sockPathFor(name string) (string, error) {
 	dir, err := h.ensureSockRuntimeDir()
 	if err != nil {
@@ -2605,10 +2586,11 @@ func (h *Host) sockPathFor(name string) (string, error) {
 	}
 	leaf, ok := h.sockNames[name]
 	if !ok {
-		leaf = fmt.Sprintf("e-%d.sock", len(h.sockNames))
+		leaf = fmt.Sprintf("e-%d", len(h.sockNames))
 		h.sockNames[name] = leaf
 	}
-	path := filepath.Join(dir, leaf)
+	h.sockGeneration++
+	path := filepath.Join(dir, fmt.Sprintf("%s-g%d.sock", leaf, h.sockGeneration))
 	if err := validateUnixSocketPath(runtime.GOOS, path); err != nil {
 		return "", err
 	}
@@ -2769,15 +2751,11 @@ func providerNameSet(names []string) map[string]struct{} {
 	return out
 }
 
-// Reload re-reads extension config, starts a fresh replacement for every
-// enabled extension beside the currently running ones (unchanged extensions
-// reuse their cached build artifact but, like upstream's re-invoked factories,
-// never their running instance), validates their handshakes, then swaps the
-// new set into the registry. Like upstream reload, an extension that fails to
-// resolve, build, start, or register is not loaded: its previous runtime is
-// stopped, its failure is recorded in ReloadReport.Issues, and every other
-// extension loads. Only a config loader failure fails the reload.
+// Reload stages replacements beside serving generations and commits successful cells.
+// Failed cells keep their previous generations; failures are reported and returned.
 func (h *Host) Reload(ctx context.Context) ([]extension.Extension, error) {
+	ctx = context.WithValue(ctx, runtimeParentKey{}, runtimeParent(ctx))
+	ctx = context.WithValue(ctx, deferLoadedProvidersKey{}, true)
 	ctx = context.WithValue(ctx, deferNodeReadyKey{}, true)
 	ctx = context.WithValue(ctx, reloadingKey{}, reloadPasses.Add(1))
 	h.transitionMu.Lock()
@@ -2798,6 +2776,16 @@ func (h *Host) Reload(ctx context.Context) ([]extension.Extension, error) {
 	} else {
 		cfgs, err = h.configLoader()
 	}
+	if err == nil && h.reloadHandshakeTimeout != nil {
+		var timeout time.Duration
+		timeout, err = h.reloadHandshakeTimeout()
+		if err == nil && timeout <= 0 {
+			err = errors.New("extension reload handshake timeout must be positive")
+		}
+		if err == nil {
+			ctx = context.WithValue(ctx, reloadHandshakeTimeoutKey{}, timeout)
+		}
+	}
 	if err != nil {
 		rep.Error = err.Error()
 		return nil, fmt.Errorf("reload config: %w", err)
@@ -2810,24 +2798,31 @@ func (h *Host) Reload(ctx context.Context) ([]extension.Extension, error) {
 	nodeConfigs, embeddedCells := embeddedNodeConfigs(allEmbedded)
 	loaderConfigs := len(cfgs)
 	cfgs = append(cfgs, nodeConfigs...)
-	// Only once config loading has actually succeeded (CNC-003): invalidate
-	// every currently-known packed process's generation (CNC-002; see
-	// armPackedProcessGenerations), then give a crashed packed cell (from an
-	// earlier reload cycle) another chance to repack, unless it has already
-	// crashed too many times this process's lifetime. A config-loader
-	// failure returns above and retains every currently running extension
-	// and process unchanged, so arming generations before this point would
-	// invalidate crash ownership for a process this aborted reload never
-	// actually replaced: a real, later crash of that still-current process
-	// would then be silently discarded as stale instead of quarantined.
+	// Suppress stale crash reports during staging; rollback republishes survivors without recycling IDs.
 	h.armPackedProcessGenerations()
+	defer h.restoreServingPackedProcesses()
 	h.releaseRetryableQuarantines()
 	// Explicit reload ends inconclusive diagnostic partitions; identified culprits remain quarantined.
 	clear(h.nodeGroups)
 
-	for _, cfg := range cfgs {
+	h.mu.Lock()
+	oldByName := make(map[string]*managedExt, len(h.exts))
+	maps.Copy(oldByName, h.exts)
+	h.mu.Unlock()
+	oldNames := slices.Sorted(maps.Keys(oldByName))
+	var reloadErrors []error
+	for i, cfg := range cfgs {
 		if cfg.resolveErr != nil {
 			rep.Issues = append(rep.Issues, reloadIssue(cfg, cfg.resolveErr))
+			reloadErrors = append(reloadErrors, fmt.Errorf("%s: %w", extConfigOrigin(cfg), cfg.resolveErr))
+			if oldByName[cfg.Name] == nil {
+				for _, name := range oldNames {
+					if extConfigOrigin(oldByName[name].config) == extConfigOrigin(cfg) {
+						cfgs[i].Name = name
+						break
+					}
+				}
+			}
 		}
 	}
 	cfgs = DisambiguateIdentities(cfgs)
@@ -2838,10 +2833,6 @@ func (h *Host) Reload(ctx context.Context) ([]extension.Extension, error) {
 		}
 	}
 
-	h.mu.Lock()
-	oldByName := make(map[string]*managedExt, len(h.exts))
-	maps.Copy(oldByName, h.exts)
-	h.mu.Unlock()
 	for _, cfg := range embeddedCellConfigs(embeddedCells) {
 		newByName[cfg.Name] = cfg
 	}
@@ -2849,23 +2840,11 @@ func (h *Host) Reload(ctx context.Context) ([]extension.Extension, error) {
 	var staged []stagedManagedExt
 	var removed []*managedExt
 
-	for name, old := range oldByName {
+	for _, name := range oldNames {
+		old := oldByName[name]
 		if _, ok := newByName[name]; !ok {
 			removed = append(removed, old)
 			rep.Removed = append(rep.Removed, name)
-		}
-	}
-	removeOld := func(name string) {
-		old := oldByName[name]
-		if old == nil || slices.Contains(removed, old) {
-			return
-		}
-		removed = append(removed, old)
-		rep.Removed = append(rep.Removed, name)
-	}
-	for _, cfg := range cfgs {
-		if cfg.resolveErr != nil {
-			removeOld(cfg.Name)
 		}
 	}
 
@@ -2890,7 +2869,7 @@ func (h *Host) Reload(ctx context.Context) ([]extension.Extension, error) {
 		item, stageErr := h.stageInProcess(ctx, cfg, serve)
 		if stageErr != nil {
 			rep.Issues = append(rep.Issues, reloadIssue(cfg, stageErr))
-			removeOld(cfg.Name)
+			reloadErrors = append(reloadErrors, stageErr)
 			continue
 		}
 		staged = append(staged, item)
@@ -2898,8 +2877,16 @@ func (h *Host) Reload(ctx context.Context) ([]extension.Extension, error) {
 	cells := h.planCells(cellConfigs)
 	h.planEventBus(ctx, cells)
 	var passFailures []reloadBuildFailure
+	stagedCellKeys := make(map[string]string)
+	failedCells := make(map[string]bool)
 	h.stageCellsInOrder(ctx, cells, func(cell CellSpec, outcome stageOutcome, stageErr error) {
+		if stageErr != nil {
+			failedCells[cell.Key] = true
+		}
 		outcomes, failures := h.isolateCellFailure(ctx, cell, oldByName, outcome, stageErr)
+		for _, cfg := range cell.Extensions {
+			stagedCellKeys[cfg.Name] = cell.Key
+		}
 		for _, outcome := range outcomes {
 			outcome.report.Replaced = anyExisting(cell.Extensions, oldByName)
 			index := slices.IndexFunc(rep.Cells, func(existing ReloadCellReport) bool {
@@ -2913,14 +2900,13 @@ func (h *Host) Reload(ctx context.Context) ([]extension.Extension, error) {
 			}
 			staged = append(staged, outcome.staged...)
 		}
-		// Upstream reload does not keep a failed extension's previous
-		// runtime: the extension is not loaded and its error is reported.
 		for _, failure := range failures {
 			passFailures = append(passFailures, reloadBuildFailure(failure))
-			removeOld(failure.cfg.Name)
+			reloadErrors = append(reloadErrors, failure.err)
 		}
 	})
 	rep.Issues = append(rep.Issues, buildFailureIssues(passFailures)...)
+	staged = h.discardFailedReloadCells(staged, stagedCellKeys, failedCells)
 
 	for _, cell := range embeddedCells {
 		embeddedStaged, _, stageErr := h.stageEmbeddedCell(ctx, cell)
@@ -2931,7 +2917,7 @@ func (h *Host) Reload(ctx context.Context) ([]extension.Extension, error) {
 		if stageErr != nil {
 			for _, cfg := range embeddedCellConfigs([]EmbeddedCell{cell}) {
 				rep.Issues = append(rep.Issues, reloadIssue(cfg, stageErr))
-				removeOld(cfg.Name)
+				reloadErrors = append(reloadErrors, stageErr)
 			}
 			continue
 		}
@@ -2953,15 +2939,35 @@ func (h *Host) Reload(ctx context.Context) ([]extension.Extension, error) {
 	}
 
 	rep.Cells = append(rep.Cells, h.quarantineReports(reloadStart)...)
+	var registrationFailures []cellFailure
+	staged, registrationFailures = h.prepareReloadRegistrations(staged, stagedCellKeys)
+	for _, failure := range registrationFailures {
+		reloadErrors = append(reloadErrors, failure.err)
+		rep.Issues = append(rep.Issues, reloadIssue(failure.cfg, failure.err))
+	}
 
-	h.commitStaged(staged, removed, "reload replaced")
 	for _, item := range staged {
 		if err := item.me.activateNode(); err != nil {
-			h.disablePackedMember(item.me, err.Error())
+			failedCells[reloadStagedCellKey(item, stagedCellKeys)] = true
 			rep.Issues = append(rep.Issues, reloadIssue(item.me.config, err))
+			reloadErrors = append(reloadErrors, err)
 		}
 	}
-	return h.Extensions(), nil
+	staged = h.discardFailedReloadCells(staged, stagedCellKeys, failedCells)
+	h.commitStaged(staged, removed, "reload replaced")
+	for i := range rep.Cells {
+		rep.Cells[i].Replaced = slices.ContainsFunc(staged, func(item stagedManagedExt) bool {
+			return oldByName[item.name] != nil && slices.Contains(rep.Cells[i].Extensions, item.name)
+		})
+	}
+	reloadErr := errors.Join(reloadErrors...)
+	if reloadErr != nil {
+		if len(staged) != 0 || len(removed) != 0 {
+			reloadErr = errors.Join(extension.ErrReloadPartiallyApplied, reloadErr)
+		}
+		rep.Error = reloadErr.Error()
+	}
+	return h.Extensions(), reloadErr
 }
 
 func reloadIssue(cfg ExtConfig, err error) string {
@@ -2973,6 +2979,9 @@ func reloadIssue(cfg ExtConfig, err error) string {
 }
 
 func (h *Host) commitStaged(staged []stagedManagedExt, removed []*managedExt, replaceReason string) {
+	for _, item := range staged {
+		h.publishReloadRegistrations(item.me)
+	}
 	replaced := make([]*managedExt, 0, len(staged))
 	h.mu.Lock()
 	for _, old := range removed {
@@ -3155,10 +3164,6 @@ func (h *Host) connectExt(ctx, extCtx context.Context, cancel context.CancelFunc
 		return nil, newLoadError(me.config.Name, "spawn", "socket_dir_failed", fmt.Errorf("create socket dir: %w", err))
 	}
 
-	// Clean up a stale socket from a prior load of this same Host (private dir,
-	// so this only ever removes our own file, never a peer's live socket).
-	_ = os.Remove(sockPath)
-
 	me.sockPath = sockPath
 
 	// Create listener.
@@ -3169,9 +3174,13 @@ func (h *Host) connectExt(ctx, extCtx context.Context, cancel context.CancelFunc
 	defer func() { _ = listener.Close() }()
 
 	if me.procOwner != nil {
+		me.handshakeDeadline = reloadHandshakeDeadline(ctx)
+		var handshakeDone context.CancelFunc
+		ctx, handshakeDone = withReloadHandshakeDeadline(ctx, me.handshakeDeadline)
+		defer handshakeDone()
 		// pig additive (D20): the process that already holds this extension's modules re-invokes the factory, as Pi's loader does inside one runtime.
 		entry, _ := nodeLauncherEntry(binPath)
-		if err := me.share.send(factoryAdmission{Name: me.config.Name, Entry: entry, Socket: address, ReloadPass: reloadPass(ctx), Cwd: h.cwd}); err != nil {
+		if err := me.share.send(ctx, factoryAdmission{Name: me.config.Name, Entry: entry, Socket: address, ReloadPass: reloadPass(ctx), Cwd: h.cwd}); err != nil {
 			return nil, newLoadError(me.config.Name, "spawn", "admit_failed", fmt.Errorf("admit %s to the running extension process: %w", me.config.Name, err))
 		}
 		return h.acceptExtConn(ctx, cancel, me, listener)
@@ -3247,6 +3256,7 @@ func (h *Host) connectExt(ctx, extCtx context.Context, cancel context.CancelFunc
 	if nodeOutput {
 		cmd.Stdout, cmd.Stderr = h.nodeExtensionOutput(stderrSink)
 	}
+	me.handshakeDeadline = reloadHandshakeDeadline(ctx)
 	processTree, err := startProcessTree(cmd)
 	if err != nil {
 		// No Cmd.Wait runs to close the writer the host-side copy owns.
@@ -3325,13 +3335,11 @@ func (me *managedExt) exitErr() error {
 	return me.waitErr
 }
 
-// acceptExtConn waits for the extension to connect. Upstream awaits the extension factory
-// with no deadline, and a Node factory runs before its runtime connects, so
-// the wait ends only when the extension connects, its process exits, or the
-// caller cancels. A connection the process made before it exited is honored
-// first (awaitConnection), so a factory error the process reported before exiting is
-// the load error.
+// acceptExtConn bounds reload admission but leaves initial loading cancellation-only.
+// A connection made before process exit is honored before the exit diagnostic.
 func (h *Host) acceptExtConn(ctx context.Context, cancel context.CancelFunc, me *managedExt, listener net.Listener) (net.Conn, error) {
+	ctx, done := withReloadHandshakeDeadline(ctx, me.handshakeDeadline)
+	defer done()
 	rawConn, outcome, err := h.awaitConnection(ctx, listener, me.exited())
 	switch outcome {
 	case acceptFailed:
@@ -3357,7 +3365,7 @@ func (h *Host) acceptExtConn(ctx context.Context, cancel context.CancelFunc, me 
 		return nil, loadErr
 	case acceptCancelled:
 		cancel()
-		loadErr := newLoadError(me.config.Name, "connect", "load_cancelled", fmt.Errorf("extension load cancelled before it connected: %w", err))
+		loadErr := newLoadError(me.config.Name, "connect", "load_cancelled", fmt.Errorf("extension load cancelled before it connected: %w", context.Cause(ctx)))
 		loadErr.StderrLog = me.stderrLogPath
 		return nil, loadErr
 	}
@@ -3368,6 +3376,8 @@ func (h *Host) acceptExtConn(ctx context.Context, cancel context.CancelFunc, me 
 // builds the extension.Extension. Shared by the subprocess and fused
 // in-process load paths.
 func (h *Host) adoptConn(ctx context.Context, me *managedExt, rawConn net.Conn, extCtx context.Context, cancel context.CancelFunc, isRestart bool) (*extension.Extension, error) {
+	ctx, done := withReloadHandshakeDeadline(ctx, me.handshakeDeadline)
+	defer done()
 	// Wrap in managed connection.
 	conn := NewConn(me.config.Name, rawConn)
 	h.observeXref(conn)
@@ -3384,6 +3394,9 @@ func (h *Host) adoptConn(ctx context.Context, me *managedExt, rawConn net.Conn, 
 	// or the caller cancels.
 	reg, err := h.waitForRegister(ctx, me, conn)
 	if err != nil {
+		if ctx.Err() != nil {
+			conn.fail(context.Cause(ctx))
+		}
 		_ = conn.Close("register failed")
 		cancel()
 		if factoryErr, ok := errors.AsType[*FactoryLoadError](err); ok {
@@ -3397,9 +3410,11 @@ func (h *Host) adoptConn(ctx context.Context, me *managedExt, rawConn net.Conn, 
 		}
 		loadErr := newLoadError(me.config.Name, "register", "register_failed", regErr)
 		loadErr.StderrLog = me.stderrLogPath
-		loadErr.Hint = standaloneRebuildHint(me.config)
-		if loadErr.Hint == "" {
-			loadErr.Hint = registerDecodeHint(err)
+		if ctx.Err() == nil {
+			loadErr.Hint = standaloneRebuildHint(me.config)
+			if loadErr.Hint == "" {
+				loadErr.Hint = registerDecodeHint(err)
+			}
 		}
 		return nil, loadErr
 	}
@@ -3485,41 +3500,14 @@ func (h *Host) adoptConn(ctx context.Context, me *managedExt, rawConn net.Conn, 
 
 	// Reverse provider callbacks may call the host while registering.
 	go h.handleIncoming(me, conn)
-	// On a crash restart the providers are already registered and their
-	// handlers resolve the current connection at call time, so re-registering would duplicate
-	// them. Same binary → same providers, so skip.
-	for _, provider := range reg.Providers {
-		if provider.Native != nil {
-			if err := h.registerNativeProvider(ctx, me, conn, provider.Native, !isRestart); err != nil {
-				return nil, err
-			}
-		}
-	}
-	if !isRestart {
-		for _, provider := range reg.Providers {
-			if provider.Native != nil {
-				continue
-			}
-			var cfg extension.ProviderConfig
-			if err := json.Unmarshal(provider.Config, &cfg); err != nil {
-				_ = conn.Close("provider registration failed")
-				cancel()
-				loadErr := newLoadError(me.config.Name, "register", "provider_config_invalid", fmt.Errorf("provider %s: decode config: %w", provider.Name, err))
-				loadErr.StderrLog = me.stderrLogPath
-				return nil, loadErr
-			}
-			if err := h.queueLoadedProvider(me, conn, provider, cfg); err != nil {
-				_ = conn.Close("provider registration failed")
-				cancel()
-				loadErr := newLoadError(me.config.Name, "register", "provider_config_invalid", err)
-				loadErr.StderrLog = me.stderrLogPath
-				return nil, loadErr
-			}
-		}
+	if err := h.loadProviderDeclarations(ctx, me, conn, reg.Providers, isRestart); err != nil {
+		_ = conn.Close("provider registration failed")
+		cancel()
+		return nil, newLoadError(me.config.Name, "register", "provider_config_invalid", err)
 	}
 
 	if !isRestart {
-		if err := h.registerExtensionAPI(me, reg); err != nil {
+		if err := h.loadExtensionRegistration(ctx, me, reg); err != nil {
 			_ = conn.Close("registration failed")
 			cancel()
 			loadErr := newLoadError(me.config.Name, "register", "registration_invalid", err)
@@ -3531,7 +3519,7 @@ func (h *Host) adoptConn(ctx context.Context, me *managedExt, rawConn net.Conn, 
 	if len(reg.Providers) > 0 {
 		me.releaseLiveness = conn.holdLiveness()
 	}
-	if h.uiBridge != nil {
+	if h.uiBridge != nil && me.pendingRegistration == nil {
 		h.uiBridge.RegisterExtConn(me.config.Name, conn, reg.WantsModelRegistry)
 	}
 
@@ -3556,7 +3544,7 @@ func (h *Host) waitForRegister(ctx context.Context, me *managedExt, conn *Conn) 
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, context.Cause(ctx)
 		case env, ok := <-conn.Incoming():
 			if !ok {
 				if failure := conn.failureError(); failure != nil {

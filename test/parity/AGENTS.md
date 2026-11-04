@@ -1,6 +1,6 @@
 # AGENTS.md — test/parity
 
-Pinned Pi is the behavior oracle. Scenarios (`scenarios/<family>/*.toml`, families in `families.toml`) run Pi and PiG through `runner/` and compare. Read `README.md` before editing a scenario.
+For unchanged inherited behavior, pinned Pi is the comparison oracle. Fork behavior follows `.project/specs/`; rewrite or delete scenarios that pin intentionally replaced behavior, rather than masking differences. Scenarios (`scenarios/<family>/*.toml`, families in `families.toml`) run Pi and PiG through `runner/` and compare. Read `README.md` before editing a scenario.
 
 ## Contract
 - A scenario proves only its asserted path. Generated inventories define review obligations, not acceptance.
@@ -12,7 +12,7 @@ Pinned Pi is the behavior oracle. Scenarios (`scenarios/<family>/*.toml`, famili
 - Comparator strength: `wait_contains` → `output_normalized_equal` → `output_equal` → `escaped_output_equal`. Tighten, never weaken to keep a bug green. Raise `runs` where flake risk matters; `runs = 1` is wrong for non-trivial behavior.
 - Weak tags: `boot-only`, `registration-only` (catalog/auth wiring only, never stream/payload files), `smoke-only`, deferred. They don't count as behavioral verification.
 - Comment every `normalize_replace`, `lint-known-gap`, `skip`, `serial`, group override or weak tag. Never normalize ANSI/whitespace to hide a real difference.
-- Output differs → fix PiG or cite `D<N>`; a comment alone is not enough.
+- Output differs → fix a defect, cite an inherited `D<N>`, or rewrite the affected scenario for a spec-decided fork change; a comment alone is not enough.
 - Writable paths via `{{TEMP}}`; never write into checked-in fixture roots; agent/home dirs are ephemeral copies. `pre_clear_paths` is deprecated.
 - Default scheduler groups unless `group`/`serial` is justified.
 - Shared behavior fix → re-probe affected scenarios in other families.

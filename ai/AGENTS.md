@@ -10,7 +10,7 @@ Port of Pi `packages/ai`: Transcript and message types, Providers (one file fami
 - Request contract checks: `internal/requestvalidity` (rules cited in `wire.go`).
 
 ## Contract
-- A Provider receives a normalized Transcript. Public Message, content, Usage and event shapes match pinned Pi.
+- A Provider receives a normalized Transcript. Public Message, content, Usage and event shapes retain inherited semantics unless a fork spec decides otherwise.
 - Event Stream: preserves event order, exactly one terminal result. Setup may return an immediate error; provider, auth, runtime and cancellation failures after creation terminate the stream.
 - Providers read the transcript via `TranscriptContext.borrowed` and never modify the slice, a message or anything it references. `Messages` is the copying accessor for callers that keep or change the result.
 
@@ -22,8 +22,8 @@ Port of Pi `packages/ai`: Transcript and message types, Providers (one file fami
 | Iteration stops while waiting | cancel the iterator context | no waiter or goroutine remains |
 | Cancellation races termination | concurrent Push, iteration, Result under `-race` | one terminal result |
 | Late coroutine driver continues another turn's drain | `TestContinuationLateDriverDoesNotContinueAnotherTurnsDrain` | driver continues only its own body's drain; no body runs beside a reaction; executor never left draining without a loop |
-| Invalid provider event sequence | setup, start, block, delta, end, terminal paths | Pi event order |
-| Replay metadata crosses provider/model identity | replay signed content through another model | drop or transform as Pi does |
+| Invalid provider event sequence | setup, start, block, delta, end, terminal paths | documented event order |
+| Replay metadata crosses provider/model identity | replay signed content through another model | discard or transform incompatible replay metadata |
 | Consumed events retained | drain a long stream | consumed queue entries released |
 | Transport consumer stalls | stop reading subprocess frames | bounded backpressure + cancellation |
 | Provider gets a Transcript its API rejects (orphan tool result, content between call and results, duplicate call id, refused role order) | every test; any binary built with `-tags requestvalidity` | `internal/requestvalidity` panics at the send seam. `PIG_REQUEST_VALIDITY_REPORT=<file>` records instead. Intentionally invalid test requests use `invalidRequest(t)` and state why |
@@ -37,4 +37,4 @@ Port of Pi `packages/ai`: Transcript and message types, Providers (one file fami
 
 ## Traps
 - Don't parse SSE outside `sse.go`; don't classify errors by status-code substrings; don't map unknown/missing stop reasons to success (divergence-guard).
-- Don't special-case one provider in shared code; see root "Faithful, general implementations".
+- Don't special-case one provider in shared code; see root "Engineering".
