@@ -28,3 +28,8 @@ ai/*_generated.go linguist-generated=true
 coding/extension/host/fusepack/registry_generated.go linguist-generated=true
 internal/mermaid/width_data.go linguist-generated=true
 test/parity/interfaces/*.json linguist-generated=true
+
+# Fork-owned agent steering keeps the fork side in upstream merges (.project/specs/0001-personal-distribution.md D2).
+# Needs `git config merge.ours.driver true`. AGENTS.md files under testdata are fixtures and merge normally.
+AGENTS.md merge=ours
+**/testdata/**/AGENTS.md merge=text

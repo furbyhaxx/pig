@@ -25,24 +25,26 @@ jobs:
     outputs:
       sha: ${{ steps.sync.outputs.sha }}
     steps:
-      - name: Merge upstream without overwriting custom changes
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: main
+          fetch-depth: 0
+          # GITHUB_TOKEN cannot push merges that change .github/workflows; PIG_SYNC_TOKEN needs contents and workflows write.
+          token: ${{ secrets.PIG_SYNC_TOKEN || github.token }}
+      - name: Merge upstream; fork-owned files keep the fork side
         id: sync
+        run: bash automation/release/personal-fork-sync.sh
+      - name: Keep inherited upstream workflows disabled
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          upstream=$(gh api repos/MichaelKinsy/PiG/commits/main --jq .sha)
-          gh api --method POST "repos/$REPOSITORY/merges" \
-            -f base=main -f head="$upstream" \
-            -f commit_message=$'chore: merge PiG upstream\n\nSigned-off-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
           gh api "repos/$REPOSITORY/actions/workflows" --paginate \
             --jq '.workflows[] | select(.path != ".github/workflows/personal-fork.yml" and .state == "active") | .id' |
             while read -r workflow; do
               gh api --method PUT "repos/$REPOSITORY/actions/workflows/$workflow/disable"
             done
-          sha=$(gh api "repos/$REPOSITORY/commits/main" --jq .sha)
-          printf 'sha=%s\n' "$sha" >> "$GITHUB_OUTPUT"
   release:
     needs: sync
     runs-on: ubuntu-24.04

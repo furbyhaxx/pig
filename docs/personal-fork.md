@@ -26,7 +26,9 @@ Windows releases contain `pig.exe`; stop PiG and replace it from the matching ZI
 
 ## Automatic synchronization and releases
 
-The `Personal fork` workflow runs hourly, on pushes to `main`, and through manual dispatch. It merges `MichaelKinsy/PiG:main` using GitHub's merge API. A conflict stops the workflow and publishes nothing. Resolve the merge locally, preserve custom changes, and push the resolution to `main`. There is no force synchronization or automatic conflict resolution.
+The `Personal fork` workflow runs hourly, on pushes to `main`, and through manual dispatch. It merges `MichaelKinsy/PiG:main` into `main` (`automation/release/personal-fork-sync.sh`). A conflict stops the workflow and publishes nothing. Resolve the merge locally, preserve custom changes, and push the resolution to `main`. There is no force synchronization. The only automatic resolution is for the fork's own `AGENTS.md` files, which always keep the fork version; the merge commit lists upstream changes to them for review. Run `git config merge.ours.driver true` once in a local clone so local merges behave the same.
+
+Upstream merges that change `.github/workflows/` can only be pushed with a token that has the workflows permission, which `GITHUB_TOKEN` never has. Store a fine-grained personal access token for `furbyhaxx/pig` with *Contents* and *Workflows* read/write as the Actions secret `PIG_SYNC_TOKEN`. Without it, such merges fail and the sync stops until you merge them locally.
 
 After a clean merge, a new source commit produces a release. Already released source is skipped. Builds cover Linux, macOS, and Windows on amd64/arm64, plus Android arm64 using the NDK. Only Linux amd64 is executed by this workflow; other targets are cross-built, not natively verified. This lightweight personal pipeline does not claim the upstream candidate pipeline's full security, parity, SBOM, or attestation evidence.
 
