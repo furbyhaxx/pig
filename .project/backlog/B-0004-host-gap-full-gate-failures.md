@@ -5,9 +5,9 @@ document:
   title: "Resolve remaining host-gap full-check failures"
   description: "Failures exposed after repairing the pinned Pi oracle setup"
   status: "open"
-  revision: 4
+  revision: 5
   created_at: "2026-11-04T17:13:00+01:00"
-  updated_at: "2026-11-04T23:10:42+01:00"
+  updated_at: "2026-11-04T23:40:00+01:00"
   created_by: "coding-agent"
   updated_by: "coding-agent"
   kind: "bug"
@@ -26,6 +26,9 @@ document:
     - revision: 4
       reason: "Separate pre-existing failures from the SDK reload change with a pristine-HEAD baseline"
       changes: ["record startup allocation, RPC usage golden, raw-pig scan and regex oracle failures", "record their reproduction on unmodified HEAD"]
+    - revision: 5
+      reason: "Removed the stale foreign worktree and ran ci-contracts on the committed tree"
+      changes: ["record the raw-pig scan passing after the worktree removal", "record the host core.hooksPath failure in the Porter commit-failure test"]
 ---
 
 # Remaining full-check failures
@@ -89,6 +92,12 @@ A throwaway `git worktree` at `5972948ba` (no local changes; removed afterwards)
 
 A full `coding` run (all packages in that directory) and a focused `-race` reload selection passed after the change.
 
-## Acceptance
+## Worktree removal and ci-contracts (04.11.2026, 23:40)
 
+- `.worktrees/docs/agents-md-rewrite` was removed by owner decision: its branch had no commits outside `main` and the checkout had no local changes. `coding/cli.TestRawPigContainsNoPlatformAPIPaths` now passes, so that row is cleared by the removal rather than by a code change.
+- `make ci-drift` passes on the committed tree. `make ci-contracts` fails at `porter-check` in `automation/porter/test_task_runner.py::test_a_failed_commit_fails_the_task_and_the_runner_and_is_not_marked_done`, which installs a failing `.git/hooks/pre-commit` in a scratch repository and expects the commit to fail.
+- Cause, reproduced outside the repository: the host sets a global `core.hooksPath` (`/home/furbyhaxx/.config/git/hooks`), so a repository-local `.git/hooks/pre-commit` is never consulted and the commit succeeds. `git -c user.email=t@t -c user.name=t commit` in a fresh repository with a failing `pre-commit` returns 0 with that configuration. This is a host configuration effect on a test, not a defect in the Porter runner or in this change, and it will fail any test that relies on a repository-local hook.
+- Not repaired here: neutralizing the global setting for CI would change the host's git configuration, which is outside this repository. Verified: `make porter-check` passes all 26 tests with `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_AUTHOR_*`/`GIT_COMMITTER_*` set, so the runner's behavior is correct and only the host's hook discovery differs.
+
+## Acceptance
 Reproduce each failure narrowly, fix its owner with regression evidence, then rerun `make check` and the complete changed-package target without retries, timing overrides or skipped tests. PLAN-0001 S0 remains open until its gates pass.

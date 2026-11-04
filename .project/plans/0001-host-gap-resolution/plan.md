@@ -5,9 +5,9 @@ document:
   title: "Resolve the Workbench host gaps"
   description: "Slices that implement SPEC-0002..SPEC-0010 after re-steering the fork (SPEC-0001 D7-D10), with tests, wire/SDK parity and docs per slice"
   status: "draft"
-  revision: 8
+  revision: 9
   created_at: "2026-11-04T15:05:00+01:00"
-  updated_at: "2026-11-04T23:16:06+01:00"
+  updated_at: "2026-11-04T23:35:00+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -35,6 +35,9 @@ document:
     - revision: 8
       reason: "Owner approved per-cell publication for the SDK loader; implement it and record its evidence"
       changes: ["route DefaultResourceLoader reloads through one persistent Host", "record red-green, mutation and baseline comparison evidence", "record the remaining pre-existing gate failures in B-0004", "mark S1.1 and S1.2 implemented in the progress and task tables"]
+    - revision: 9
+      reason: "Commit the S0/S1.1/S1.2 work, remove the stale foreign worktree and land SPEC-0007 D3"
+      changes: ["record the two commits that now carry the previously uncommitted work", "record the removed .worktrees/docs/agents-md-rewrite checkout and the scan failure it cleared", "implement strict deliverAs with red-green evidence and SDK constants", "record S1.5 evidence and the still-open S1.3, S1.4, S1.6 and S1.7"]
 ---
 
 # PLAN-0001 Resolve the Workbench host gaps
@@ -46,7 +49,7 @@ Input: `../../analyses/2026-11-04-host-gap-verification/README.md`. Policy: `../
 | Slice | Goal | Specs | Status |
 |---|---|---|---|
 | S0 | Steering, gates, public fork statement | 0001 | implemented; full gate blocked (B-0004) |
-| S1 | Reliability fixes and skill roots | 0004 D1–D3, 0007 D1–D3, 0009 | now; 1.1 and 1.2 implemented, P29 agent-turn reproduction open, 1.3–1.7 next |
+| S1 | Reliability fixes and skill roots | 0004 D1–D3, 0007 D1–D3, 0009 | now; 1.1, 1.2 and 1.5 implemented, P29 agent-turn reproduction open, 1.3, 1.4, 1.6 and 1.7 next |
 | S2 | Model request pipeline | 0003 | later |
 | S3 | System prompt composition | 0002 | later |
 | S4 | Headless output and dialogs | 0005 | later |
@@ -109,7 +112,7 @@ Done when: `make check` passes, no child `AGENTS.md` demands Pi faithfulness for
 | 1.2 | Bounded reload handshake, atomic reload, error to `ctx.Reload()`, `/reload`, RPC and the SDK loader; global setting `extensionsReloadHandshakeMs` | 0004 D2 | stuck-peer test (process never registers) keeps old generation serving; SDK per-cell publication test | `settings.md`, `extensions.md` reload section |
 | 1.3 | Event-bus cancellation (`events.cancel`) host + all SDKs | 0004 D3 | conformance test: caller abort ends listener context in Go/Rust/Python/Node | `extensions.md` event bus |
 | 1.4 | `nextTurn` bound to leaf; discard + `queued_message_discarded` on navigation/new/fork/resume/switch | 0007 D1 | red test from probe P20; poisoned history case | `extensions.md`, `events.md` |
-| 1.5 | Strict `deliverAs`; SDK constants | 0007 D3 | wire test with unknown value → error | `extensions.md`, `rpc.md` |
+| 1.5 | Strict `deliverAs`; SDK constants | 0007 D3 | `TestSendMessageRejectsUnknownDeliverAs`, `TestSendUserMessageRejectsUnknownDeliverAs`, `TestSendUserMessageRejectsNextTurn`; unknown value fails the call in every SDK through the shared Session action | `extensions.md`, `extension-api.md` |
 | 1.6 | `session_start` `resume` for continued sessions; `initial` flag | 0007 D2 | `--continue`, `--resume`, `--session`, fresh start | `events.md`, changelog `### Upgrading` |
 | 1.7 | `skills.roots[]`: settings object form, legacy migration fix, tokens, precedence, trust; `make generate-schemas` | 0009 | migration keeps `roots`/`paths`; collision order; untrusted project ignores project roots; `HOME`-independent isolation | `skills.md`, `settings.md`, `settings-examples.md`, root `AGENTS.md` test-isolation bullet |
 
@@ -146,8 +149,20 @@ Done when: all S1 tests red-proven where they are bug fixes, `make check` passes
 - Remaining 1.2 caveat: SDK reload coverage exercises inline factories, built-ins and file extensions through the loader. Compiled-in `extensionFactories` still go through the same inline path, but a real agent-turn reload against a compiled-in factory has not been driven end to end.
 - S1.3–S1.7 and S2–S8 have not started. No complete slice gate or commit is claimed by these implementation notes.
 
-## S2 Model request pipeline (later)
+### S1.5 evidence (04.11.2026)
 
+- The previously uncommitted S0/S1.1/S1.2 work is committed as `37eb840a5`; SPEC-0007 D3 is `e14430cfa` plus its release-note commit. The tree is clean after both.
+- `.worktrees/docs/agents-md-rewrite` was removed by owner decision. Its branch had no commits outside `main` and the checkout had no local changes, so nothing was lost. `coding/cli.TestRawPigContainsNoPlatformAPIPaths` passes after the removal; it had been scanning that foreign checkout.
+- Red → green: `TestSendMessageRejectsUnknownDeliverAs`, `TestSendUserMessageRejectsUnknownDeliverAs` and `TestSendUserMessageRejectsNextTurn` failed first (each returned nil and delivered the message), then passed. `TestKnownDeliverAsValuesAreAccepted` keeps the empty value and the three defined modes working.
+- One validation sits at the shared boundary (`extension.ValidateDeliverAs` called from `SendMessage`, `SendMessageStaged`, `sendCustomMessage`, `SendUserMessage` and `SendExtensionUserMessageStaged`), so the in-process, subprocess and session-graph bindings all reject through the same path. An unknown value fails before any queueing or dispatch work.
+- Go, Rust and Python SDKs export `DeliverSteer`/`DeliverFollowUp`/`DeliverNextTurn` (`DELIVER_*` in Rust and Python). The TypeScript surface already restricts the literal union through the pinned Pi declarations and exports no runtime values, so it gained no constant.
+- RPC-mode user prompts are not validated by this change: `PromptOptions.StreamingBehavior` still comes from CLI flags, and SPEC-0007 D3 names only the two extension calls. A `rpc.md` entry therefore was not added; `extensions.md` and `extension-api.md` carry the contract.
+- Verified: `go build ./...`, `go vet ./coding ./coding/extension`, the deliverAs and queue/custom-message/prompt selections in `./coding`, `cargo check --all-targets` in `extensions/sdk-rs` (pre-existing warnings only), Python parse of `pig_sdk/__init__.py`, `make lint-changed` (0 issues), `make changelog-check`, `make ci-drift`.
+- `make ci-contracts` passes its correspondence and Porter packages, then fails the Porter unit test that installs a failing repository-local `pre-commit` hook, because this host sets a global `core.hooksPath`. `make porter-check` passes all 26 tests with `GIT_CONFIG_GLOBAL=/dev/null`. Recorded in B-0004 as a host-configuration effect, not a defect of this change.
+- Not verified in this pass: no cross-SDK conformance row drives an unknown `deliverAs` through Node, Rust and Python processes. The rejection is proven at the Session boundary that every binding shares, not through each runtime. Record it as a conformance gap for S1.5 follow-up rather than a covered row.
+- Still open in S1: 1.3 (`events.cancel`), 1.4 (`nextTurn` leaf binding), 1.6 (`session_start` `resume`/`initial`), 1.7 (`skills.roots[]`). S2–S8 have not started.
+
+## S2 Model request pipeline (later)
 Goal: SPEC-0003 D1–D6. Key steps: move hooks into `ModelRuntime` (`coding/services.go`), `purpose`/`origin`, re-entrancy guard, fail-closed table, `block` result, phases, `extensions.hookTimeoutMs`, wire + SDKs, benchmark of the no-handler path. Docs: `extensions.md`, `extension-api.md`, `events.md`, `security.md`, `compaction.md`, `settings.md`.
 
 ## S3 System prompt composition (later)
