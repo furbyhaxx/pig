@@ -253,6 +253,9 @@ func (s *Session) ValidatePromptModelAuth(ctx context.Context) error {
 
 // SendUserMessage awaits the Session's extension-originated user turn or queue operation. Expansion defaults to false.
 func (s *Session) SendUserMessage(ctx context.Context, content any, options *extension.SendUserMessageOptions) error {
+	if err := validateSendUserMessageDeliverAs(options); err != nil {
+		return err
+	}
 	text, images, err := extensionUserMessageContent(content)
 	if err != nil {
 		return err
@@ -280,6 +283,9 @@ func (s *Session) SendExtensionUserMessage(content any, options *extension.SendU
 
 // SendExtensionUserMessageStaged is SendExtensionUserMessage whose run preparation and start stage places; a nil stage runs both on the caller.
 func (s *Session) SendExtensionUserMessageStaged(content any, options *extension.SendUserMessageOptions, stage *ExtensionRunStage) error {
+	if err := validateSendUserMessageDeliverAs(options); err != nil {
+		return err
+	}
 	text, images, err := extensionUserMessageContent(content)
 	if err != nil {
 		return err

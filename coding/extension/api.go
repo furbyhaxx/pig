@@ -2,6 +2,10 @@ package extension
 
 import (
 	"context"
+	"fmt"
+	"slices"
+	"strconv"
+	"strings"
 
 	"github.com/MichaelKinsy/PiG/ai"
 	"github.com/MichaelKinsy/PiG/internal/orderedjson"
@@ -20,6 +24,20 @@ const (
 	DeliverAsFollowUp DeliverAs = "followUp"
 	DeliverAsNextTurn DeliverAs = "nextTurn"
 )
+
+// ValidateDeliverAs reports whether value names one of allowed, or is empty,
+// which leaves the delivery to the call's default. An unknown value is an error
+// so a misspelt mode cannot silently take a different path.
+func ValidateDeliverAs(value DeliverAs, allowed ...DeliverAs) error {
+	if value == "" || slices.Contains(allowed, value) {
+		return nil
+	}
+	names := make([]string, len(allowed))
+	for i, candidate := range allowed {
+		names[i] = strconv.Quote(string(candidate))
+	}
+	return fmt.Errorf("unsupported deliverAs %q: use %s", string(value), strings.Join(names, ", "))
+}
 
 // SendMessagePayload mirrors the inline `Pick<CustomMessage<T>, "customType"
 // | "content" | "display" | "details">` parameter on upstream's sendMessage.

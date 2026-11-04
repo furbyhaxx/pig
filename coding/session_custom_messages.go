@@ -16,19 +16,44 @@ func (s *Session) SendCustomMessage(ctx context.Context, message extension.Custo
 	return s.sendCustomMessage(ctx, message, options, true, nil)
 }
 
-// SendMessage is the bound extension action. The Session owns triggered work and reports failures through its extension error listeners.
+// SendMessage is the bound extension action. The Session owns triggered work and reports failures through its extension error listeners. An unknown deliverAs fails here, before any work is queued.
 func (s *Session) SendMessage(message extension.CustomMessageRef, options *extension.SendMessageOptions) error {
+	if err := validateSendMessageDeliverAs(options); err != nil {
+		return err
+	}
 	s.reportRuntimeError("send_message", s.sendCustomMessage(s.backgroundContext(), message, options, false, nil))
 	return nil
 }
 
 // SendMessageStaged is SendMessage whose idle triggerTurn run preparation and start stage places; a nil stage starts the run as SendMessage does.
 func (s *Session) SendMessageStaged(message extension.CustomMessageRef, options *extension.SendMessageOptions, stage *ExtensionRunStage) error {
+	if err := validateSendMessageDeliverAs(options); err != nil {
+		return err
+	}
 	s.reportRuntimeError("send_message", s.sendCustomMessage(s.backgroundContext(), message, options, false, stage))
 	return nil
 }
 
+// validateSendMessageDeliverAs rejects a delivery mode sendMessage does not define.
+func validateSendMessageDeliverAs(options *extension.SendMessageOptions) error {
+	if options == nil {
+		return nil
+	}
+	return extension.ValidateDeliverAs(options.DeliverAs, extension.DeliverAsSteer, extension.DeliverAsFollowUp, extension.DeliverAsNextTurn)
+}
+
+// validateSendUserMessageDeliverAs rejects a delivery mode sendUserMessage does not define: nextTurn defers a message to the next user prompt, which a user message is.
+func validateSendUserMessageDeliverAs(options *extension.SendUserMessageOptions) error {
+	if options == nil {
+		return nil
+	}
+	return extension.ValidateDeliverAs(options.DeliverAs, extension.DeliverAsSteer, extension.DeliverAsFollowUp)
+}
+
 func (s *Session) sendCustomMessage(ctx context.Context, message extension.CustomMessageRef, options *extension.SendMessageOptions, wait bool, stage *ExtensionRunStage) error {
+	if err := validateSendMessageDeliverAs(options); err != nil {
+		return err
+	}
 	content := message.Content
 	if content == nil {
 		content = []any{}

@@ -68,8 +68,8 @@ These are the call names the host accepts. SDK bindings wrap each into a method 
 
 ### Session control
 
-- `sendMessage(customMessageRef, options)` - inject a structured message into the session.
-- `sendUserMessage(content, options)` - synthesize a user turn. `deliverAs` is `"steer" | "followUp" | "nextTurn"`.
+- `sendMessage(customMessageRef, options)` - inject a structured message into the session. `deliverAs` is `"steer"`, `"followUp"` or `"nextTurn"`.
+- `sendUserMessage(content, options)` - synthesize a user turn. `deliverAs` is `"steer"` or `"followUp"`; `"nextTurn"` is rejected because a user message already starts the next turn.
 - `appendEntry(customType, data)` - append a custom JSONL entry without invoking the model.
 - `setLabel(entryID, label)` - set a small display label on an existing entry.
 - `setActiveTools(tools)` - pin the tool set for the next model turn.

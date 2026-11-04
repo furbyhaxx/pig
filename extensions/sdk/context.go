@@ -583,8 +583,18 @@ func (c Context) Editor(title, prefill string) (any, bool, error) {
 // session's state (while a turn streams, an unset triggerTurn steers).
 type SendMessageOptions struct {
 	TriggerTurn *bool  // nil: host default; true starts or joins a turn; false never does
-	DeliverAs   string // "steer", "followUp", or "nextTurn"; empty: host default
+	DeliverAs   string // one of the Deliver* constants; empty: host default
 }
+
+// Delivery modes accepted by SendMessage and SendUserMessage. The host rejects
+// any other value instead of applying a default.
+const (
+	DeliverSteer    = "steer"
+	DeliverFollowUp = "followUp"
+	// DeliverNextTurn applies to SendMessage only: it defers the message to the
+	// next user prompt.
+	DeliverNextTurn = "nextTurn"
+)
 
 // SendMessage injects a custom message into the conversation.
 func (c Context) SendMessage(customType, content string, display bool, opts SendMessageOptions) error {

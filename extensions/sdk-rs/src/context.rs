@@ -4141,12 +4141,20 @@ pub struct CustomMessage {
     pub details: Option<serde_json::Value>,
 }
 
+/// Delivery modes accepted by `Context::send_message` and
+/// `Context::send_user_message`. The host rejects any other value instead of
+/// applying a default.
+pub const DELIVER_STEER: &str = "steer";
+pub const DELIVER_FOLLOW_UP: &str = "followUp";
+/// Applies to `send_message` only: it defers the message to the next user prompt.
+pub const DELIVER_NEXT_TURN: &str = "nextTurn";
+
 /// Upstream `pi.sendMessage` options. `None` leaves an option unset so the
 /// host applies upstream's default for the session's state.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SendMessageOptions {
     pub trigger_turn: Option<bool>,
-    /// `"steer"`, `"followUp"` or `"nextTurn"`.
+    /// One of [`DELIVER_STEER`], [`DELIVER_FOLLOW_UP`] or [`DELIVER_NEXT_TURN`].
     pub deliver_as: Option<String>,
 }
 

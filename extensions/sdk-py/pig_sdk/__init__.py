@@ -247,6 +247,13 @@ EVENT_INPUT = "input"
 EVENT_PROVIDER_STREAM_EVENT = "provider_stream_event"
 EVENT_MCP_SERVERS_CHANGE = "mcp_servers_change"
 
+# Delivery modes accepted by send_message and send_user_message. The host
+# rejects any other value instead of applying a default.
+DELIVER_STEER = "steer"
+DELIVER_FOLLOW_UP = "followUp"
+# send_message only: defers the message to the next user prompt.
+DELIVER_NEXT_TURN = "nextTurn"
+
 
 Schema: TypeAlias = dict[str, Any]
 ToolPrepareArguments: TypeAlias = Callable[[dict[str, Any]], dict[str, Any]]
