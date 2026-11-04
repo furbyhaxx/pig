@@ -37,7 +37,7 @@ jobs:
             -f base=main -f head="$upstream" \
             -f commit_message=$'chore: merge PiG upstream\n\nSigned-off-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
           gh api "repos/$REPOSITORY/actions/workflows" --paginate \
-            --jq '.workflows[] | select(.path != ".github/workflows/personal-fork.yml") | .id' |
+            --jq '.workflows[] | select(.path != ".github/workflows/personal-fork.yml" and .state == "active") | .id' |
             while read -r workflow; do
               gh api --method PUT "repos/$REPOSITORY/actions/workflows/$workflow/disable"
             done
