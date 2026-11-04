@@ -3,7 +3,6 @@ package codingagent
 // pi: packages/coding-agent/src/utils/changelog.ts
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -131,8 +130,9 @@ func TestParseChangelog_RealFile(t *testing.T) {
 		t.Fatalf("bundled CHANGELOG.md needs the current release and the 0.0.0 baseline: %#v", got)
 	}
 	newest := got[0] // file order: newest first
-	if v := fmt.Sprintf("%d.%d.%d", newest.Major, newest.Minor, newest.Patch); v != pigversion.PigVersion {
-		t.Fatalf("newest CHANGELOG.md entry is %s, want the current PigVersion %s", v, pigversion.PigVersion)
+	heading, _, _ := strings.Cut(newest.Content, "\n")
+	if !strings.HasPrefix(heading, "## ["+pigversion.PigVersion+"]") {
+		t.Fatalf("newest CHANGELOG.md heading is %q, want the current PigVersion %s", heading, pigversion.PigVersion)
 	}
 	baseline := got[len(got)-1]
 	if baseline.Major != 0 || baseline.Minor != 0 || baseline.Patch != 0 {
