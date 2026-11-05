@@ -11,6 +11,13 @@ export PATH="$go_root/bin:$PATH"
 # Keep compiler caches separate from the validated program's runtime state.
 export GOCACHE="${GOCACHE:-$(go env GOCACHE)}"
 export GOMODCACHE="${GOMODCACHE:-$(go env GOMODCACHE)}"
+# rustup and cargo find their toolchains and registry under HOME by default; pin them to the caller's before HOME moves, as for Go above. A missing directory leaves the variable unset.
+for rust_dir in RUSTUP_HOME:.rustup CARGO_HOME:.cargo; do
+  name=${rust_dir%%:*}
+  if [ -z "${!name:-}" ] && [ -d "$HOME/${rust_dir#*:}" ]; then
+    export "$name=$HOME/${rust_dir#*:}"
+  fi
+done
 
 directory=$(mktemp -d "${TMPDIR:-${TMP:-/tmp}}/pig-validation.XXXXXXXX")
 trap 'rm -rf -- "$directory"' EXIT
