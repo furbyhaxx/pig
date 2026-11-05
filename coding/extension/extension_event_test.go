@@ -42,7 +42,7 @@ func TestExtensionEventIsPisUnion(t *testing.T) {
 
 	goTypes := map[string]reflect.Type{}
 	for _, event := range []ExtensionEvent{
-		ProjectTrustEvent{}, ResourcesDiscoverEvent{}, McpServersChangeEvent{}, ContextEvent{}, ContextWithSystemEvent{}, CacheWarmingDecisionEvent{},
+		QueuedMessageDiscardedEvent{}, ProjectTrustEvent{}, ResourcesDiscoverEvent{}, McpServersChangeEvent{}, ContextEvent{}, ContextWithSystemEvent{}, CacheWarmingDecisionEvent{},
 		BeforeProviderRequestEvent{}, BeforeProviderHeadersEvent{}, AfterProviderResponseEvent{}, ProviderStreamEvent{}, BeforeAgentStartEvent{},
 		AgentStartEvent{}, AgentEndEvent{}, AgentBeforeSettleEvent{}, AgentSettledEvent{}, UIPromptStartEvent{}, UIPromptEndEvent{}, TurnStartEvent{},
 		TurnEndEvent{}, MessageStartEvent{}, MessageUpdateEvent{}, MessageEndEvent{}, ToolExecutionStartEvent{}, ToolExecutionUpdateEvent{},
@@ -86,7 +86,7 @@ func TestExtensionEventIsPisUnion(t *testing.T) {
 		}
 	}
 	// No Go type claims to be a member Pi's union lacks.
-	allowed := []string{"SessionInfoChangedEvent", "SessionCompactFailedEvent", "CustomToolCallEvent"}
+	allowed := []string{"QueuedMessageDiscardedEvent", "SessionInfoChangedEvent", "SessionCompactFailedEvent", "CustomToolCallEvent"}
 	for name := range goTypes {
 		if !slices.Contains(piMembers, name) && !slices.Contains(sessionMembers, name) && !strings.HasSuffix(name, "ToolResultEvent") && !slices.Contains(allowed, name) {
 			t.Errorf("Go event %s is not a member of Pi's ExtensionEvent union", name)

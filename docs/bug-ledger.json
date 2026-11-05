@@ -6222,6 +6222,25 @@
       ]
     },
     {
+      "id": "BF-3cc9957",
+      "title": "fix(coding): bound session_start dispatch by the mode's context",
+      "symptom": "fix(coding): bound session_start dispatch by the mode's context",
+      "rootCause": "EmitSessionStartEvent took no context and dispatched with context.Background(), so a mode cancelled during startup or a replacement could not stop session_start handlers or resource discovery.",
+      "rootCauseSource": "commit",
+      "userImpact": "Behavior differed from Pi",
+      "platform": "All platforms",
+      "class": "own",
+      "fixedIn": "Unreleased",
+      "origin": "commit",
+      "commits": [
+        {
+          "hash": "3cc9957f24",
+          "date": "2026-11-05"
+        }
+      ],
+      "tests": []
+    },
+    {
       "id": "BF-3ce6bcb",
       "title": "fix(changelog,source): /i scheme tests fold as JavaScript does, not as RE2's (?i)",
       "symptom": "fix(changelog,source): /i scheme tests fold as JavaScript does, not as RE2's (?i)",
@@ -34672,6 +34691,30 @@
         "test/parity/scenarios/extensions-runtime/73-shutdown-from-session-before-fork.toml",
         "test/parity/scenarios/extensions-runtime/73-shutdown-from-session-before-switch.toml",
         "test/parity/scenarios/extensions-runtime/73-shutdown-from-session-start.toml"
+      ]
+    },
+    {
+      "id": "BF-ee84034",
+      "title": "Bind deferred `nextTurn` custom messages to their session leaf and discard stale branch context on navigation…",
+      "symptom": "Bind deferred `nextTurn` custom messages to their session leaf and discard stale branch context on navigation or session replacement.",
+      "rootCause": "Implement SPEC-0007 D1. Stamp the session and leaf at queue time, remove invalidated context on navigation and replacement, and report each removal to extensions and the debug log. Preserve same-leaf queues and ordinary turn growth.",
+      "rootCauseSource": "commit",
+      "userImpact": "Lost or altered data",
+      "platform": "All platforms",
+      "class": "own",
+      "fixedIn": "Unreleased",
+      "releaseNote": "Bind deferred `nextTurn` custom messages to their session leaf and discard stale branch context on navigation or session replacement. Extensions receive `queued_message_discarded` with `customType` and `reason`; `PIG_DEBUG` also records each discard (SPEC-0007 D1).",
+      "origin": "release note",
+      "commits": [
+        {
+          "hash": "ee8403488b",
+          "date": "2026-11-05"
+        }
+      ],
+      "tests": [
+        "coding/session_queue_upstream_test.go::TestNextTurnLeafBinding",
+        "coding/session_queue_upstream_test.go::TestNextTurnRuntimeReplacement",
+        "coding/session_queue_upstream_test.go::TestNextTurnSessionReplacement"
       ]
     },
     {

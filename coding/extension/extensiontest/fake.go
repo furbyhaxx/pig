@@ -31,47 +31,48 @@ type Fake struct {
 	nextSubscription uint64
 
 	// ── Event subscriptions ──
-	OnProjectTrustHandlers          []extension.ProjectTrustHandler
-	OnResourcesDiscoverHandlers     []func(ctx context.Context, evt extension.ResourcesDiscoverEvent) (extension.ResourcesDiscoverResult, error)
-	OnSessionStartHandlers          []func(ctx context.Context, evt extension.SessionStartEvent) error
-	OnSessionInfoChangedHandlers    []func(ctx context.Context, evt extension.SessionInfoChangedEvent) error
-	OnMcpServersChangeHandlers      []func(ctx context.Context, evt extension.McpServersChangeEvent) error
-	OnProviderStreamEventHandlers   []func(ctx context.Context, evt extension.ProviderStreamEvent) error
-	OnSessionBeforeSwitchHandlers   []func(ctx context.Context, evt extension.SessionBeforeSwitchEvent) (extension.SessionBeforeSwitchResult, error)
-	OnSessionBeforeForkHandlers     []func(ctx context.Context, evt extension.SessionBeforeForkEvent) (extension.SessionBeforeForkResult, error)
-	OnSessionBeforeCompactHandlers  []func(ctx context.Context, evt extension.SessionBeforeCompactEvent) (extension.SessionBeforeCompactResult, error)
-	OnSessionCompactHandlers        []func(ctx context.Context, evt extension.SessionCompactEvent) error
-	OnSessionCompactFailedHandlers  []func(ctx context.Context, evt extension.SessionCompactFailedEvent) error
-	OnSessionShutdownHandlers       []func(ctx context.Context, evt extension.SessionShutdownEvent) error
-	OnSessionBeforeTreeHandlers     []func(ctx context.Context, evt extension.SessionBeforeTreeEvent) (extension.SessionBeforeTreeResult, error)
-	OnSessionTreeHandlers           []func(ctx context.Context, evt extension.SessionTreeEvent) error
-	OnContextHandlers               []func(ctx context.Context, evt extension.ContextEvent) (extension.ContextEventResult, error)
-	OnContextWithSystemHandlers     []func(ctx context.Context, evt extension.ContextWithSystemEvent) (extension.ContextEventResult, error)
-	OnBeforeProviderRequestHandlers []func(ctx context.Context, evt extension.BeforeProviderRequestEvent) (extension.BeforeProviderRequestEventResult, error)
-	OnAfterProviderResponseHandlers []func(ctx context.Context, evt extension.AfterProviderResponseEvent) error
-	OnBeforeProviderHeadersHandlers []func(ctx context.Context, evt extension.BeforeProviderHeadersEvent) error
-	OnBeforeAgentStartHandlers      []func(ctx context.Context, evt extension.BeforeAgentStartEvent) (extension.BeforeAgentStartEventResult, error)
-	OnAgentStartHandlers            []func(ctx context.Context, evt extension.AgentStartEvent) error
-	OnAgentEndHandlers              []func(ctx context.Context, evt extension.AgentEndEvent) error
-	OnAgentBeforeSettleHandlers     []func(ctx context.Context, evt *extension.AgentBeforeSettleEvent) (extension.AgentBeforeSettleEventResult, error)
-	OnAgentSettledHandlers          []func(ctx context.Context, evt extension.AgentSettledEvent) error
-	OnUiPromptStartHandlers         []func(ctx context.Context, evt extension.UIPromptStartEvent) error
-	OnUiPromptEndHandlers           []func(ctx context.Context, evt extension.UIPromptEndEvent) error
-	OnCacheWarmingDecisionHandlers  []func(ctx context.Context, evt extension.CacheWarmingDecisionEvent) (extension.CacheWarmingDecisionEventResult, error)
-	OnTurnStartHandlers             []func(ctx context.Context, evt extension.TurnStartEvent) error
-	OnTurnEndHandlers               []func(ctx context.Context, evt extension.TurnEndEvent) (extension.TurnEndEventResult, error)
-	OnMessageStartHandlers          []func(ctx context.Context, evt extension.MessageStartEvent) error
-	OnMessageUpdateHandlers         []func(ctx context.Context, evt extension.MessageUpdateEvent) error
-	OnMessageEndHandlers            []func(ctx context.Context, evt extension.MessageEndEvent) (extension.MessageEndEventResult, error)
-	OnToolExecutionStartHandlers    []func(ctx context.Context, evt extension.ToolExecutionStartEvent) error
-	OnToolExecutionUpdateHandlers   []func(ctx context.Context, evt extension.ToolExecutionUpdateEvent) error
-	OnToolExecutionEndHandlers      []func(ctx context.Context, evt extension.ToolExecutionEndEvent) error
-	OnModelSelectHandlers           []func(ctx context.Context, evt extension.ModelSelectEvent) error
-	OnThinkingLevelSelectHandlers   []func(ctx context.Context, evt extension.ThinkingLevelSelectEvent) error
-	OnToolCallHandlers              []func(ctx context.Context, evt extension.ToolCallEvent) (extension.ToolCallEventResult, error)
-	OnToolResultHandlers            []func(ctx context.Context, evt extension.ToolResultEvent) (extension.ToolResultEventResult, error)
-	OnUserBashHandlers              []func(ctx context.Context, evt extension.UserBashEvent) (extension.UserBashEventResult, error)
-	OnInputHandlers                 []func(ctx context.Context, evt extension.InputEvent) (extension.InputEventResult, error)
+	OnProjectTrustHandlers           []extension.ProjectTrustHandler
+	OnResourcesDiscoverHandlers      []func(ctx context.Context, evt extension.ResourcesDiscoverEvent) (extension.ResourcesDiscoverResult, error)
+	OnSessionStartHandlers           []func(ctx context.Context, evt extension.SessionStartEvent) error
+	OnSessionInfoChangedHandlers     []func(ctx context.Context, evt extension.SessionInfoChangedEvent) error
+	OnMcpServersChangeHandlers       []func(ctx context.Context, evt extension.McpServersChangeEvent) error
+	OnProviderStreamEventHandlers    []func(ctx context.Context, evt extension.ProviderStreamEvent) error
+	OnSessionBeforeSwitchHandlers    []func(ctx context.Context, evt extension.SessionBeforeSwitchEvent) (extension.SessionBeforeSwitchResult, error)
+	OnSessionBeforeForkHandlers      []func(ctx context.Context, evt extension.SessionBeforeForkEvent) (extension.SessionBeforeForkResult, error)
+	OnSessionBeforeCompactHandlers   []func(ctx context.Context, evt extension.SessionBeforeCompactEvent) (extension.SessionBeforeCompactResult, error)
+	OnSessionCompactHandlers         []func(ctx context.Context, evt extension.SessionCompactEvent) error
+	OnSessionCompactFailedHandlers   []func(ctx context.Context, evt extension.SessionCompactFailedEvent) error
+	OnQueuedMessageDiscardedHandlers []func(ctx context.Context, evt extension.QueuedMessageDiscardedEvent) error
+	OnSessionShutdownHandlers        []func(ctx context.Context, evt extension.SessionShutdownEvent) error
+	OnSessionBeforeTreeHandlers      []func(ctx context.Context, evt extension.SessionBeforeTreeEvent) (extension.SessionBeforeTreeResult, error)
+	OnSessionTreeHandlers            []func(ctx context.Context, evt extension.SessionTreeEvent) error
+	OnContextHandlers                []func(ctx context.Context, evt extension.ContextEvent) (extension.ContextEventResult, error)
+	OnContextWithSystemHandlers      []func(ctx context.Context, evt extension.ContextWithSystemEvent) (extension.ContextEventResult, error)
+	OnBeforeProviderRequestHandlers  []func(ctx context.Context, evt extension.BeforeProviderRequestEvent) (extension.BeforeProviderRequestEventResult, error)
+	OnAfterProviderResponseHandlers  []func(ctx context.Context, evt extension.AfterProviderResponseEvent) error
+	OnBeforeProviderHeadersHandlers  []func(ctx context.Context, evt extension.BeforeProviderHeadersEvent) error
+	OnBeforeAgentStartHandlers       []func(ctx context.Context, evt extension.BeforeAgentStartEvent) (extension.BeforeAgentStartEventResult, error)
+	OnAgentStartHandlers             []func(ctx context.Context, evt extension.AgentStartEvent) error
+	OnAgentEndHandlers               []func(ctx context.Context, evt extension.AgentEndEvent) error
+	OnAgentBeforeSettleHandlers      []func(ctx context.Context, evt *extension.AgentBeforeSettleEvent) (extension.AgentBeforeSettleEventResult, error)
+	OnAgentSettledHandlers           []func(ctx context.Context, evt extension.AgentSettledEvent) error
+	OnUiPromptStartHandlers          []func(ctx context.Context, evt extension.UIPromptStartEvent) error
+	OnUiPromptEndHandlers            []func(ctx context.Context, evt extension.UIPromptEndEvent) error
+	OnCacheWarmingDecisionHandlers   []func(ctx context.Context, evt extension.CacheWarmingDecisionEvent) (extension.CacheWarmingDecisionEventResult, error)
+	OnTurnStartHandlers              []func(ctx context.Context, evt extension.TurnStartEvent) error
+	OnTurnEndHandlers                []func(ctx context.Context, evt extension.TurnEndEvent) (extension.TurnEndEventResult, error)
+	OnMessageStartHandlers           []func(ctx context.Context, evt extension.MessageStartEvent) error
+	OnMessageUpdateHandlers          []func(ctx context.Context, evt extension.MessageUpdateEvent) error
+	OnMessageEndHandlers             []func(ctx context.Context, evt extension.MessageEndEvent) (extension.MessageEndEventResult, error)
+	OnToolExecutionStartHandlers     []func(ctx context.Context, evt extension.ToolExecutionStartEvent) error
+	OnToolExecutionUpdateHandlers    []func(ctx context.Context, evt extension.ToolExecutionUpdateEvent) error
+	OnToolExecutionEndHandlers       []func(ctx context.Context, evt extension.ToolExecutionEndEvent) error
+	OnModelSelectHandlers            []func(ctx context.Context, evt extension.ModelSelectEvent) error
+	OnThinkingLevelSelectHandlers    []func(ctx context.Context, evt extension.ThinkingLevelSelectEvent) error
+	OnToolCallHandlers               []func(ctx context.Context, evt extension.ToolCallEvent) (extension.ToolCallEventResult, error)
+	OnToolResultHandlers             []func(ctx context.Context, evt extension.ToolResultEvent) (extension.ToolResultEventResult, error)
+	OnUserBashHandlers               []func(ctx context.Context, evt extension.UserBashEvent) (extension.UserBashEventResult, error)
+	OnInputHandlers                  []func(ctx context.Context, evt extension.InputEvent) (extension.InputEventResult, error)
 
 	// ── Registrations ──
 	RegisterToolCalls            []extension.ToolDefinition
@@ -226,6 +227,9 @@ func (f *Fake) OnSessionCompact(h func(ctx context.Context, evt extension.Sessio
 }
 func (f *Fake) OnSessionCompactFailed(h func(ctx context.Context, evt extension.SessionCompactFailedEvent) error) func() {
 	return subscribe(f, "OnSessionCompactFailedHandlers", &f.OnSessionCompactFailedHandlers, h)
+}
+func (f *Fake) OnQueuedMessageDiscarded(h func(ctx context.Context, evt extension.QueuedMessageDiscardedEvent) error) func() {
+	return subscribe(f, "OnQueuedMessageDiscardedHandlers", &f.OnQueuedMessageDiscardedHandlers, h)
 }
 func (f *Fake) OnSessionShutdown(h func(ctx context.Context, evt extension.SessionShutdownEvent) error) func() {
 	return subscribe(f, "OnSessionShutdownHandlers", &f.OnSessionShutdownHandlers, h)

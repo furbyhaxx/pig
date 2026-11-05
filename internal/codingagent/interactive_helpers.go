@@ -12,6 +12,7 @@ import (
 
 	"github.com/MichaelKinsy/PiG/agent"
 	"github.com/MichaelKinsy/PiG/coding/extension"
+	"github.com/MichaelKinsy/PiG/coding/extension/host/inproc"
 	"github.com/MichaelKinsy/PiG/coding/extension/host/invocation"
 	"github.com/MichaelKinsy/PiG/tui"
 )
@@ -63,6 +64,17 @@ func debugLog(format string, args ...any) {
 	defer func() { _ = f.Close() }()
 	_, _ = fmt.Fprintf(f, "[%s] ", time.Now().Format("15:04:05.000"))
 	_, _ = fmt.Fprintf(f, format+"\n", args...)
+}
+
+// EmitQueuedMessageDiscards notifies extensions and the PIG_DEBUG log of each invalidated nextTurn message, in queue order.
+func EmitQueuedMessageDiscards(ctx context.Context, runner *inproc.Runner, messages []agent.AgentMessage, reason string) {
+	for _, message := range messages {
+		customType, _ := message.Custom["customType"].(string)
+		debugLog("queued_message_discarded customType=%q reason=%q", customType, reason)
+		if runner != nil {
+			_, _ = runner.Emit(ctx, extension.QueuedMessageDiscardedEvent{Type: "queued_message_discarded", CustomType: customType, Reason: reason})
+		}
+	}
 }
 
 // showWarning appends a padded, theme-colored warning with Pi's textual prefix.

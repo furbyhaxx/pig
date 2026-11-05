@@ -25,6 +25,8 @@ pub const EVENT_SESSION_SHUTDOWN: &str = "session_shutdown";
 pub const EVENT_SESSION_BEFORE_TREE: &str = "session_before_tree";
 /// Upstream `pi.on("session_tree", ...)`.
 pub const EVENT_SESSION_TREE: &str = "session_tree";
+/// A nextTurn message invalidated by navigation or session replacement (SPEC-0007 D1).
+pub const EVENT_QUEUED_MESSAGE_DISCARDED: &str = "queued_message_discarded";
 /// Upstream `pi.on("context", ...)`.
 pub const EVENT_CONTEXT: &str = "context";
 /// Upstream `pi.on("context_with_system", ...)`.
@@ -91,6 +93,7 @@ mod tests {
     #[test]
     fn event_names_match_upstream() {
         let pairs = [
+            (EVENT_QUEUED_MESSAGE_DISCARDED, "queued_message_discarded"),
             (EVENT_PROJECT_TRUST, "project_trust"),
             (EVENT_RESOURCES_DISCOVER, "resources_discover"),
             (EVENT_SESSION_START, "session_start"),
@@ -133,7 +136,7 @@ mod tests {
             (EVENT_PROVIDER_STREAM_EVENT, "provider_stream_event"),
             (EVENT_MCP_SERVERS_CHANGE, "mcp_servers_change"),
         ];
-        assert_eq!(pairs.len(), 41);
+        assert_eq!(pairs.len(), 42);
         for (constant, name) in pairs {
             assert_eq!(constant, name);
         }

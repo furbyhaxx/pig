@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/MichaelKinsy/PiG/ai"
@@ -57,6 +58,54 @@ func TestNextTurnDoesNotEnterTheFollowUpQueue(t *testing.T) {
 
 	if agent.HasQueuedMessages() {
 		t.Error("a nextTurn message entered the steering or follow-up queue")
+	}
+}
+
+func TestNextTurnLeafStampAndDiscard(t *testing.T) {
+	a := newTestAgentForNextTurn(t)
+	leaf := new("a")
+	a.BindNextTurnSession("session", func() *string { return leaf })
+	queue := func(name string) { a.QueueNextTurn(AgentMessage{Custom: map[string]any{"customType": name}}) }
+	queue("a-1")
+	queue("a-2")
+	leaf = new("b")
+	queue("b")
+	discarded := a.DiscardPendingNextTurn("session", leaf)
+	if len(discarded) != 2 || discarded[0].Custom["customType"] != "a-1" || discarded[1].Custom["customType"] != "a-2" {
+		t.Fatalf("discarded = %+v, want a-1, a-2", discarded)
+	}
+	kept := a.TakePendingNextTurn()
+	if len(kept) != 1 || kept[0].Custom["customType"] != "b" {
+		t.Fatalf("kept = %+v, want b", kept)
+	}
+	leaf = nil
+	queue("root")
+	if got := a.DiscardPendingNextTurn("session", nil); len(got) != 0 {
+		t.Fatalf("root discarded = %+v", got)
+	}
+	if got := a.RebindNextTurnSession("other-session", func() *string { return nil }); len(got) != 1 {
+		t.Fatalf("replacement discarded = %+v, want root", got)
+	}
+	if got := a.DiscardPendingNextTurn("other-session", nil); len(got) != 0 {
+		t.Fatalf("duplicate discard = %+v", got)
+	}
+}
+
+func BenchmarkNextTurnLeafDiscard(b *testing.B) {
+	for _, size := range []int{1, 1000} {
+		b.Run(fmt.Sprint(size), func(b *testing.B) {
+			a := &Agent{}
+			leaf := new("a")
+			a.BindNextTurnSession("session", func() *string { return leaf })
+			message := AgentMessage{Custom: map[string]any{"customType": "benchmark"}}
+			b.ReportAllocs()
+			for b.Loop() {
+				for range size {
+					a.QueueNextTurn(message)
+				}
+				a.DiscardPendingNextTurn("session", new("b"))
+			}
+		})
 	}
 }
 

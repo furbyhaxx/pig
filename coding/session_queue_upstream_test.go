@@ -15,6 +15,161 @@ import (
 	"github.com/MichaelKinsy/PiG/coding/extension"
 )
 
+func TestNextTurnLeafBinding(t *testing.T) {
+	for _, stop := range []ai.StopReason{ai.StopReasonStop, ai.StopReasonError, ai.StopReasonAborted} {
+		for _, keep := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/keep=%v", stop, keep), func(t *testing.T) {
+				var discarded []string
+				h := newQueueCharacterizationHarness(t, extension.Extension{Handlers: map[string][]extension.HandlerFn{
+					"queued_message_discarded": {func(args ...any) (any, error) {
+						wire, err := json.Marshal(args[0])
+						discarded = append(discarded, string(wire))
+						return nil, err
+					}},
+				}}, nil)
+				appendTreeUser(t, h.session, "root")
+				target := appendTreeAssistant(t, h.session, "root reply")
+				appendTreeUser(t, h.session, "prior turn")
+				leaf, err := h.session.inner.AppendMessage(agent.AgentMessage{Assistant: &agent.AssistantMessage{
+					Role: agent.RoleAssistant, Content: []ai.AssistantContentBlock{ai.TextContent{Text: ""}}, StopReason: stop,
+				}})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if keep {
+					target = appendTreeUser(t, h.session, "draft to edit")
+					if err := h.session.inner.SetLeafID(&leaf); err != nil {
+						t.Fatal(err)
+					}
+				}
+				h.session.RefreshContext()
+				if err := h.session.SendCustomMessage(t.Context(), extension.CustomMessageRef{CustomType: "branch-note", Content: "private branch context"}, &extension.SendMessageOptions{DeliverAs: extension.DeliverAsNextTurn}); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := h.session.NavigateTree(t.Context(), target, NavigateTreeOptions{}); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := h.session.NavigateTree(t.Context(), target, NavigateTreeOptions{}); err != nil {
+					t.Fatal(err)
+				}
+				sawCustom := false
+				h.provider.responses = []scriptedResponse{func(messages []ai.Message) *ai.AssistantMessage {
+					sawCustom = queueProviderHasTextBlock(messages, "private branch context")
+					return fauxReply("done", ai.StopReasonStop, 0)(messages)
+				}}
+				if err := h.session.Prompt(t.Context(), "continue"); err != nil {
+					t.Fatal(err)
+				}
+				if sawCustom != keep {
+					t.Errorf("nextTurn injected = %v, want %v", sawCustom, keep)
+				}
+				var want []string
+				if !keep {
+					want = []string{`{"type":"queued_message_discarded","customType":"branch-note","reason":"tree"}`}
+				}
+				if !reflect.DeepEqual(discarded, want) {
+					t.Errorf("discard events = %v, want %v", discarded, want)
+				}
+			})
+		}
+	}
+}
+
+func TestNextTurnRuntimeReplacement(t *testing.T) {
+	for _, reason := range []string{"new", "fork", "resume"} {
+		t.Run(reason, func(t *testing.T) {
+			var discarded []extension.QueuedMessageDiscardedEvent
+			h := newRuntimeTestHarness(t, runtimeTestOptions{extension: func() extension.Extension {
+				return extension.Extension{Handlers: map[string][]extension.HandlerFn{"queued_message_discarded": {func(args ...any) (any, error) {
+					discarded = append(discarded, args[0].(extension.QueuedMessageDiscardedEvent))
+					return nil, nil
+				}}}}
+			}})
+			runtimePrompt(t, h.runtime, "original")
+			path := h.runtime.Session().Path()
+			entry := h.runtime.Session().UserMessagesForForking()[0].EntryID
+			if reason == "resume" {
+				if _, err := h.runtime.NewSession(t.Context(), nil); err != nil {
+					t.Fatal(err)
+				}
+			}
+			outgoing := h.runtime.Session()
+			if err := outgoing.SendCustomMessage(t.Context(), extension.CustomMessageRef{CustomType: "branch-note", Content: "private branch context"}, &extension.SendMessageOptions{DeliverAs: extension.DeliverAsNextTurn}); err != nil {
+				t.Fatal(err)
+			}
+			var err error
+			switch reason {
+			case "new":
+				_, err = h.runtime.NewSession(t.Context(), nil)
+			case "fork":
+				_, err = h.runtime.Fork(t.Context(), entry, nil)
+			case "resume":
+				_, err = h.runtime.SwitchSession(t.Context(), path)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := []extension.QueuedMessageDiscardedEvent{{Type: "queued_message_discarded", CustomType: "branch-note", Reason: reason}}
+			if !reflect.DeepEqual(discarded, want) {
+				t.Fatalf("discards=%+v want=%+v", discarded, want)
+			}
+			if pending := outgoing.Agent().TakePendingNextTurn(); len(pending) != 0 {
+				t.Fatalf("outgoing pending=%+v", pending)
+			}
+			if pending := h.runtime.Session().Agent().TakePendingNextTurn(); len(pending) != 0 {
+				t.Fatalf("replacement pending=%+v", pending)
+			}
+		})
+	}
+}
+
+func TestNextTurnSessionReplacement(t *testing.T) {
+	for _, reason := range []string{"new", "fork", "resume", "switch"} {
+		t.Run(reason, func(t *testing.T) {
+			s := newTreeTestSession(t)
+			var discarded []extension.QueuedMessageDiscardedEvent
+			withTreeHandlers(s, t, map[string][]extension.HandlerFn{"queued_message_discarded": {func(args ...any) (any, error) {
+				discarded = append(discarded, args[0].(extension.QueuedMessageDiscardedEvent))
+				return nil, nil
+			}}})
+			appendTreeUser(t, s, "first")
+			target := appendTreeAssistant(t, s, "reply")
+			appendTreeUser(t, s, "other branch")
+			if err := s.SendCustomMessage(t.Context(), extension.CustomMessageRef{CustomType: "branch-note"}, &extension.SendMessageOptions{DeliverAs: extension.DeliverAsNextTurn}); err != nil {
+				t.Fatal(err)
+			}
+			var err error
+			switch reason {
+			case "new":
+				err = s.NewSession("")
+			case "fork":
+				err = s.Fork(target)
+			case "resume":
+				err = s.SwitchSession(s.Path())
+			case "switch":
+				next, createErr := NewInMemorySessionManager(s.CWD())
+				if createErr != nil {
+					t.Fatal(createErr)
+				}
+				s.ReplaceInner(next)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantCount := 1
+			if reason == "resume" {
+				wantCount = 0
+			}
+			if len(discarded) != wantCount {
+				t.Fatalf("discards=%+v, want %d", discarded, wantCount)
+			}
+			if wantCount == 1 && (discarded[0].CustomType != "branch-note" || discarded[0].Reason != reason) {
+				t.Fatalf("discard=%+v", discarded[0])
+			}
+		})
+	}
+}
+
 func TestUpstreamSessionQueue(t *testing.T) {
 	var records []any
 	capture := func(t *testing.T, h *recoveryHarness) {

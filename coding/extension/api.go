@@ -151,6 +151,9 @@ type API interface {
 	// upstream: types.ts:1374
 	OnSessionCompactFailed(handler ExtensionHandlerNoResult[SessionCompactFailedEvent]) func()
 
+	// OnQueuedMessageDiscarded registers a handler for a nextTurn message invalidated by navigation or session replacement.
+	OnQueuedMessageDiscarded(handler ExtensionHandlerNoResult[QueuedMessageDiscardedEvent]) func()
+
 	// OnSessionShutdown registers a handler for "session_shutdown".
 	// upstream: types.ts:1083
 	OnSessionShutdown(handler ExtensionHandlerNoResult[SessionShutdownEvent]) func()

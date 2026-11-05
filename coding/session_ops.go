@@ -24,7 +24,9 @@ func (s *Session) Fork(entryID string) error {
 	if err := s.inner.Branch(entryID); err != nil {
 		return fmt.Errorf("coding: fork %s: %w", entryID, err)
 	}
+	discarded := s.agent.DiscardPendingNextTurn(s.inner.ID(), s.inner.GetLeafID())
 	s.refreshContext()
+	s.emitQueuedMessageDiscards(s.backgroundContext(), discarded, "fork")
 	return nil
 }
 
@@ -47,7 +49,7 @@ func (s *Session) ForkToNewSessionWithText(userMsgEntryID string) (string, error
 	if err != nil {
 		return "", fmt.Errorf("coding: fork %s: %w", userMsgEntryID, err)
 	}
-	s.ReplaceInner(newSess)
+	s.replaceInner(s.backgroundContext(), newSess, "fork")
 	return selectedText, nil
 }
 
@@ -57,7 +59,7 @@ func (s *Session) NewSession(parentSession string) error {
 	if err != nil {
 		return err
 	}
-	s.ReplaceInner(next)
+	s.replaceInner(s.backgroundContext(), next, "new")
 	return nil
 }
 
@@ -92,7 +94,7 @@ func (s *Session) SwitchSession(path string) error {
 	if err != nil {
 		return fmt.Errorf("coding: switch session: %w", err)
 	}
-	s.ReplaceInner(next)
+	s.replaceInner(s.backgroundContext(), next, "resume")
 	return nil
 }
 

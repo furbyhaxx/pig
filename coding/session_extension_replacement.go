@@ -72,7 +72,7 @@ func (s *Session) finishExtensionReplacement(ctx context.Context, next *icodinga
 		}
 	}
 	// pig divergence (D30): session replacement retains the host-scoped runner.
-	s.ReplaceInner(next)
+	s.replaceInner(ctx, next, reason)
 	event := extension.SessionStartEvent{Type: "session_start", Reason: reason, PreviousSessionFile: previous}
 	s.mu.Lock()
 	rebind := s.rebindSession

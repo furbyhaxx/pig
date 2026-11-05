@@ -46,6 +46,13 @@ func emitsTo[E extension.ExtensionEvent](t *testing.T, eventType string, event E
 // ExtensionAPI subscribes a handler that the runner's emit delivers the matching event to. Each Go API.On* member keeps its
 // handler and the runner dispatches the typed event to it.
 func TestAPIOnMembersDeliverTheirEventsThroughTheRunner(t *testing.T) {
+	emitsTo(t, "queued_message_discarded", extension.QueuedMessageDiscardedEvent{Type: "queued_message_discarded", CustomType: "note", Reason: "tree"},
+		func(a extension.API, h func(context.Context, extension.QueuedMessageDiscardedEvent) error) func() {
+			return a.OnQueuedMessageDiscarded(h)
+		},
+		func(f *extensiontest.Fake) []func(context.Context, extension.QueuedMessageDiscardedEvent) error {
+			return f.OnQueuedMessageDiscardedHandlers
+		})
 	emitsTo(t, "session_start", extension.SessionStartEvent{Type: "session_start", Reason: "startup"},
 		func(a extension.API, h func(context.Context, extension.SessionStartEvent) error) func() {
 			return a.OnSessionStart(h)

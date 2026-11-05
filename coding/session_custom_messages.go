@@ -9,6 +9,7 @@ import (
 
 	"github.com/MichaelKinsy/PiG/agent"
 	"github.com/MichaelKinsy/PiG/coding/extension"
+	icodingagent "github.com/MichaelKinsy/PiG/internal/codingagent"
 )
 
 // SendCustomMessage awaits custom-message delivery and any triggered turn. An explicit false TriggerTurn defers an active turn's append until its tool results are complete.
@@ -229,6 +230,10 @@ func (s *Session) appendCustomMessage(message agent.AgentMessage) error {
 	}
 	s.refreshContext()
 	return nil
+}
+
+func (s *Session) emitQueuedMessageDiscards(ctx context.Context, messages []agent.AgentMessage, reason string) {
+	icodingagent.EmitQueuedMessageDiscards(ctx, s.currentRunner(), messages, reason)
 }
 
 type publishedSessionEvent struct{ agent.AgentEvent }

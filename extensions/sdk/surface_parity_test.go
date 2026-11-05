@@ -78,7 +78,8 @@ func decodeArgs(t *testing.T, raw json.RawMessage) map[string]any {
 
 func TestEventConstantsMatchPiEventNames(t *testing.T) {
 	want := map[string]string{
-		EventProjectTrust: "project_trust", EventResourcesDiscover: "resources_discover",
+		EventQueuedMessageDiscarded: "queued_message_discarded",
+		EventProjectTrust:           "project_trust", EventResourcesDiscover: "resources_discover",
 		EventSessionStart: "session_start", EventSessionInfoChanged: "session_info_changed",
 		EventSessionBeforeSwitch: "session_before_switch", EventSessionBeforeFork: "session_before_fork",
 		EventSessionBeforeCompact: "session_before_compact", EventSessionCompact: "session_compact",
@@ -97,8 +98,8 @@ func TestEventConstantsMatchPiEventNames(t *testing.T) {
 		EventThinkingLevelSelect: "thinking_level_select", EventToolCall: "tool_call",
 		EventToolResult: "tool_result", EventUserBash: "user_bash", EventInput: "input",
 	}
-	if len(want) != 39 {
-		t.Fatalf("event constants are not distinct: %d of 39", len(want))
+	if len(want) != 40 {
+		t.Fatalf("event constants are not distinct: %d of 40", len(want))
 	}
 	for got, name := range want {
 		if got != name {

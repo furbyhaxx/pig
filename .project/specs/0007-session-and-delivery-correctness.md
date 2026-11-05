@@ -5,9 +5,9 @@ document:
   title: "Session and delivery correctness"
   description: "Queued nextTurn messages bound to their branch, resume reason for continued sessions, strict deliverAs, deduplicated session listing, lighter listing payloads, custom data in branch projections and an explicit no-op compaction result"
   status: "draft"
-  revision: 2
+  revision: 4
   created_at: "2026-11-04T14:52:00+01:00"
-  updated_at: "2026-11-05T00:20:00+01:00"
+  updated_at: "2026-11-05T12:32:01+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -17,6 +17,12 @@ document:
     - revision: 2
       reason: "Owner decided the initial flag is Runtime-scoped; implement D2 and D3"
       changes: ["D2 initial marks the first session_start of a Runtime, not of the OS process", "D2 record where resume is decided and how every mode receives it", "D3 record the shared validation boundary"]
+    - revision: 3
+      reason: "Implement D1 branch-bound nextTurn delivery"
+      changes: ["Record queue-time session and leaf identity, lifecycle discard boundaries, typed discard event and regression evidence"]
+    - revision: 4
+      reason: "Cover the interactive in-place fork path"
+      changes: ["Record the direct slash fork boundary and its red-proven regression; share discard dispatch between modes"]
 ---
 
 # SPEC-0007 Session and delivery correctness
@@ -25,9 +31,12 @@ Resolves U-08, U-17, U-18, U-21 and the `GetBranch`, `allMessagesText` and "Noth
 
 ## D1 `nextTurn` bound to its branch (U-08)
 
-- A queued `nextTurn` message records the session leaf id at queue time (`agent/agent.go` `pendingNextTurn`).
-- Tree navigation, new session, fork, resume and session switch discard queued messages whose leaf is no longer the current leaf.
-- Each discard emits `queued_message_discarded {customType, reason}` to extensions and a debug log line; the sender can re-queue.
+- A queued `nextTurn` message records the session identity and leaf id at queue time in `agent/agent.go` `pendingNextTurnMessage`. `Agent.BindNextTurnSession` binds the leaf reader to the SessionManager accessor `(*internal/codingagent.Session).GetLeafID()` (`coding.Session.SessionManager()` returns that underlying Session). A nil leaf identifies the position before the first entry; forked sessions sharing entry ids remain distinct by session identity.
+- Tree navigation and in-place fork discard messages whose stored identity differs from the destination. Selecting a user message can resolve to its parent leaf: if that is the queued leaf, the message stays queued. Ordinary transcript appends do not invalidate the queue; messages queued during a running turn still join the next prompt.
+- In-place new/resume/switch replacements compare the destination session and leaf before rebinding the reader. A Runtime replacement retires the old Agent and discards its entire queue before extension shutdown; it does not transfer deferred messages between Agent instances. Cancelled navigation or replacement does not discard.
+- Each discard emits the typed `extension.QueuedMessageDiscardedEvent` as `{"type":"queued_message_discarded","customType":"…","reason":"…"}` through the normal extension dispatch and writes a `PIG_DEBUG` line. Reasons are `tree`, `new`, `fork`, `resume` (including switch to an existing session file), and `switch` for direct `ReplaceInner`. Events retain queue order; removing a message before dispatch prevents a second discard of it. Extensions can choose to queue fresh context for the destination instead of retaining stale branch state.
+- Production boundaries: `Session.navigateTree`, `Session.Fork`, `Session.replaceInner`, `Runtime.teardownCurrent`, and interactive `buildSlashContext.ForkAtEntry` (which calls `forkAndRebuild` directly). All three prompt injection paths drain the same Agent queue, including interactive delivery.
+- Evidence: `TestNextTurnLeafBinding` failed before the fix with injected stale context and zero discard events, for ordinary, errored and aborted prior assistant turns; it now checks exactly one discard and same-leaf retention after navigation to a child user entry. `TestNextTurnLeafStampAndDiscard` checks queue-time identity, ordered filtering, nil root and session identity. `TestInteractiveForkDiscardsNextTurn` independently failed with a retained queue and no event before the slash fork boundary was covered; it now verifies the interactive sendMessage path and the production fork callback. `TestNextTurnRuntimeReplacement` covers new/fork/resume; `TestNextTurnSessionReplacement` covers direct SDK boundaries and same-session/same-leaf resume retention. `TestConformance_EventPayloadsReachEverySDKUnchanged` includes the new event for Go, Node, Rust and Python in isolated, packed and fused realizations.
 
 ## D2 Resume reason (U-17)
 

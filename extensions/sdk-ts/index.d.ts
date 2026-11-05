@@ -90,8 +90,17 @@ export interface PiGExtensionSourceInfo {
   baseDir?: string;
 }
 
+/** A nextTurn message invalidated by navigation or session replacement (SPEC-0007 D1). */
+export interface QueuedMessageDiscardedEvent {
+  type: "queued_message_discarded";
+  customType: string;
+  reason: "tree" | "new" | "fork" | "resume" | "switch";
+}
+
 declare module "@earendil-works/pi-coding-agent" {
   interface ExtensionAPI {
+    /** Observe a discarded nextTurn message; handlers may re-queue for the current branch. */
+    on(event: "queued_message_discarded", handler: (event: QueuedMessageDiscardedEvent, ctx: ExtensionContext) => void | Promise<void>): void;
     /**
      * Run `handler(ctx)` once the runtime registered and has its state, before
      * it serves a request (`session_start` included) and after the emits its

@@ -430,6 +430,8 @@ func (m *InteractiveMode) buildSlashContext(ctx context.Context) *SlashContext {
 			if err := forkAndRebuild(m.currentSession(), m.agent, entryID); err != nil {
 				return err
 			}
+			discarded := m.agent.DiscardPendingNextTurn(m.currentSession().ID(), m.currentSession().GetLeafID())
+			EmitQueuedMessageDiscards(ctx, m.newRunner, discarded, "fork")
 			// Rebuild visible chat so it matches the LLM
 			// context (forkAndRebuild moves the leaf + updates agent messages
 			// but chatContainer still shows the abandoned-branch messages).

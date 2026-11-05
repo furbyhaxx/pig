@@ -21,6 +21,8 @@ const (
 	EventSessionShutdown      = "session_shutdown"
 	EventSessionBeforeTree    = "session_before_tree"
 	EventSessionTree          = "session_tree"
+	// EventQueuedMessageDiscarded reports a nextTurn message invalidated by navigation or session replacement (SPEC-0007 D1).
+	EventQueuedMessageDiscarded = "queued_message_discarded"
 
 	// Context and provider requests.
 	EventContext               = "context"

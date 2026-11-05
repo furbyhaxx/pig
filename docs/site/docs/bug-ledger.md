@@ -218,6 +218,7 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 | [BF-3b8aa66](#bf-3b8aa66) | A Piglet Binary that strips `bedrock-converse-stream` links the AWS SDK again: the Bedrock retry backoff… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-3ba74f2](#bf-3ba74f2) | fix(codingagent): wait for a read's rest on the route snapshot that found no modal | PiG's own defect | All platforms | Unreleased |
 | [BF-3cb7131](#bf-3cb7131) | fix(sdk-py): stage pig_sdk.tui with the package, which pig_sdk imports at load; keep the pi-ai patterns… | PiG's own defect | All platforms | Unreleased |
+| [BF-3cc9957](#bf-3cc9957) | fix(coding): bound session_start dispatch by the mode's context | PiG's own defect | All platforms | Unreleased |
 | [BF-3ce6bcb](#bf-3ce6bcb) | fix(changelog,source): /i scheme tests fold as JavaScript does, not as RE2's (?i) | PiG's own defect | All platforms | Unreleased |
 | [BF-3cf03c0](#bf-3cf03c0) | A faux provider error message that carries a response id writes `responseId` after `errorMessage` in session… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-3d12e48](#bf-3d12e48) | fix(tui): tree selector cursor follows Pi's selectedIndex over an empty list | PiG's own defect | All platforms | Unreleased |
@@ -1142,6 +1143,7 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 | [BF-ed05099-4](#bf-ed05099-4) | Tool-call input keeps its object members in the order the model sent them through events, tool execution… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-edb73db](#bf-edb73db) | fix(codingagent): one owner-overflow forwarder at a time; the drain test waits for it, not for the flag's… | PiG's own defect | All platforms | Unreleased |
 | [BF-edd287c](#bf-edd287c) | Migrating a version 1 session file that holds a line parsing to a number, string, array or `true` no longer… | PiG's own defect | All platforms | 0.5.0 |
+| [BF-ee84034](#bf-ee84034) | Bind deferred `nextTurn` custom messages to their session leaf and discard stale branch context on navigation… | PiG's own defect | All platforms | Unreleased |
 | [BF-eeac307](#bf-eeac307) | Anthropic and Bedrock assistant messages write `providerThinkingLevel` after `model`, and write… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-ef0f95a](#bf-ef0f95a) | OpenCode Zen and OpenCode Go use the `opencode.ai/inference` endpoints, which fixes OpenCode Go Gemini models… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-f02269c](#bf-f02269c) | When an extension's `before_provider_request` handler replaces an Anthropic request, or a Codex WebSocket… | PiG's own defect | All platforms | 0.5.0 |
@@ -4004,6 +4006,19 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 - **Fixed in:** Unreleased
 - **Fix commits:** `3cb7131f3a` (2026-10-21)
 - **Tests:** `extensions/sdk-py/bundle_test.go::TestEveryPackageSourceIsBundled`
+
+### BF-3cc9957
+
+**fix(coding): bound session_start dispatch by the mode's context**
+
+- **Source:** PiG's own defect
+- **Symptom:** fix(coding): bound session_start dispatch by the mode's context
+- **Root cause:** EmitSessionStartEvent took no context and dispatched with context.Background(), so a mode cancelled during startup or a replacement could not stop session_start handlers or resource discovery.
+- **User impact:** Behavior differed from Pi
+- **Platform:** All platforms
+- **Fixed in:** Unreleased
+- **Fix commits:** `3cc9957f24` (2026-11-05)
+- **Tests:** None recorded.
 
 ### BF-3ce6bcb
 
@@ -16843,6 +16858,20 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 - **Fix commits:** `34f7594aa5` (2026-10-11), `edd287c5d8` (2026-10-12)
 - **Tests:** `internal/codingagent/extension_ui_phase_shutdown_test.go::TestAwaitedExtensionPhaseWithoutShutdownReturnsItsResult`, `internal/codingagent/extension_ui_phase_shutdown_test.go::TestNewSessionEndedByShutdownIsNotAFatalRuntimeError`, `internal/codingagent/extension_ui_phase_shutdown_test.go::TestShutdownDuringAwaitedExtensionPhaseDoesNotWaitForAHandlerThatIgnoresCancellation`, `internal/codingagent/extension_ui_phase_shutdown_test.go::TestShutdownDuringAwaitedExtensionPhaseEndsThePhase`, `internal/codingagent/session_open_nonentry_oracle_test.go::TestMigrateSessionEntriesPassesOverRecordsThatAreNotObjectsWhenFindingTheHeader`, `internal/codingagent/session_open_nonentry_oracle_test.go::TestMigrateV1ToV2ChainsThroughAnArrayRecordAndRefusesAPrimitiveAsPiDoes`, `internal/codingagent/session_open_nonentry_oracle_test.go::TestSessionOpenKeepsRecordsThatAreNotEntriesAsPiDoes`, `test/parity/scenarios/extensions-runtime/73-shutdown-from-session-before-fork.toml` and 2 more in docs/bug-ledger.json
 - **Release note:** Migrating a version 1 session file that holds a line parsing to a number, string, array or `true` no longer fails while finding the header. Like Pi, an array record stays as written and still takes a place in the migration's id chain, and a number, string or boolean record stops the migration with the same `Cannot create property 'id'` error Pi throws.
+
+### BF-ee84034
+
+**Bind deferred `nextTurn` custom messages to their session leaf and discard stale branch context on navigation…**
+
+- **Source:** PiG's own defect
+- **Symptom:** Bind deferred `nextTurn` custom messages to their session leaf and discard stale branch context on navigation or session replacement.
+- **Root cause:** Implement SPEC-0007 D1. Stamp the session and leaf at queue time, remove invalidated context on navigation and replacement, and report each removal to extensions and the debug log. Preserve same-leaf queues and ordinary turn growth.
+- **User impact:** Lost or altered data
+- **Platform:** All platforms
+- **Fixed in:** Unreleased
+- **Fix commits:** `ee8403488b` (2026-11-05)
+- **Tests:** `coding/session_queue_upstream_test.go::TestNextTurnLeafBinding`, `coding/session_queue_upstream_test.go::TestNextTurnRuntimeReplacement`, `coding/session_queue_upstream_test.go::TestNextTurnSessionReplacement`
+- **Release note:** Bind deferred `nextTurn` custom messages to their session leaf and discard stale branch context on navigation or session replacement. Extensions receive `queued_message_discarded` with `customType` and `reason`; `PIG_DEBUG` also records each discard (SPEC-0007 D1).
 
 ### BF-eeac307
 
