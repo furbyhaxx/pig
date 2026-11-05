@@ -5,9 +5,9 @@ document:
   title: "Resolve the Workbench host gaps"
   description: "Slices that implement SPEC-0002..SPEC-0010 after re-steering the fork (SPEC-0001 D7-D10), with tests, wire/SDK parity and docs per slice"
   status: "draft"
-  revision: 12
+  revision: 13
   created_at: "2026-11-04T15:05:00+01:00"
-  updated_at: "2026-11-05T10:05:00+01:00"
+  updated_at: "2026-11-05T15:40:00+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -47,6 +47,9 @@ document:
     - revision: 12
       reason: "Fix the test wrapper that hid rustup"
       changes: ["record ddcf654d8 and drop the manual RUSTUP_HOME/CARGO_HOME workaround from the S1.6 evidence"]
+    - revision: 13
+      reason: "S1.3 and S1.4 landed through delegated workers and were integrated"
+      changes: ["replace the 1.3 and 1.4 rows with their real evidence", "record the S1.3 and S1.4 evidence sections", "record the two blockers found during integration: Node has no handler context, and the SDK bundles were stale"]
 ---
 
 # PLAN-0001 Resolve the Workbench host gaps
@@ -58,7 +61,7 @@ Input: `../../analyses/2026-11-04-host-gap-verification/README.md`. Policy: `../
 | Slice | Goal | Specs | Status |
 |---|---|---|---|
 | S0 | Steering, gates, public fork statement | 0001 | implemented; full gate blocked (B-0004) |
-| S1 | Reliability fixes and skill roots | 0004 D1–D3, 0007 D1–D3, 0009 | now; 1.1, 1.2, 1.5 and 1.6 implemented, P29 agent-turn reproduction open, 1.3, 1.4 and 1.7 next |
+| S1 | Reliability fixes and skill roots | 0004 D1–D3, 0007 D1–D3, 0009 | now; 1.1–1.6 implemented, P29 agent-turn reproduction open, 1.7 next |
 | S2 | Model request pipeline | 0003 | later |
 | S3 | System prompt composition | 0002 | later |
 | S4 | Headless output and dialogs | 0005 | later |
@@ -73,7 +76,7 @@ No work: U-09 and U-26 (wrong findings), U-20 (watch; regression test when it re
 
 - Per task: red test first for bugs; implementation; wire + all SDKs + `test/extension-conformance/` for extension API changes; docs in both trees (`docs/site/docs/`, `internal/pigdocs/content/`); `make generate` when settings, flags or exported API change; `changelog.d/` fragment for user-facing changes.
 - Upstream tests and parity scenarios that pin replaced behavior are rewritten or deleted in the same change (SPEC-0001 D10); the commit body cites the spec.
-- Gate per task: `make test-changed lint-changed`, `go vet` on touched packages, `-race` on edited packages. Before closing a slice: `make ci-drift ci-contracts`, `make check`.
+- Gate per task: `make test-changed lint-changed`, `go vet` on touched packages, `-race` on edited packages. Any change to an SDK source (`extensions/sdk*`) also runs that SDK's own suite (`make test-sdk-go`, `test-sdk-py`, `test-sdk-rs`) and `go generate ./...` in that bundle directory, because a stale `.gz` mirror otherwise ships silently (B-0004). Before closing a slice: `make ci-drift ci-contracts`, `make check`.
 - A spec decision that turns out wrong is revised in the spec in the same change.
 
 ## S0 Steering and gates (now)
@@ -119,8 +122,8 @@ Done when: `make check` passes, no child `AGENTS.md` demands Pi faithfulness for
 |---|---|---|---|---|
 | 1.1 | Generation-unique sockets implemented; original P29 tree-navigation and agent-turn reproduction remains open | 0004 D1 | red-proven `TestSocketGenerationTeardownDoesNotUnlinkSuccessor`; 200-reload stress loop is not a P29 reproduction | `docs/runtime-cell-reload.md`, bundle `runtime-cells.md` |
 | 1.2 | Bounded reload handshake, atomic reload, error to `ctx.Reload()`, `/reload`, RPC and the SDK loader; global setting `extensionsReloadHandshakeMs` | 0004 D2 | stuck-peer test (process never registers) keeps old generation serving; SDK per-cell publication test | `settings.md`, `extensions.md` reload section |
-| 1.3 | Event-bus cancellation (`events.cancel`) host + all SDKs | 0004 D3 | conformance test: caller abort ends listener context in Go/Rust/Python/Node | `extensions.md` event bus |
-| 1.4 | `nextTurn` bound to leaf; discard + `queued_message_discarded` on navigation/new/fork/resume/switch | 0007 D1 | red test from probe P20; poisoned history case | `extensions.md`, `events.md` |
+| 1.3 | Event-bus cancellation reuses the existing `cancel` frame; Go, Python and Rust handler contexts end, Node keeps its `(data)` signature | 0004 D3 | `TestNativeEventBusCallerCancellationEndsListener` (Go/Python/Rust, isolated and shared-ok), `TestEventBusCancelledDispatchDoesNotStartListeners`, `TestEventBusCancelledCallerStillRegistersAndUnregisters` | `extensions.md` event bus, `extension-api.md`, `extension-api-parity.md` |
+| 1.4 | `nextTurn` bound to session and leaf; discard + `queued_message_discarded` on navigation/new/fork/resume/switch, including in-place slash forks | 0007 D1 | `TestNextTurnLeafBinding` (ordinary, errored, aborted history; keep and discard cases), interactive send guard | `events.md` both trees |
 | 1.5 | Strict `deliverAs`; SDK constants | 0007 D3 | `TestSendMessageRejectsUnknownDeliverAs`, `TestSendUserMessageRejectsUnknownDeliverAs`, `TestSendUserMessageRejectsNextTurn`; unknown value fails the call in every SDK through the shared Session action | `extensions.md`, `extension-api.md` |
 | 1.6 | `session_start` `resume` for continued sessions; `initial` flag | 0007 D2 | `--continue`, `--resume`, `--session`, fresh start | `events.md`, changelog `### Upgrading` |
 | 1.7 | `skills.roots[]`: settings object form, legacy migration fix, tokens, precedence, trust; `make generate-schemas` | 0009 | migration keeps `roots`/`paths`; collision order; untrusted project ignores project roots; `HOME`-independent isolation | `skills.md`, `settings.md`, `settings-examples.md`, root `AGENTS.md` test-isolation bullet |
@@ -169,8 +172,35 @@ Done when: all S1 tests red-proven where they are bug fixes, `make check` passes
 - Verified: `go build ./...`, `go vet ./coding ./coding/extension`, the deliverAs and queue/custom-message/prompt selections in `./coding`, `cargo check --all-targets` in `extensions/sdk-rs` (pre-existing warnings only), Python parse of `pig_sdk/__init__.py`, `make lint-changed` (0 issues), `make changelog-check`, `make ci-drift`.
 - `make ci-contracts` passes its correspondence and Porter packages, then fails the Porter unit test that installs a failing repository-local `pre-commit` hook, because this host sets a global `core.hooksPath`. `make porter-check` passes all 26 tests with `GIT_CONFIG_GLOBAL=/dev/null`. Recorded in B-0004 as a host-configuration effect, not a defect of this change.
 - Not verified in this pass: no cross-SDK conformance row drives an unknown `deliverAs` through Node, Rust and Python processes. The rejection is proven at the Session boundary that every binding shares, not through each runtime. Record it as a conformance gap for S1.5 follow-up rather than a covered row.
-- Still open in S1: 1.3 (`events.cancel`), 1.4 (`nextTurn` leaf binding), 1.7 (`skills.roots[]`). 1.6 landed (below). S2–S8 have not started.
+- Still open in S1: 1.7 (`skills.roots[]`) and the P29 agent-turn reproduction. 1.3, 1.4 and 1.6 landed (below). S2–S8 have not started.
 - Anchors for the next items: `events.cancel` (1.3) is the bus in `coding/extension/host/subprocess/event_bus.go`; the `nextTurn` leaf binding (1.4) is `agent.pendingNextTurn`.
+
+### S1.3 evidence: cancellable event dispatch (05.11.2026)
+
+Commits `f01e57c2e` (fix), `b9abc0da2` (changelog), `95e40703e` (docs). Implemented by a delegated worker after one refusal as "mis-sized"; the resume carried the lead decision that the host change and its proof are one unit.
+
+- No new wire method. `handleEventBusCall` no longer shields `events.emit` from the caller's context (`context.WithoutCancel` now applies only to `events.on`/`events.off`, so registration stays atomic for a cancelled caller), `dispatchEvent` starts no further listener once the caller's context is done, and `Conn.request` already sends the existing `MsgCancel` frame for each outstanding dispatch. Node listeners additionally had their emission waiters released on cancellation.
+- Go factory-pump and pre-ready dispatches now arm a request scope instead of `context.Background()`, so they cancel like registered handlers.
+- Red → green, mutation-checked by me on the merged tree: restoring `context.WithoutCancel(ctx)` for every method turns `TestNativeEventBusCallerCancellationEndsListener/go/{isolated,shared-ok}` red after 240 s; the unmutated selection is green.
+- Node/TypeScript is a documented limit, not a gap: Pi's handler signature is `(data)`, so there is no context to end and JavaScript cannot preempt a running handler. SPEC-0004 D3 records it, the changelog says it, and the docs say it.
+- Docs: `extensions.md`, `extension-api.md` and the `pi.events` row of `extension-api-parity.md` now state the contract. `docs-drift` caught that `events.md` (added by 1.4) had no provenance classification and no navigation entry; `docs.json` gained both.
+- Not covered: the cross-SDK row cancels an emitting *command* request. Cancellation of an emit made inside a tool call that the user aborted is the same host path but has no row of its own.
+
+### S1.4 evidence: branch-bound `nextTurn` (05.11.2026)
+
+Commits `ee8403488` (fix), `cb7bf2cff` (in-place slash forks), `8694de46c` (changelog and bug ledger). Also delegated, also after one "mis-sized" refusal.
+
+- A queued message records its session and leaf at queue time; navigation and every replacement path drop messages whose leaf is no longer current, including the in-place slash forks (`internal/codingagent`), and each drop emits `queued_message_discarded {customType, reason}` plus a `PIG_DEBUG` line.
+- Red → green, mutation-checked by me on the merged tree: removing the discard emission turns `TestNextTurnLeafBinding` red for the ordinary, errored and aborted history cases; the keep case (same leaf) still passes, which is what makes the discard meaningful rather than a blanket clear.
+- The extension event is typed (`extension.QueuedMessageDiscardedEvent`) and reached every SDK surface without a wire change, since it travels as an ordinary extension event.
+- Not covered: the interactive `--resume` picker path still has no end-to-end test (carried from S1.6).
+
+### Integration notes (05.11.2026)
+
+- `feat/s1-4-nextturn-leaf` was merged with `--no-ff` as `fb244b67b`; S1.3 was committed directly on `main`. No conflicts.
+- The embedded SDK bundles (`*.go.gz`, `*.py.gz`, `*.rs.gz`) were stale before this work: the Python `__init__.py.gz` still lacked the S1.5 `DELIVER_*` constants. S1.3 regenerated them with `go generate` in each SDK; after the merge I regenerated again so the mirror matches the source (`29dfffd16`).
+- Gates on the merged tree: `make generate`, `make docs-drift`, `make ci-drift`, `make changelog-check`, `go vet` on the touched packages, `-race` on `agent`, `coding` and `coding/extension/host/subprocess`, the SDK and host selections, and `TestNativeEventBusCallerCancellationEndsListener|QueuedMessageDiscarded|ApiOnEvents` in `test/extension-conformance` (green, 88 s). `make ci-contracts` still fails only the known `porter-check` hook test (B-0004).
+- Delegation note for the next slice: both workers refused the first brief as mis-sized within seconds. The resume-with-lead-decision countermeasure from `selecting-worker-model` worked again, and cost less than splitting.
 
 ### S1.6 evidence: `session_start` `resume` and `initial` (05.11.2026)
 

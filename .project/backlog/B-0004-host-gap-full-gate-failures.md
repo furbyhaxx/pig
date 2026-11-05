@@ -5,9 +5,9 @@ document:
   title: "Resolve remaining host-gap full-check failures"
   description: "Failures exposed after repairing the pinned Pi oracle setup"
   status: "open"
-  revision: 7
+  revision: 8
   created_at: "2026-11-04T17:13:00+01:00"
-  updated_at: "2026-11-05T10:05:00+01:00"
+  updated_at: "2026-11-05T15:45:00+01:00"
   created_by: "coding-agent"
   updated_by: "coding-agent"
   kind: "bug"
@@ -35,6 +35,9 @@ document:
     - revision: 7
       reason: "The rustup isolation gap is fixed"
       changes: ["mark the isolation-wrapper rustup section resolved by ddcf654d8"]
+    - revision: 8
+      reason: "Record the stale SDK bundles found while integrating S1.3 and S1.4"
+      changes: ["add the stale-bundle section and its regeneration command"]
 ---
 
 # Remaining full-check failures
@@ -109,6 +112,12 @@ A full `coding` run (all packages in that directory) and a focused `-race` reloa
 
 - `automation/ci/with-isolated-pig-home.sh` points `HOME` at a scratch directory, so rustup's default `~/.rustup` and `~/.cargo` disappear and every Rust extension row fails with "rustup could not choose a version of cargo to run". Seen in `TestJSONModeWritesNothingSessionStartEmittedBeforeTheWriterSubscribesInEverySDK/rust` and the RPC sibling.
 - Resolved by `ddcf654d8` (05.11.2026): the wrapper pins `RUSTUP_HOME` and `CARGO_HOME` to the caller's directories before it moves `HOME`, as it already did for the Go caches. A caller's explicit value wins; a missing directory stays unset. With neither variable exported, both Rust rows failed before the change and pass after it. The remaining sections of this item stay open.
+
+## Stale embedded SDK bundles (05.11.2026)
+
+- The `*.gz` copies that `bundle_embed.go` stages for the Go, Python and Rust SDKs drift whenever a large SDK source changes and nobody regenerates them. Found while integrating S1.3/S1.4: `extensions/sdk-py/pig_sdk/__init__.py.gz` still lacked the `DELIVER_*` constants from the S1.5 work, so a staged Python extension ran an older module than the tree contained.
+- A check for exactly this already exists in every SDK — `TestCompressedCopiesHoldTheirFilesText` in `extensions/sdk/bundle_test.go:61`, `extensions/sdk-py/bundle_test.go:68` and `extensions/sdk-rs/bundle_inventory_test.go:59`. The drift survived because nothing ran it: S1.5's gates were `make test-changed lint-changed`, `go vet` and `make ci-drift`, and `make test-sdk-go`, `test-sdk-py`, `test-sdk-rs` are not part of any of them.
+- So this is not a missing test. It is a gate-coverage gap: an SDK source change must run the SDK's own suite. Fix hint: add the three `test-sdk-*` targets to the per-slice gate in `.project/plans/0001-host-gap-resolution/plan.md` ("Rules for every slice"), or to `make ci-drift`, and regenerate with `cd extensions/sdk && go generate ./...` (same for `sdk-py`, `sdk-rs`) whenever a bundle source changes.
 
 ## Acceptance
 Reproduce each failure narrowly, fix its owner with regression evidence, then rerun `make check` and the complete changed-package target without retries, timing overrides or skipped tests. PLAN-0001 S0 remains open until its gates pass.
