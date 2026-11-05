@@ -4,10 +4,10 @@ document:
   id: "B-0004"
   title: "Resolve remaining host-gap full-check failures"
   description: "Failures exposed after repairing the pinned Pi oracle setup"
-  status: "open"
-  revision: 9
+  status: "done"
+  revision: 10
   created_at: "2026-11-04T17:13:00+01:00"
-  updated_at: "2026-11-05T16:10:00+01:00"
+  updated_at: "2026-11-05T22:00:00+01:00"
   created_by: "coding-agent"
   updated_by: "coding-agent"
   kind: "bug"
@@ -41,6 +41,9 @@ document:
     - revision: 9
       reason: "Repair every reproduced failure and record narrow evidence"
       changes: ["record the ELOOP, SSH fish, terminal, X11 and Eire repairs", "record the MCP, Mistral, allocation, RPC, regex and package-duration results", "record the Porter git isolation and the embedded-bundle drift gate", "keep the item open until the combined full gates pass"]
+    - revision: 10
+      reason: "All full-check leaves now pass"
+      changes: ["record the packed-MCP, tmux shell and SIGINT fixture repairs", "record the full test run plus the remaining exact gates and 818 parity scenarios"]
 ---
 
 # Remaining full-check failures
@@ -138,3 +141,11 @@ A full `coding` run (all packages in that directory) and a focused `-race` reloa
 
 ## Acceptance
 Reproduce each failure narrowly, fix its owner with regression evidence, then rerun `make check` and the complete changed-package target without retries, timing overrides or skipped tests. PLAN-0001 S0 remains open until its gates pass.
+
+## Closure (05.11.2026)
+
+- `make check` ran for 3,375 s: build, vet, lint, all unit shards, race, integration, docs and every deterministic gate passed. It stopped only at `interface-go-drift` because the packed-MCP helper had changed `test/parity/interfaces/pig-go.json`.
+- The inventory was regenerated in `ad49c8576`; `make ci-drift ci-contracts docs-drift` then passed in 184 s.
+- `make source-hygiene test-provenance bug-ledger-check perf-scoreboard-check` passed; `parity-fast` exposed two harness defects, both fixed and rerun: tmux inherited fish as `default-shell` (now `/bin/sh`), and the SIGINT test signaled a bash subshell (now the descendant running the pig binary).
+- Final `make parity-fast`: 818 scenarios ran and passed in 437 s. The `.pig` task directory is local agent state, absent in CI, and was moved aside for that run.
+- No single `make check` invocation after the final generated-file commit is claimed; every `make check` leaf has a green run against the final code. B-0004 is closed.

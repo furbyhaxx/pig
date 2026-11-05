@@ -5,9 +5,9 @@ document:
   title: "Resolve the Workbench host gaps"
   description: "Slices that implement SPEC-0002..SPEC-0010 after re-steering the fork (SPEC-0001 D7-D10), with tests, wire/SDK parity and docs per slice"
   status: "draft"
-  revision: 16
+  revision: 17
   created_at: "2026-11-04T15:05:00+01:00"
-  updated_at: "2026-11-05T15:45:00+01:00"
+  updated_at: "2026-11-05T22:00:00+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -59,6 +59,9 @@ document:
     - revision: 16
       reason: "Reproduce P29 through tree navigation, real agent turns and packed Go reloads"
       changes: ["record the 12-round PTY reproduction and its first-try status", "mark 1.1 and the progress row implemented", "leave S1 acceptance open"]
+    - revision: 17
+      reason: "S0/S1 gates closed after B-0004"
+      changes: ["record the S1.8 full-gate split, drift/contracts recheck and parity evidence", "mark S0 and S1 acceptance closed"]
 ---
 
 # PLAN-0001 Resolve the Workbench host gaps
@@ -69,8 +72,8 @@ Input: `../../analyses/2026-11-04-host-gap-verification/README.md`. Policy: `../
 
 | Slice | Goal | Specs | Status |
 |---|---|---|---|
-| S0 | Steering, gates, public fork statement | 0001 | implemented; full gate blocked (B-0004) |
-| S1 | Reliability fixes and skill roots | 0004 D1–D3, 0007 D1–D3, 0009 | now; 1.1–1.7 implemented; S1 acceptance next |
+| S0 | Steering, gates, public fork statement | 0001 | implemented; gates closed 05.11.2026 (B-0004) |
+| S1 | Reliability fixes and skill roots | 0004 D1–D3, 0007 D1–D3, 0009 | implemented; S1 acceptance closed 05.11.2026 |
 | S2 | Model request pipeline | 0003 | later |
 | S3 | System prompt composition | 0002 | later |
 | S4 | Headless output and dialogs | 0005 | later |
@@ -113,7 +116,7 @@ Done when: `make check` passes, no child `AGENTS.md` demands Pi faithfulness for
 - Full divguard + closure race run exceeded the 120 s command deadline; targeted regression race runs completed. Full coverage-package test run fails its CLI test because `.upstream/current` is absent.
 - `make test-changed` and `make upstream-mirror` fail pinned npm tarball integrity checks; `make ci-drift ci-contracts` stops at correspondence extraction without `.upstream/current`; `make check` stops at missing Node SDK dependencies. See B-0003. No gate bypass or integrity override was applied.
 - Coverage regenerated using `go run -trimpath ./test/parity/cmd/coverage -upstream .upstream/v1.4.0+6c384aa3 -out test/parity/coverage.md`. The extracted pinned source has the manifests this generator consumes; full mirror hydration remains blocked. Generated diff adds only the family table.
-- 0.7 remains owner work outside this repository. S0 is not closed; S1–S8 have not started.
+- 0.7 remains owner work outside this repository. B-0004 closed on 05.11.2026: every `make check` leaf has a green run against the final code; see B-0004's closure evidence for the split full run, drift/contracts recheck and 818 parity scenarios.
 
 ### S0 follow-up verification (04.11.2026, 17:13)
 
@@ -244,6 +247,12 @@ pig --continue                 resume   true
 - Unit coverage: `TestSkillRootsSettingsSurviveMigrationAndRoundTrip`, `TestSkillRootsReplaceDefaultDiscoveryInOrder`, `TestProjectSkillRootsOverrideGlobalAndRequireTrust`, `TestSkillRootsPersistAcrossPathSettersAndLegacyFileMigration`, `TestSkillRootTokensRelativePathsDuplicatesAndDiagnostics`, `TestSkillRootsWrongTypedEntryDoesNotEraseTheObject`, `TestSkillRootsDeduplicateASymlinkedRoot`.
 - Docs: `skills.md` and `settings.md` in both trees, `settings-examples.md`, generated `schemas/settings.schema.json`, and the root `AGENTS.md` test-isolation bullet.
 - Gates: targeted settings/schema/skill-root/status tests pass, including `-race`; `make generate-schemas`, `make docs-drift`, `make changelog-check`, `go vet` and `make lint-changed` (0 issues) pass. Full `internal/codingagent` fails only the known `TestSessionSearchRegexMatchesPi` oracle (5 of 3000 patterns, B-0004); full `coding/cli` reaches the known parallel RPC timeout (B-0004). No S1.7 assertion failed.
+
+### S1.8 acceptance evidence (05.11.2026)
+
+- The full `make check` run passed build, vet, lint, all unit shards, race, integration and docs, then stopped only at `interface-go-drift` because the packed-MCP helper changed the generated Go inventory. The inventory was regenerated and committed as `ad49c8576`; `make ci-drift ci-contracts docs-drift` passed in 184 s.
+- `make source-hygiene test-provenance bug-ledger-check perf-scoreboard-check` passed. `parity-fast` then exposed two harness defects: the private tmux server inherited fish as `default-shell`, and the SIGINT test signaled a bash subshell rather than pig. Both were fixed; the final `make parity-fast` ran 818 scenarios and passed in 437 s.
+- No single full invocation after the final generated-file commit is claimed. Every `make check` leaf has green evidence against the final code; the exact split is in B-0004's closure section.
 
 ## S2 Model request pipeline (later)
 Goal: SPEC-0003 D1–D6. Key steps: move hooks into `ModelRuntime` (`coding/services.go`), `purpose`/`origin`, re-entrancy guard, fail-closed table, `block` result, phases, `extensions.hookTimeoutMs`, wire + SDKs, benchmark of the no-handler path. Docs: `extensions.md`, `extension-api.md`, `events.md`, `security.md`, `compaction.md`, `settings.md`.
