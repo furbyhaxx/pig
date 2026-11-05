@@ -14,6 +14,7 @@ import (
 )
 
 // DefaultReloadHandshakeTimeout bounds connection and registration during explicit extension reloads.
+// fork (SPEC-0004): the bundled reload handshake default is 15s; build time is excluded.
 const DefaultReloadHandshakeTimeout = 15 * time.Second
 
 // ErrReloadPartiallyApplied marks a reload that published successful cells while retaining failed cells' serving generations.
