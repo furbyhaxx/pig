@@ -62,7 +62,8 @@
     "usecase-summarise-pdfs.md": "pig-authored",
     "usecase-weekly-report.md": "pig-authored",
     "virtual-models.md": "adapted-pi",
-    "windows.md": "adapted-pi"
+    "windows.md": "adapted-pi",
+    "events.md": "pig-authored"
   },
   "navigation": [
     {
@@ -222,6 +223,10 @@
             {
               "title": "Build Extensions",
               "path": "extensions.md"
+            },
+            {
+              "title": "Events and Hooks",
+              "path": "events.md"
             },
             {
               "title": "Add Custom Providers",
