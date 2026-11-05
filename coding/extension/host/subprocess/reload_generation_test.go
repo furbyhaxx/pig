@@ -201,6 +201,12 @@ func TestPackedGoReloadLoopNeverHangs(t *testing.T) {
 			t.Fatalf("reload %d replaced the retained process", i+1)
 		}
 	}
+	h.mu.Lock()
+	watched := len(h.watchedPacked)
+	h.mu.Unlock()
+	if watched != 1 {
+		t.Fatalf("retained reloads left %d watched process states, want 1", watched)
+	}
 	h.Shutdown("loop complete")
 	select {
 	case <-share.exitedChan():

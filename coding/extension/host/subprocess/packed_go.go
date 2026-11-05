@@ -66,6 +66,10 @@ type processShare struct {
 	exitCh <-chan struct{}
 	refs   atomic.Int32
 	parked atomic.Bool
+	// current is the newest generation published into this OS process. One watcher per process reports its exit against this state, so a crash is attributed to the live generation rather than the generation that spawned the process.
+	current atomic.Pointer[packedProcessState]
+	// watcherDone is closed by the process's one watcher. It is set before that watcher starts and never changes.
+	watcherDone chan struct{}
 	// dead is set when the host saw a connection to the process close without the host closing it. A process that was killed but is not yet reaped still takes control lines, so dead, not exit timing, keeps a retention claim off it.
 	dead atomic.Bool
 	// parkedBy is the epoch of the Host that parked the process. node marks a Node runtime process, whose socket addresses differ on Windows.
@@ -582,15 +586,30 @@ func (h *Host) startGoPackedCellOnce(ctx context.Context, cell *runtimecell.GoPa
 		}
 	}
 	started = true
+	startWatcher := false
 	h.mu.Lock()
 	if h.watchedPacked == nil {
 		h.watchedPacked = make(map[*packedProcessState]struct{})
 	}
-	processState.watcherDone = make(chan struct{})
-	h.watchedPacked[processState] = struct{}{}
+	if h.packedCellActiveGeneration == nil {
+		h.packedCellActiveGeneration = make(map[string]int)
+	}
+	h.packedCellActiveGeneration[cell.Key] = processState.generation
+	if processState.origin == nil {
+		processState.watcherDone = make(chan struct{})
+		processState.share.watcherDone = processState.watcherDone
+		processState.share.current.Store(processState)
+		h.watchedPacked[processState] = struct{}{}
+		startWatcher = true
+	} else {
+		processState.share.current.Store(processState)
+		processState.watcherDone = processState.share.watcherDone
+	}
 	h.mu.Unlock()
-	//portlint:allow golifetime the watcher closes processState.watcherDone when the process ends, and Host.Shutdown waits on it for every process in h.watchedPacked
-	go h.watchPackedProcess(processState)
+	if startWatcher {
+		//portlint:allow golifetime the watcher closes processState.watcherDone when the process ends, and Host.Shutdown waits on it for every process in h.watchedPacked
+		go h.watchPackedProcess(processState)
+	}
 	if acceptErr != nil {
 		return staged, registered, acceptErr
 	}
@@ -769,24 +788,37 @@ func (h *Host) watchPackedProcess(process *packedProcessState) {
 		}
 	}()
 	err := process.wait()
-	if process.stopping.Load() || h.shuttingDown.Load() || (process.parent != nil && process.parent.Err() != nil) {
+	if h.shuttingDown.Load() {
+		return
+	}
+	current := process
+	if process.share != nil {
+		if published := process.share.current.Load(); published != nil {
+			current = published
+		}
+	}
+	if current.stopping.Load() || (current.parent != nil && current.parent.Err() != nil) {
+		return
+	}
+	// The spawn state retires when a reload replaces its generation while the process lives on for the current one; only a released share means the process itself was stopped.
+	if process.stopping.Load() && process.processReleased() {
 		return
 	}
 	reason := "packed process exited"
 	if err != nil {
 		reason += ": " + err.Error()
 	}
-	if process.node {
-		h.recoverNodeProcess(process, reason)
+	if current.node {
+		h.recoverNodeProcess(current, reason)
 		return
 	}
-	// quarantinePackedCellGeneration checks process.generation against the
+	// quarantinePackedCellGeneration checks current.generation against the
 	// key's current packedCellGeneration atomically with the quarantine
 	// write (CNC-002): a plain pre-check here would leave a window between
 	// "generation still current" and "quarantine written" for a concurrent
 	// Reload to claim a fresh generation and start a replacement process
 	// that this stale report would then wrongly tear down.
-	h.quarantinePackedCellGeneration(process.key, process.generation, reason)
+	h.quarantinePackedCellGeneration(current.key, current.generation, reason)
 }
 
 func (h *Host) acceptPackedExt(ctx context.Context, me *managedExt, ln net.Listener) (_ *extension.Extension, err error) {
