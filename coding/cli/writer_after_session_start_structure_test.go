@@ -80,7 +80,7 @@ func TestSessionOriginWritersObeyTheWriterSubscribedGate(t *testing.T) {
 		}
 		switch fun := call.Fun.(type) {
 		case *ast.SelectorExpr:
-			if fun.Sel.Name == "EmitSessionStartTransition" {
+			if fun.Sel.Name == "EmitSessionStartEvent" {
 				emit = append(emit, call.Pos())
 			}
 		case *ast.Ident:
