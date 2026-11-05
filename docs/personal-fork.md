@@ -39,3 +39,9 @@ The source branch retains upstream version pins to minimize merge conflicts. Rel
 `PIG_UPDATE_SIGNING_KEY` is the fork repository's Actions secret. Its public half is `automation/release/personal-update-trust.pem`. Never commit the private half. Keep a trusted backup before replacing the secret: key rotation requires an overlap release trusted by existing installations. GitHub cannot return an existing secret value.
 
 Inherited upstream workflows are disabled in this fork until individually reviewed. The personal workflow is the supported release path; upstream package publishing, hosted-site, notification, and image automation must not run implicitly under the fork identity.
+
+## Local checks
+
+Run `make fork-check` before a commit (`automation/make/fork.mk`). It builds the module, lints and tests the packages a change affects, vets the changed packages for Windows, and runs the engineering ratchets (`divergence-guard`, `port-lint`, `perf-lint`, `any-trap`, `go-fix-clean`), `source-hygiene`, `docs-drift` and `changelog-check`.
+
+Upstream's Pi-comparison, porting-ledger and publication gates (`make check`, `make verify`, `ci-drift`, `ci-contracts`, the `parity*` and `journeys*` targets, `compliance`, `release-check`, Pig Porter) remain in the tree for clean merges but are not part of the fork's checks and may fail (SPEC-0001 D10). `docs/project/test-economy.md` describes upstream's tiers.

@@ -42,7 +42,7 @@ func TestLintChangedPackageSelection(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
-			for _, path := range []string{"Makefile", "automation/make/parity.mk", "automation/make/ci.mk", "coding/upstream.go", ".upstream/pin", "automation/pin/pin.py", "automation/pin/pinlib.py"} {
+			for _, path := range []string{"Makefile", "automation/make/parity.mk", "automation/make/ci.mk", "automation/make/fork.mk", "coding/upstream.go", ".upstream/pin", "automation/pin/pin.py", "automation/pin/pinlib.py"} {
 				copyCIFixture(t, root, path)
 			}
 			for _, path := range tc.files {

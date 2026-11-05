@@ -819,3 +819,4 @@ parity-deps: interface-deps ## Build the Pi comparator from source at the pin (P
 
 include automation/make/parity.mk
 include automation/make/ci.mk
+include automation/make/fork.mk

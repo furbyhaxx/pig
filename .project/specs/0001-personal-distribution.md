@@ -5,9 +5,9 @@ document:
   title: "Personal PiG distribution"
   description: "Fork identity, upstream synchronization, versioning, release, update trust and agent-steering ownership of furbyhaxx/pig"
   status: "published"
-  revision: 5
+  revision: 6
   created_at: "2026-11-04T12:30:29+01:00"
-  updated_at: "2026-11-05T22:50:00+01:00"
+  updated_at: "2026-11-05T23:23:00+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -26,6 +26,9 @@ document:
     - revision: 5
       reason: "Fork owns its community, conduct, support and security contacts (B-0002)"
       changes: ["replace upstream owner, email, DCO and parity issue process with fork policy", "protect the community files with merge=ours"]
+    - revision: 6
+      reason: "Owner: upstream Pi-compatibility and porting gates cost time and tokens without protecting the fork's goal"
+      changes: ["D10 takes Pi-comparison, porting-ledger and upstream-publication gates off the required path", "D10 defines make fork-check as the fork gate", "D10 drops Porter"]
 ---
 
 # SPEC-0001 Personal PiG distribution
@@ -93,9 +96,12 @@ document:
 
 ### D10 Inherited parity gates
 
-- Upstream's Pi-comparison machinery (parity scenarios, Pi oracle tests, interface inventories, PORT_MAP drift, `divergence-guard` markers, `port-lint`) keeps running.
-- A fork change that intentionally changes behavior one of them pins rewrites or deletes the affected test or scenario in the same change and cites the spec.
+- Required gate for fork changes: `make fork-check` (`automation/make/fork.mk`): build, vet, `lint-changed`, `test-changed`, `go-fix-clean`, `divergence-guard`, `port-lint`, `perf-lint`, `any-trap`, `source-hygiene`, `docs-drift`, `changelog-check`. Inner loop: focused `go test` plus `-race` on edited packages.
+- Not required, not run by agents unless the owner asks: Pi-comparison gates (`parity*`, `journeys*`, `test-pipeline-fuzz`, `ci-node-runtime`), porting ledgers (`ci-contracts` and its members, `closure-check`, `port-map-drift`, `portmap-check`, `coverage-drift`, `lint-scenarios`, `known-gaps-drift`, `custom-factory-ledger-drift`, `divergence*` except `divergence-guard`, `test-provenance`, `test-expectation-lint`, `sdk-surface-drift`, `sdk-apidiff`, `bug-ledger-check`), upstream publication gates (`compliance`, `module-publication`, `module-size`, `npm-dist-*`, `release-check`), and the bundles that contain them (`make check`, `make verify`, `ci-drift`). Reason: they prove equivalence with Pi or keep upstream's port ledgers consistent; the fork's goal (D7) does not need either, and together they cost tens of CPU-minutes per change.
+- The targets, scenarios and ledgers stay in the tree so upstream merges stay clean (D8). They may go stale; a stale result there is not a fork defect.
+- Go tests in ordinary packages that compare with Pi or a Pi golden run under `test-changed`. When a fork change or a host difference breaks one, rewrite it to assert the fork's own contract or delete it in the same change, citing the spec. Never keep a Pi expectation the fork does not want.
 - `divergence-guard` patterns are kept as engineering checks. Fork code fixes the smell; an intentional hit needs `// fork (SPEC-NNNN): <reason>`, accepted only when `.project/specs/NNNN-*.md` exists as a regular file and the reason is nonempty. Invalid markers remain findings and report an actionable problem.
+- Pig Porter (`piglets/porter`, `porter-*` targets) is not used by the fork; its failures (for example `porter-check` under a global `core.hooksPath`) are not fork work.
 - Root `AGENTS.md` states this policy; child `AGENTS.md` files of the parity machinery apply only to maintaining it.
 
 ### D11 Community and security contacts

@@ -16,5 +16,5 @@ Cross-package suites. Package-local tests stay next to their package.
 | `ci-images/` | CI image pins, installer tests (`install_sh*_test.go`) | `go test ./test/ci-images` |
 | `evals/`, `longsession/`, `mcp-conformance/`, `wiring/`, `generate/` | evals, long-session fixtures, MCP suite, SDK wiring, generator help | see each README/doc.go |
 
-- Goldens and snapshots need declared Pi provenance: `testdata-provenance.toml` (`make test-provenance`).
+- A Pi golden names its regeneration script in `testdata-provenance.toml`. Fork-owned goldens need no Pi provenance; prefer an invariant assertion over a value snapshot (SPEC-0001 D10).
 - `docs/site/public/install.sh` change → `test/ci-images/install_sh_test.go`.

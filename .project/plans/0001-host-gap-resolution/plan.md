@@ -5,9 +5,9 @@ document:
   title: "Resolve the Workbench host gaps"
   description: "Slices that implement SPEC-0002..SPEC-0010 after re-steering the fork (SPEC-0001 D7-D10), with tests, wire/SDK parity and docs per slice"
   status: "draft"
-  revision: 18
+  revision: 19
   created_at: "2026-11-04T15:05:00+01:00"
-  updated_at: "2026-11-05T23:55:00+01:00"
+  updated_at: "2026-11-05T23:23:00+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -65,6 +65,9 @@ document:
     - revision: 18
       reason: "B-0006 closed the three S1 coverage gaps"
       changes: ["record strict deliverAs, aborted-tool emit cancellation and the resume picker rows", "correct the picker's expected initial flag to SPEC-0007 D2"]
+    - revision: 19
+      reason: "SPEC-0001 revision 6 takes upstream parity and porting gates off the required path"
+      changes: ["slice gate is make fork-check", "parity scenarios are no longer rewritten per change"]
 ---
 
 # PLAN-0001 Resolve the Workbench host gaps
@@ -90,8 +93,8 @@ No work: U-09 and U-26 (wrong findings), U-20 (watch; regression test when it re
 ## Rules for every slice
 
 - Per task: red test first for bugs; implementation; wire + all SDKs + `test/extension-conformance/` for extension API changes; docs in both trees (`docs/site/docs/`, `internal/pigdocs/content/`); `make generate` when settings, flags or exported API change; `changelog.d/` fragment for user-facing changes.
-- Upstream tests and parity scenarios that pin replaced behavior are rewritten or deleted in the same change (SPEC-0001 D10); the commit body cites the spec.
-- Gate per task: `make test-changed lint-changed`, `go vet` on touched packages, `-race` on edited packages. Any change to an SDK source (`extensions/sdk*`) also runs that SDK's own suite (`make test-sdk-go`, `test-sdk-py`, `test-sdk-rs`), `make sdk-bundles-check`, and `go generate ./...` in that bundle directory, because a stale `.gz` mirror otherwise ships silently (B-0004). Before closing a slice: `make ci-drift ci-contracts`, `make check`.
+- Go tests in ordinary packages that pin replaced behavior or a Pi golden are rewritten to the fork contract or deleted in the same change (SPEC-0001 D10); the commit body cites the spec. Parity scenarios are not maintained.
+- Gate per task: focused `go test`, `-race` on edited packages, `make lint-changed`. Any change to an SDK source (`extensions/sdk*`) also runs that SDK's own suite (`make test-sdk-go`, `test-sdk-py`, `test-sdk-rs`), `make sdk-bundles-check`, and `go generate ./...` in that bundle directory, because a stale `.gz` mirror otherwise ships silently (B-0004). Before a commit and before closing a slice: `make fork-check`. Do not run `make check`, `ci-drift`, `ci-contracts` or parity targets (SPEC-0001 D10).
 - A spec decision that turns out wrong is revised in the spec in the same change.
 
 ## S0 Steering and gates (now)

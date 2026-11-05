@@ -28,12 +28,12 @@ Decisions: `.project/specs/0001-personal-distribution.md` (D7–D10).
 
 - Every deliberate change of behavior inherited from upstream: decision in a `.project/specs/` spec, user docs updated in the same change, `changelog.d/` fragment.
 - Don't record fork changes as `docs/parity/divergences/D<N>.md`, `// pig divergence (D<N>)` markers or `docs/additive-features.md` entries; those are upstream's ledgers. Cite the spec in the commit body.
-- Upstream tests and parity scenarios that pin the replaced behavior → rewrite them to the new behavior or delete them, in the same change. Never weaken, skip or normalize a test to keep unrelated behavior green.
+- Go tests that pin the replaced behavior or a Pi golden → rewrite them to the new behavior or delete them, in the same change. Parity scenarios under `test/parity/scenarios/` are not maintained by the fork (SPEC-0001 D10); don't edit them for fork changes. Never weaken, skip or normalize a test to keep unrelated behavior green.
 - Existing `D<N>` records and `docs/additive-features.md` stay as upstream maintains them; read them to learn why upstream PiG differs from Pi.
 
 ## Sources of truth
 
-No prose claim overrides these. Never hand-edit generated files. After changing exported Go API, CLI flags, settings, scenarios or docs mirrors: `make generate`, commit the result.
+No prose claim overrides these. Never hand-edit generated files. After changing exported Go API, CLI flags, settings or docs mirrors: `make generate`, commit the result.
 
 | What | Where |
 |---|---|
@@ -155,7 +155,7 @@ Shared provider/model/auth/tool regression matrix (explain an inapplicable row f
 - Comments state current behavior and non-obvious protocol, concurrency, security or compatibility invariants. The source-hygiene gate rejects roadmap phases, workstream labels, future promises, placeholder plans and pointers to PORT_MAP/status ledgers. Nothing is grandfathered: revalidate old comments, placeholders and compatibility paths when touched. Don't leave "Ports packages/..." or "upstream:" claims on code the fork redesigned.
 - Observable behavior change → update the doc comment in the same commit.
 - Lint: fix findings at the source. Narrowest suppression with a reason (`nolintlint` rejects stale or unexplained pragmas); security suppressions name the CLI threat-model reason. Don't suppress `iface`; delete the unneeded interface. Don't enable or apply `ireturn`/`interfacebloat` mechanically.
-- `make divergence-guard` (in `make check`) flags engineering smells in `agent`, `ai`, `coding`, `internal/codingagent`, `tui`, `cmd/pig`: `magic-literal`, `cancel-drop-send`, `default-drop-send`, `stream-parse-continue`, `stop-reason-success`, `hand-rolled-sse` (SSE only in `ai/sse.go`), `discarded-io-error`, `hook-fail-open`, `error-status-substring`, `agent-run-outside-session` (agent `Send`/`Continue` only in `coding/session*.go`); `bare-recover` everywhere. Fix the smell. The guard accepts `// fork (SPEC-NNNN): <reason>` when `.project/specs/NNNN-*.md` exists, plus inherited upstream markers (`// pig divergence (D<N>): ...`, `// upstream: <file>:<symbol>`); don't invent `D<N>` numbers for fork code. `automation/ci/divguard/baseline.toml` is shrink-only.
+- `make divergence-guard` (in `make fork-check`) flags engineering smells in `agent`, `ai`, `coding`, `internal/codingagent`, `tui`, `cmd/pig`: `magic-literal`, `cancel-drop-send`, `default-drop-send`, `stream-parse-continue`, `stop-reason-success`, `hand-rolled-sse` (SSE only in `ai/sse.go`), `discarded-io-error`, `hook-fail-open`, `error-status-substring`, `agent-run-outside-session` (agent `Send`/`Continue` only in `coding/session*.go`); `bare-recover` everywhere. Fix the smell. The guard accepts `// fork (SPEC-NNNN): <reason>` when `.project/specs/NNNN-*.md` exists, plus inherited upstream markers (`// pig divergence (D<N>): ...`, `// upstream: <file>:<symbol>`); don't invent `D<N>` numbers for fork code. `automation/ci/divguard/baseline.toml` is shrink-only.
 - `make port-lint` (`automation/ci/portlint/README.md`): fix at the source or `//portlint:allow <check> <reason>` for a reviewed false positive; never add baseline entries for new code.
 - Pig-owned formats (source, manifest, record, graph/plan, builder, Marketplace, publication, subprocess): one strict current unversioned shape. No format discriminator, negotiation, compatibility reader, migration, redirect or dual write unless a spec decides it.
 - Self-update: one native ownership tier per operation (standalone download, package manager, immutable Piglet Binary, OCI/Image, read-only); never substitute one for another after work starts. Downloads need full checksum and overflow-safe size checks. Startup checks stay bounded and best-effort; explicit update failures stay actionable.
@@ -164,12 +164,11 @@ Shared provider/model/auth/tool regression matrix (explain an inapplicable row f
 ## Commands
 
 - Iterate: `go test ./<pkg> -run '<Tests>'`. `-race` on edited packages only. No `-count=1` unless the test reads inputs through a child process. Bound fuzzing with `-parallel` and `-fuzztime`. Shared host: build with `-trimpath`.
-- Before a commit: `make test-changed lint-changed`, `go vet` on touched packages.
-- Before reporting ready: `make ci-drift ci-contracts`. Behavior change in an area with Pi-comparison scenarios → `make parity-family FAMILY=<f>` to find the scenarios to rewrite (see Behavior changes).
-- Full: `make check` (deterministic gates + `parity-fast`), `make verify`, `make test`, `make parity`, `make lint`. Tiers: `docs/project/test-economy.md`.
+- Before a commit and before reporting ready: `make fork-check` (`automation/make/fork.mk`: build, `lint-changed`, Windows vet of changed packages, `test-changed`, `go-fix-clean`, `divergence-guard`, `port-lint`, `perf-lint`, `any-trap`, `source-hygiene`, `docs-drift`, `changelog-check`). SDK source change → also that SDK's suite (`make test-sdk-go|test-sdk-py|test-sdk-rs|test-sdk-ts`) and `make sdk-bundles-check`.
+- Don't run upstream's Pi-compatibility, porting-ledger or publication gates unless the owner asks: `make check`, `verify`, `ci-drift`, `ci-contracts`, `parity*`, `journeys*`, `portmap-check`, `port-map-drift`, `coverage-drift`, `divergence-consistency|quality`, `test-provenance`, `test-expectation-lint`, `sdk-surface-drift`, `sdk-apidiff`, `bug-ledger-check`, `compliance`, `module-publication`, `module-size`, `release-check`, `porter-*` (SPEC-0001 D10). Their failures are not fork defects.
 - `make test` requires Go, Node, Python, Rust; fixture build failures are fatal. Prereqs: `make doctor`; setup: skill `setup-pig`.
 - Lint config change: `go tool golangci-lint config verify`.
-- All targets: `make help`, `make help-parity`. Don't `go install ./cmd/pig`; use `make pig` (→ `bin/pig`) or `make install`.
+- All targets: `make help`, `make help-parity`; fork gates in `automation/make/fork.mk`. Don't `go install ./cmd/pig`; use `make pig` (→ `bin/pig`) or `make install`.
 
 ## Public writing
 
