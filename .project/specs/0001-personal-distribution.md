@@ -5,9 +5,9 @@ document:
   title: "Personal PiG distribution"
   description: "Fork identity, upstream synchronization, versioning, release, update trust and agent-steering ownership of furbyhaxx/pig"
   status: "published"
-  revision: 3
+  revision: 4
   created_at: "2026-11-04T12:30:29+01:00"
-  updated_at: "2026-11-04T15:28:56+01:00"
+  updated_at: "2026-11-05T22:20:00+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -20,6 +20,9 @@ document:
     - revision: 3
       reason: "Implement S0 fork steering and gate ownership"
       changes: ["D6 family dashboard lives in generated coverage", "D10 fork markers require an existing spec and a reason"]
+    - revision: 4
+      reason: "Verify native artifacts before publication (B-0001)"
+      changes: ["split draft upload from publication", "add native linux-arm64, darwin-arm64 and windows-amd64 smoke jobs", "record the remaining cross-built targets"]
 ---
 
 # SPEC-0001 Personal PiG distribution
@@ -51,10 +54,10 @@ document:
 
 ### D4 Release and update trust
 
-- `automation/release/personal-fork.sh` builds linux/darwin/windows × amd64/arm64 and android/arm64 (NDK), signs `update.json` with Ed25519, and publishes a GitHub release through a draft. Already-released source commits are skipped.
+- `automation/release/personal-fork.sh` builds linux/darwin/windows × amd64/arm64 and android/arm64 (NDK), signs `update.json` with Ed25519, and stages a draft GitHub release. A verify matrix runs the linux-arm64, darwin-arm64 and windows-amd64 archives natively (`pig --version` and `pig update`) before a separate job publishes the draft. Already-released source commits are skipped.
 - Signing key: Actions secret `PIG_UPDATE_SIGNING_KEY`; public key committed at `automation/release/personal-update-trust.pem`, embedded in binaries and shipped in archives. The installer writes it to `<config-root>/update-trust.pem` together with `update-url`.
 - GitHub marks `-c.N` releases as full releases so `/releases/latest` serves the fork channel.
-- Only linux/amd64 is executed in the pipeline; other targets are cross-built. The pipeline does not reproduce upstream's SBOM, attestation and parity evidence.
+- linux/amd64 is executed on the build host; linux-arm64, darwin-arm64 and windows-amd64 run on their own runners in the verify matrix. darwin-amd64, windows-arm64 and android-arm64 are cross-built; Android is checked for an AArch64 PIE that links bionic. The pipeline does not reproduce upstream's SBOM, attestation and parity evidence.
 
 ### D5 Inherited workflows
 

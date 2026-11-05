@@ -76,7 +76,7 @@ bash automation/release/sign-update-manifest.sh "$work/out/update.json" "$work/s
 gh release create "v$version" --repo "$REPOSITORY" --target "$sha" --draft \
   --title "PiG $version" --notes "Personal PiG build. Upstream PiG: $base. Source: $sha
 
-Configuration and executable names are unchanged. Linux amd64 smoke-tested; other targets cross-built, not natively tested."
+Configuration and executable names are unchanged. Linux amd64 smoke-tested on the build host; Linux arm64, macOS arm64 and Windows amd64 are smoke-tested natively after upload; the remaining targets are cross-built, not natively tested. Android is ELF-checked."
 retry_release() {
   local attempt
   for attempt in 1 2 3; do
@@ -88,4 +88,8 @@ retry_release() {
 for asset in "$work/out/"*; do
   retry_release gh release upload "v$version" "$asset" --repo "$REPOSITORY" --clobber
 done
-retry_release gh release edit "v$version" --repo "$REPOSITORY" --draft=false --prerelease=false --latest
+# Publication is the workflow's separate final job, after native smoke tests.
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+  printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+fi
+printf 'draft release v%s prepared\n' "$version"
