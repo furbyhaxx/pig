@@ -870,6 +870,7 @@ func ensureTmuxServer() error {
 	// Ignore host tmux configuration and configure the private server before either application starts. Pi checks these options asynchronously (interactive-mode.ts:1214-1259); both sides must see the same supported keyboard protocol, not race a startup warning against scenario input.
 	output, err := exec.Command("tmux", tmuxArgs("-f", os.DevNull,
 		"new-session", "-d", "-s", tmuxKeeperSession, "sleep 2147483647",
+		";", "set-option", "-g", "default-shell", "/bin/sh",
 		";", "set-option", "-g", "extended-keys", "on")...).CombinedOutput()
 	if err != nil {
 		tmuxKeeperErr = fmt.Errorf("start isolated tmux server: %w: %s", err, strings.TrimSpace(string(output)))
