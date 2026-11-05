@@ -1146,6 +1146,7 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 | [BF-ee84034](#bf-ee84034) | Bind deferred `nextTurn` custom messages to their session leaf and discard stale branch context on navigation… | PiG's own defect | All platforms | Unreleased |
 | [BF-eeac307](#bf-eeac307) | Anthropic and Bedrock assistant messages write `providerThinkingLevel` after `model`, and write… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-ef0f95a](#bf-ef0f95a) | OpenCode Zen and OpenCode Go use the `opencode.ai/inference` endpoints, which fixes OpenCode Go Gemini models… | PiG's own defect | All platforms | 0.5.0 |
+| [BF-f01e57c](#bf-f01e57c) | Cancel active Go, Python and Rust event-bus listener contexts when the emitting request is cancelled… | PiG's own defect | All platforms | Unreleased |
 | [BF-f02269c](#bf-f02269c) | When an extension's `before_provider_request` handler replaces an Anthropic request, or a Codex WebSocket… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-f06ab7e](#bf-f06ab7e) | A run that `sendMessage({ triggerTurn: true })` starts while idle emits `before_agent_start`, checks… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-f07d033](#bf-f07d033) | A response stream dropped mid-run now reports `terminated (cause: ...)` instead of a bare `terminated` (D144… | A Pi defect that PiG fixed first | All platforms | 0.5.0 |
@@ -16900,6 +16901,20 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 - **Fix commits:** `ef0f95ab0e` (2026-10-14)
 - **Tests:** `ai/classifier_models_upstream_test.go::TestClassifierModelsUpstream`, `cmd/gen-models/carried_fixes_test.go::TestCarriedOpenCodeInferenceEndpoints`
 - **Release note:** OpenCode Zen and OpenCode Go use the `opencode.ai/inference` endpoints, which fixes OpenCode Go Gemini models failing with a 404; OpenCode Go MiniMax M2.7 uses the Anthropic Messages API, and OpenCode Go DeepSeek V4 Flash is no longer listed (carried Pi fix, Pi 195120a9).
+
+### BF-f01e57c
+
+**Cancel active Go, Python and Rust event-bus listener contexts when the emitting request is cancelled…**
+
+- **Source:** PiG's own defect
+- **Symptom:** Cancel active Go, Python and Rust event-bus listener contexts when the emitting request is cancelled, including Go factory-time dispatches, and stop dispatching subsequent listeners.
+- **Root cause:** Implement SPEC-0004 D3 using the existing MsgCancel request path. Keep registration notifications unconditional, stop subsequent listener dispatches, and release earlier JavaScript emission waiters on cancellation.
+- **User impact:** An operation failed or was rejected
+- **Platform:** All platforms
+- **Fixed in:** Unreleased
+- **Fix commits:** `f01e57c2e2` (2026-11-05)
+- **Tests:** `coding/extension/host/subprocess/event_bus_conn_test.go::TestEventBusCancelledDispatchDoesNotStartListeners`, `extensions/sdk/event_bus_factory_test.go::TestEventBusFactoryDispatchCancellation`, `test/extension-conformance/events_bridge_cancel_test.go::TestNativeEventBusCallerCancellationEndsListener`
+- **Release note:** Cancel active Go, Python and Rust event-bus listener contexts when the emitting request is cancelled, including Go factory-time dispatches, and stop dispatching subsequent listeners. Registration and unregistration remain unconditional. JavaScript listeners retain their `(data)` signature and cannot be preempted. See SPEC-0004 D3.
 
 ### BF-f02269c
 

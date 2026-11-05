@@ -186904,6 +186904,17 @@
       "shapeHash": "sha256:ef999474e1b4d6e53f5fec4825902e82c3de3809fef9ba81dd56f044253f9da7"
     },
     {
+      "id": "go:github.com/MichaelKinsy/PiG/extensions/sdk#Extension.armRequestScopeOn",
+      "package": "github.com/MichaelKinsy/PiG/extensions/sdk",
+      "name": "Extension.armRequestScopeOn",
+      "kind": "function",
+      "exported": false,
+      "shape": {
+        "type": "func(id string, c *conn) (Context, *requestScope)"
+      },
+      "shapeHash": "sha256:309f3bde8320c8d26914f72dd7fdd27670e2f1ff6e5255af7ddb82e9b5efac91"
+    },
+    {
       "id": "go:github.com/MichaelKinsy/PiG/extensions/sdk#Extension.busConn",
       "package": "github.com/MichaelKinsy/PiG/extensions/sdk",
       "name": "Extension.busConn",
@@ -186946,6 +186957,17 @@
         "type": "func(env envelope)"
       },
       "shapeHash": "sha256:06498c1ea862953c09d886cc90aeb74577e3b252f483ffe07b19cf8012986095"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/extensions/sdk#Extension.cancelRequestOn",
+      "package": "github.com/MichaelKinsy/PiG/extensions/sdk",
+      "name": "Extension.cancelRequestOn",
+      "kind": "function",
+      "exported": false,
+      "shape": {
+        "type": "func(env envelope, c *conn)"
+      },
+      "shapeHash": "sha256:948b0ad187af1799f5c396d96482289138005b9bc08b0a4e9da2f855f07054c0"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/extensions/sdk#Extension.commandArgumentCompletions",
