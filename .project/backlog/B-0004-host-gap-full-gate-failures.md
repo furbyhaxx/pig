@@ -5,9 +5,9 @@ document:
   title: "Resolve remaining host-gap full-check failures"
   description: "Failures exposed after repairing the pinned Pi oracle setup"
   status: "open"
-  revision: 6
+  revision: 7
   created_at: "2026-11-04T17:13:00+01:00"
-  updated_at: "2026-11-05T00:40:00+01:00"
+  updated_at: "2026-11-05T10:05:00+01:00"
   created_by: "coding-agent"
   updated_by: "coding-agent"
   kind: "bug"
@@ -32,6 +32,9 @@ document:
     - revision: 6
       reason: "Record the isolation wrapper hiding rustup"
       changes: ["add the RUSTUP_HOME and CARGO_HOME requirement for Rust rows under with-isolated-pig-home.sh"]
+    - revision: 7
+      reason: "The rustup isolation gap is fixed"
+      changes: ["mark the isolation-wrapper rustup section resolved by ddcf654d8"]
 ---
 
 # Remaining full-check failures
@@ -105,7 +108,7 @@ A full `coding` run (all packages in that directory) and a focused `-race` reloa
 ## Isolation wrapper hides rustup (05.11.2026)
 
 - `automation/ci/with-isolated-pig-home.sh` points `HOME` at a scratch directory, so rustup's default `~/.rustup` and `~/.cargo` disappear and every Rust extension row fails with "rustup could not choose a version of cargo to run". Seen in `TestJSONModeWritesNothingSessionStartEmittedBeforeTheWriterSubscribesInEverySDK/rust` and the RPC sibling.
-- Workaround verified: export `RUSTUP_HOME=$HOME/.rustup` and `CARGO_HOME=$HOME/.cargo` before calling the wrapper; both rows then pass. Fix hint: the wrapper preserves both variables from the caller's real home when they are unset.
+- Resolved by `ddcf654d8` (05.11.2026): the wrapper pins `RUSTUP_HOME` and `CARGO_HOME` to the caller's directories before it moves `HOME`, as it already did for the Go caches. A caller's explicit value wins; a missing directory stays unset. With neither variable exported, both Rust rows failed before the change and pass after it. The remaining sections of this item stay open.
 
 ## Acceptance
 Reproduce each failure narrowly, fix its owner with regression evidence, then rerun `make check` and the complete changed-package target without retries, timing overrides or skipped tests. PLAN-0001 S0 remains open until its gates pass.

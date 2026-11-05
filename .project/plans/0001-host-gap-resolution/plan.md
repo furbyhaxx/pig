@@ -5,9 +5,9 @@ document:
   title: "Resolve the Workbench host gaps"
   description: "Slices that implement SPEC-0002..SPEC-0010 after re-steering the fork (SPEC-0001 D7-D10), with tests, wire/SDK parity and docs per slice"
   status: "draft"
-  revision: 11
+  revision: 12
   created_at: "2026-11-04T15:05:00+01:00"
-  updated_at: "2026-11-05T00:40:00+01:00"
+  updated_at: "2026-11-05T10:05:00+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -44,6 +44,9 @@ document:
     - revision: 11
       reason: "S1.6 implemented after the owner chose the Runtime-scoped initial flag"
       changes: ["replace the S1.6 preparation with evidence", "record that the prepared resume anchor did not hold and where resume is decided instead", "record the two delivery defects found and fixed", "mark the resume picker path UNVERIFIED"]
+    - revision: 12
+      reason: "Fix the test wrapper that hid rustup"
+      changes: ["record ddcf654d8 and drop the manual RUSTUP_HOME/CARGO_HOME workaround from the S1.6 evidence"]
 ---
 
 # PLAN-0001 Resolve the Workbench host gaps
@@ -188,7 +191,7 @@ pig --continue                 resume   true
 - Cross-SDK: a second `session_start` payload row with `initial: true` passes for Go, Node, Rust and Python in isolated, packed and fused realizations. No SDK type changed: handlers receive the event as JSON, and the SDK `SessionStartEvent` types are child-session inputs, where `initial` is host-computed and never accepted.
 - Tests that pinned the old first event were rewritten to D2: `TestAgentSessionRuntimeKeepsTheSessionStartEventUpstream`, `TestRuntimeOriginalNewResumeEvents`, `TestRPCRunEmitsSessionStartOnce`.
 - Gates: `make generate`, `make lint-changed` (0 issues), `go vet`, `make changelog-check`, `make ci-drift` (port-lint baseline down by two `ctxbackground` entries, one cold `os.Stat` annotated for perf-lint). `make ci-contracts` fails only the known `porter-check` hook test (B-0004).
-- Environment note: `with-isolated-pig-home.sh` hides rustup unless `RUSTUP_HOME` and `CARGO_HOME` are exported first; without them the Rust rows fail with "rustup could not choose a version". Add this to B-0004.
+- Environment note: `with-isolated-pig-home.sh` hid rustup, so Rust rows needed `RUSTUP_HOME` and `CARGO_HOME` exported by hand. Fixed in `ddcf654d8` (05.11.2026); the wrapper now runs Rust rows without a manual setup (B-0004).
 - Open: the `pig --resume` picker path was not driven end to end. It reaches the same `CreateAgentSessionRuntime` call with a selected existing file, so it should report `resume`, but no test exercises it. UNVERIFIED.
 
 ## S2 Model request pipeline (later)
