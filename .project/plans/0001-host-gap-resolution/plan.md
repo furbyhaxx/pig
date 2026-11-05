@@ -5,9 +5,9 @@ document:
   title: "Resolve the Workbench host gaps"
   description: "Slices that implement SPEC-0002..SPEC-0010 after re-steering the fork (SPEC-0001 D7-D10), with tests, wire/SDK parity and docs per slice"
   status: "draft"
-  revision: 10
+  revision: 11
   created_at: "2026-11-04T15:05:00+01:00"
-  updated_at: "2026-11-04T23:45:00+01:00"
+  updated_at: "2026-11-05T00:40:00+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -41,6 +41,9 @@ document:
     - revision: 10
       reason: "Prepare S1.6 without landing it, and record the one decision it needs first"
       changes: ["record the single implementation anchor for the resume reason", "record the three candidate anchors for the initial flag with a recommendation", "correct the earlier commit count in the S1.5 evidence"]
+    - revision: 11
+      reason: "S1.6 implemented after the owner chose the Runtime-scoped initial flag"
+      changes: ["replace the S1.6 preparation with evidence", "record that the prepared resume anchor did not hold and where resume is decided instead", "record the two delivery defects found and fixed", "mark the resume picker path UNVERIFIED"]
 ---
 
 # PLAN-0001 Resolve the Workbench host gaps
@@ -52,7 +55,7 @@ Input: `../../analyses/2026-11-04-host-gap-verification/README.md`. Policy: `../
 | Slice | Goal | Specs | Status |
 |---|---|---|---|
 | S0 | Steering, gates, public fork statement | 0001 | implemented; full gate blocked (B-0004) |
-| S1 | Reliability fixes and skill roots | 0004 D1–D3, 0007 D1–D3, 0009 | now; 1.1, 1.2 and 1.5 implemented, P29 agent-turn reproduction open, 1.3, 1.4, 1.6 and 1.7 next |
+| S1 | Reliability fixes and skill roots | 0004 D1–D3, 0007 D1–D3, 0009 | now; 1.1, 1.2, 1.5 and 1.6 implemented, P29 agent-turn reproduction open, 1.3, 1.4 and 1.7 next |
 | S2 | Model request pipeline | 0003 | later |
 | S3 | System prompt composition | 0002 | later |
 | S4 | Headless output and dialogs | 0005 | later |
@@ -163,23 +166,30 @@ Done when: all S1 tests red-proven where they are bug fixes, `make check` passes
 - Verified: `go build ./...`, `go vet ./coding ./coding/extension`, the deliverAs and queue/custom-message/prompt selections in `./coding`, `cargo check --all-targets` in `extensions/sdk-rs` (pre-existing warnings only), Python parse of `pig_sdk/__init__.py`, `make lint-changed` (0 issues), `make changelog-check`, `make ci-drift`.
 - `make ci-contracts` passes its correspondence and Porter packages, then fails the Porter unit test that installs a failing repository-local `pre-commit` hook, because this host sets a global `core.hooksPath`. `make porter-check` passes all 26 tests with `GIT_CONFIG_GLOBAL=/dev/null`. Recorded in B-0004 as a host-configuration effect, not a defect of this change.
 - Not verified in this pass: no cross-SDK conformance row drives an unknown `deliverAs` through Node, Rust and Python processes. The rejection is proven at the Session boundary that every binding shares, not through each runtime. Record it as a conformance gap for S1.5 follow-up rather than a covered row.
-- Still open in S1: 1.3 (`events.cancel`), 1.4 (`nextTurn` leaf binding), 1.6 (`session_start` `resume`/`initial`), 1.7 (`skills.roots[]`). S2–S8 have not started.
+- Still open in S1: 1.3 (`events.cancel`), 1.4 (`nextTurn` leaf binding), 1.7 (`skills.roots[]`). 1.6 landed (below). S2–S8 have not started.
+- Anchors for the next items: `events.cancel` (1.3) is the bus in `coding/extension/host/subprocess/event_bus.go`; the `nextTurn` leaf binding (1.4) is `agent.pendingNextTurn`.
 
-### S1.6 preparation: where each field belongs (04.11.2026)
+### S1.6 evidence: `session_start` `resume` and `initial` (05.11.2026)
 
-No code landed for 1.6; these are the anchors and the one open decision, recorded so the next session does not re-derive them.
+Owner decision 04.11.2026: `initial` is Runtime-scoped; SPEC-0007 D2 revision 2 records the alternatives and why they lost. Commits `453651743` (fix), `f076665fd` (changelog), `3cc9957f2` (context), `314a3a615` (perf annotation).
 
-- `reason = "resume"` has one precise home. `Runtime.startSession` sets `SessionOptions.resumed` when `ResumePath` opened an existing log, and `NewSession` consumes it in its `case opts.ResumePath != ""` branch (`coding/session.go:631`). Print, JSON, RPC and interactive all reach that branch through `ResumePath`, so no per-mode flag plumbing is needed, and an explicit `CreateAgentSessionOptions.SessionStartEvent` still overrides it afterwards.
-- `initial` needs a decided anchor first. "The process" is not a value any current type owns: `AgentSessionServices`, `Runtime` and `Session` are each created again per replacement, so a marker on any of them can report `initial` twice, once for the process's first Session and again for the first Session after a replacement. Candidate anchors:
+```
+launch                         reason   initial
+pig "prompt"                   startup  true
+pig --session <missing file>   startup  true
+pig --session <existing file>  resume   true
+pig --continue                 resume   true
+  then /new                    new      absent
+```
 
-| Anchor | Effect | Cost |
-|---|---|---|
-| package `coding` global | matches the D2 wording literally | unreachable for a test without a package-private reset; makes event-observing tests order-dependent |
-| `Runtime` field | testable, stable in every CLI mode | a replacement inside one process starts a new Runtime on the interactive path, so D2 must say "first `session_start` of a Runtime" |
-| `coding/cli` marker | one place, CLI-only | embedders get no value |
-
-Recommendation: the `Runtime` anchor with D2 reworded, since every mode already treats the Runtime as its process stand-in. Decide it in SPEC-0007 D2 before implementing, then add the field, the marker, the four SDK event types, `events.md` in both trees and a changelog `### Upgrading` entry in one change.
-- `events.cancel` (1.3) and the `nextTurn` leaf binding (1.4) have no equivalent open question; their anchors are the bus in `coding/extension/host/subprocess/event_bus.go` and `agent.pendingNextTurn` respectively.
+- The prepared anchor did not hold. `SessionOptions.resumed` is set only on the `Runtime.startSession` path, which no CLI mode uses: all four modes build a `SessionManager` first and pass it to `CreateAgentSessionRuntime`. The CLI now decides `resume` in `resolveStartupSessionSelectionIn` by checking that the selected file exists, before anything can create it, and passes the event to `CreateAgentSessionRuntime`. `NewAgentSessionRuntime` marks the first event `initial`.
+- Two delivery defects surfaced. Print, JSON and RPC re-emitted through `EmitSessionStartTransition(reason, previous)`, which dropped every other field: `Session.EmitSessionStartEvent(ctx, event)` forwards the whole event and now uses the mode's context instead of `context.Background()`. Interactive mode bound its first Session with a fixed `startup` event; `InteractiveOptions.SessionStartEvent` now carries the Runtime's.
+- Red then green, each mutation-checked: `TestRuntimeMarksOnlyItsFirstSessionStartInitial` (`./coding`), `TestSessionStartReportsResumeAndInitialAtProcessStart` (print and RPC binaries), `TestInteractiveSessionStartReportsResumeAndInitial` (PTY, fresh and `--continue`). Removing the `resumesExisting` assignment, the `Initial = true` line or the interactive option each turns its test red.
+- Cross-SDK: a second `session_start` payload row with `initial: true` passes for Go, Node, Rust and Python in isolated, packed and fused realizations. No SDK type changed: handlers receive the event as JSON, and the SDK `SessionStartEvent` types are child-session inputs, where `initial` is host-computed and never accepted.
+- Tests that pinned the old first event were rewritten to D2: `TestAgentSessionRuntimeKeepsTheSessionStartEventUpstream`, `TestRuntimeOriginalNewResumeEvents`, `TestRPCRunEmitsSessionStartOnce`.
+- Gates: `make generate`, `make lint-changed` (0 issues), `go vet`, `make changelog-check`, `make ci-drift` (port-lint baseline down by two `ctxbackground` entries, one cold `os.Stat` annotated for perf-lint). `make ci-contracts` fails only the known `porter-check` hook test (B-0004).
+- Environment note: `with-isolated-pig-home.sh` hides rustup unless `RUSTUP_HOME` and `CARGO_HOME` are exported first; without them the Rust rows fail with "rustup could not choose a version". Add this to B-0004.
+- Open: the `pig --resume` picker path was not driven end to end. It reaches the same `CreateAgentSessionRuntime` call with a selected existing file, so it should report `resume`, but no test exercises it. UNVERIFIED.
 
 ## S2 Model request pipeline (later)
 Goal: SPEC-0003 D1–D6. Key steps: move hooks into `ModelRuntime` (`coding/services.go`), `purpose`/`origin`, re-entrancy guard, fail-closed table, `block` result, phases, `extensions.hookTimeoutMs`, wire + SDKs, benchmark of the no-handler path. Docs: `extensions.md`, `extension-api.md`, `events.md`, `security.md`, `compaction.md`, `settings.md`.
