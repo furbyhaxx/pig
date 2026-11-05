@@ -12,6 +12,22 @@ import (
 	"github.com/MichaelKinsy/PiG/internal/codingagent/configschema"
 )
 
+const forkSettingsSkillsSchema = `{
+  "anyOf": [
+    {"type": "array", "items": {"type": "string"}},
+    {
+      "type": "object",
+      "properties": {
+        "roots": {"type": "array", "items": {"type": "string"}, "description": "Directories searched for skills, in precedence order. Tokens: @project, @project-agents, @agent, @user-agents."},
+        "paths": {"type": "array", "items": {"type": "string"}, "description": "Explicit skill files and directories, with +, - and ! filters."},
+        "enableSkillCommands": {"type": "boolean", "description": "Deprecated: migrate to the top-level enableSkillCommands."},
+        "customDirectories": {"type": "array", "items": {"type": "string"}, "description": "Deprecated: migrate to paths."}
+      }
+    }
+  ],
+  "description": "Skill paths as a list, or an object with roots and paths. roots replaces automatic discovery; omit it for the default roots."
+}`
+
 func assertSchemaContract(t *testing.T, path, rendered string, origin []byte) {
 	t.Helper()
 	if path != "schemas/settings.schema.json" {
@@ -31,8 +47,13 @@ func assertSchemaContract(t *testing.T, path, rendered string, origin []byte) {
 		"type": "integer", "minimum": float64(1), "maximum": float64(9223372036854),
 		"default": float64(15000), "description": "Global reload-only connect/register budget in milliseconds; build time is excluded.",
 	}
+	var skills any
+	if err := json.Unmarshal([]byte(forkSettingsSkillsSchema), &skills); err != nil {
+		t.Fatal(err)
+	}
+	want["properties"].(map[string]any)["skills"] = skills
 	if !reflect.DeepEqual(got, want) {
-		t.Error("settings schema differs from its origin plus SPEC-0004 D2")
+		t.Error("settings schema differs from its origin plus SPEC-0004 D2 and SPEC-0009")
 	}
 }
 
