@@ -170,7 +170,7 @@ func TestInteractiveSigintTerminatesAndRestoresTerminal(t *testing.T) {
 	}
 	waitForPaneText(t, session, interactiveReadyMarker, 30*time.Second)
 
-	pid := childOf(t, shellPID)
+	pid := descendantRunning(t, shellPID, bin)
 	if isigEnabled(t, tty) {
 		t.Fatal("pig should hold the terminal in raw mode with ISIG disabled")
 	}
@@ -180,12 +180,13 @@ func TestInteractiveSigintTerminatesAndRestoresTerminal(t *testing.T) {
 	}
 
 	if !waitFor(5*time.Second, func() bool { return processExited(pid) }) {
-		t.Fatal("pig survived SIGINT; upstream terminates, so pig must too")
+		cmdline, _ := os.ReadFile(fmt.Sprintf("/proc/%d/cmdline", pid))
+		t.Fatalf("pig survived SIGINT; upstream terminates, so pig must too (pid %d cmdline %q)", pid, strings.ReplaceAll(strings.TrimRight(string(cmdline), "\x00"), "\x00", " "))
 	}
 	if out, err := tmuxCommand("send-keys", "-t", session, "sleep 30", "Enter").CombinedOutput(); err != nil {
 		t.Fatalf("launch shell interrupt probe: %v\n%s", err, out)
 	}
-	sleepPID := childOf(t, shellPID)
+	sleepPID := descendantRunning(t, shellPID, "sleep 30")
 	if out, err := tmuxCommand("send-keys", "-t", session, "C-c").CombinedOutput(); err != nil {
 		t.Fatalf("send shell Ctrl+C: %v\n%s", err, out)
 	}
@@ -209,23 +210,37 @@ func paneTTY(t *testing.T, session string) string {
 	return tty
 }
 
-func childOf(t *testing.T, parent int) int {
+func descendantRunning(t *testing.T, parent int, executable string) int {
 	t.Helper()
+	var find func(int) int
+	find = func(pid int) int {
+		out, err := exec.Command("pgrep", "-P", fmt.Sprint(pid)).Output()
+		if err != nil {
+			return 0
+		}
+		for _, field := range strings.Fields(string(out)) {
+			var child int
+			if _, scanErr := fmt.Sscanf(field, "%d", &child); scanErr != nil || child <= 0 {
+				continue
+			}
+			command, _ := exec.Command("ps", "-o", "command=", "-p", fmt.Sprint(child)).Output()
+			if strings.Contains(string(command), executable) {
+				return child
+			}
+			if found := find(child); found > 0 {
+				return found
+			}
+		}
+		return 0
+	}
 	deadline := time.Now().Add(20 * time.Second)
 	for time.Now().Before(deadline) {
-		out, err := exec.Command("pgrep", "-P", fmt.Sprint(parent)).Output()
-		if err == nil {
-			fields := strings.Fields(string(out))
-			if len(fields) > 0 {
-				var pid int
-				if _, scanErr := fmt.Sscanf(fields[0], "%d", &pid); scanErr == nil && pid > 0 {
-					return pid
-				}
-			}
+		if pid := find(parent); pid > 0 {
+			return pid
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	t.Fatalf("no child of %d appeared", parent)
+	t.Fatalf("no descendant of %d runs %s", parent, executable)
 	return 0
 }
 
