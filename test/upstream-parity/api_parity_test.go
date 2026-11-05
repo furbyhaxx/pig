@@ -14,13 +14,16 @@ func goAPIType() reflect.Type {
 
 // allowedDivergences names methods on extension.API that have NO direct
 // upstream counterpart (camelCase → PascalCase or `on("...")` → `On*`).
-// Each entry MUST have a corresponding row in docs/parity/DIVERGENCES.md.
+// Each value names the upstream divergence ledger row or the fork spec that
+// records it. Fork additions cite their spec and are not D-ledger rows.
 //
 // Note: upstream's `events: EventBus` property is picked up by the parser
 // as a method (via propertyRE), so `Events` is already in upstream's
 // Pascal-cased set: the property→method shape (D1) is a NAME-shape
 // divergence visible in the API source, not an extra method here.
-var allowedDivergences = map[string]string{}
+var allowedDivergences = map[string]string{
+	"OnQueuedMessageDiscarded": "fork SPEC-0007 D1",
+}
 
 // goOverloads names the Go methods that split one upstream method with several call signatures: Go has no overloads.
 // The value is the upstream method (PascalCase) the Go method is a signature of; it is a language mechanic, not a
@@ -33,7 +36,8 @@ var goOverloads = map[string]string{
 // TestAPI_NoExtraGoMethodsBeyondUpstream asserts that pig's extension.API
 // does not invent methods that don't exist upstream. Methods on the
 // allowedDivergences map are intentional pig divergences; each MUST have
-// a corresponding entry in docs/parity/DIVERGENCES.md.
+// a corresponding entry in docs/parity/DIVERGENCES.md or, for a fork
+// addition, cite its fork spec.
 func TestAPI_NoExtraGoMethodsBeyondUpstream(t *testing.T) {
 	s, err := LoadUpstream()
 	if err != nil {

@@ -274,7 +274,7 @@ func TestSkillRootsDeduplicateASymlinkedRoot(t *testing.T) {
 	if err := os.MkdirAll(agentDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	testenv.Symlink(t, target, alias)
+	testenv.RequireDirectoryLink(t, target, alias)
 	data := []byte(`{"skills":{"roots":[` + strconvQuote(target) + `,` + strconvQuote(alias) + `]}}`)
 	if err := os.WriteFile(filepath.Join(agentDir, "settings.json"), data, 0o600); err != nil {
 		t.Fatal(err)

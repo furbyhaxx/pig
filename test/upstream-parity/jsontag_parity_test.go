@@ -75,9 +75,11 @@ func TestJSONTags_AllEventFieldsAreCamelCase(t *testing.T) {
 	}
 }
 
-// allowedExtraJSONFieldDivergences names wire members PiG writes that Pi's interface does not declare. Each value is the
-// divergence that records it.
-var allowedExtraJSONFieldDivergences = map[string]map[string]string{}
+// allowedExtraJSONFieldDivergences names wire members PiG writes that Pi's interface does not declare. Each value names
+// the divergence ledger row or the fork spec that records it; fork additions cite their spec.
+var allowedExtraJSONFieldDivergences = map[string]map[string]string{
+	"SessionStartEvent": {"initial": "fork SPEC-0007 D2"},
+}
 
 // TestJSONTags_NoExtraGoFieldsBeyondUpstream asserts that every JSON-tagged
 // field on a Go event struct has a corresponding upstream TS field.
