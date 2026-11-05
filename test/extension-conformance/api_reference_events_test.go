@@ -64,11 +64,16 @@ func TestConformance_ExtensionAPIEventSubscriptions(t *testing.T) {
 		"user_bash",
 		"input",
 	}
-	if !slices.Equal(slices.Sorted(slices.Values(piOnEvents)), slices.Sorted(slices.Values(subscribedEventNames))) {
-		t.Fatalf("subscribedEventNames drifted from the Pi 1.1.0 pi.on list: %v", subscribedEventNames)
+	// Fork events are added beside the Pi list with their spec, never folded into it.
+	forkOnEvents := []string{
+		"queued_message_discarded", // SPEC-0007 D1
 	}
-	if len(piOnEvents) != len(slices.Compact(slices.Sorted(slices.Values(piOnEvents)))) {
-		t.Fatalf("the list names an event twice: %v", piOnEvents)
+	expected := append(slices.Clone(piOnEvents), forkOnEvents...)
+	if !slices.Equal(slices.Sorted(slices.Values(expected)), slices.Sorted(slices.Values(subscribedEventNames))) {
+		t.Fatalf("subscribedEventNames drifted from the Pi 1.1.0 pi.on list plus fork events: %v", subscribedEventNames)
+	}
+	if len(expected) != len(slices.Compact(slices.Sorted(slices.Values(expected)))) {
+		t.Fatalf("the event lists name an event twice: %v", expected)
 	}
 	for _, tc := range sdkHarnessCases() {
 		t.Run(tc.name, func(t *testing.T) {

@@ -298,9 +298,29 @@ func (h *Host) handleMcpServerCall(_ context.Context, me *managedExt, call *Call
 }
 
 // handleMcpServersRead serves CallGetMcpServers: the live registry, which a Node factory reads before its register frame (loader.ts:475-478).
-func (h *Host) handleMcpServersRead() (*CallResultPayload, error) {
-	result, err := json.Marshal(McpServersResult{Servers: h.providerRuntime.McpServers().List()})
+func (h *Host) handleMcpServersRead(me *managedExt) (*CallResultPayload, error) {
+	result, err := json.Marshal(McpServersResult{Servers: h.factoryMcpServers(me).McpServers().List()})
 	return &CallResultPayload{Result: result}, err
+}
+
+// factoryMcpServers is the registry a packed Node factory reads or checks against: the live servers plus the pending registrations of earlier members of its cell, which that cell publishes together after every member loads. Pi commits each member's registration when its factory returns, so the next factory must see it.
+func (h *Host) factoryMcpServers(me *managedExt) *extension.ExtensionRuntime {
+	view := extension.CreateExtensionRuntime()
+	for _, server := range h.providerRuntime.McpServers().List() {
+		view.McpServers().Register(server)
+	}
+	if me.packedProcess == nil {
+		return view
+	}
+	for _, member := range me.packedProcess.members {
+		if member == me || member.pendingRegistration == nil {
+			continue
+		}
+		for _, server := range member.pendingRegistration.McpServers {
+			_ = view.RegisterMcpServer(extConfigOrigin(member.config), server.Name, server.Config)
+		}
+	}
+	return view
 }
 
 // handleLoadingExec serves CallLoadingExec: upstream's execCommand in the working directory the loader was given, which a factory's pi.exec uses before any session binds (loader.ts:411-414).
@@ -326,7 +346,7 @@ func (h *Host) handleMcpServerCheck(me *managedExt, call *CallPayload) (*CallRes
 	if err := json.Unmarshal(call.Args, &decl); err != nil {
 		return nil, fmt.Errorf("decode %s: %w", call.Method, err)
 	}
-	if _, err := h.providerRuntime.CheckMcpServer(extConfigOrigin(me.config), decl.Name, decl.Config); err != nil {
+	if _, err := h.factoryMcpServers(me).CheckMcpServer(extConfigOrigin(me.config), decl.Name, decl.Config); err != nil {
 		return nil, err
 	}
 	return &CallResultPayload{}, nil

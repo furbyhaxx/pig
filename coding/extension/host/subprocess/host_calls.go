@@ -450,7 +450,7 @@ func (h *Host) runCall(me *managedExt, conn *Conn, callID string, call *CallPayl
 	case call.Method == "event.subscribe" || call.Method == "event.unsubscribe":
 		result, err = h.handleEventSubscription(me, call)
 	case call.Method == CallGetMcpServers:
-		result, err = h.handleMcpServersRead()
+		result, err = h.handleMcpServersRead(me)
 	case call.Method == CallCheckMcpServer:
 		result, err = h.handleMcpServerCheck(me, call)
 	case call.Method == CallParseFrontmatter:
