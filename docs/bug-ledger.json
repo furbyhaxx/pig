@@ -15668,6 +15668,28 @@
       ]
     },
     {
+      "id": "BF-6f4b6e3",
+      "title": "A packed Node cell exposes an earlier member's MCP registrations to a later member's factory, so…",
+      "symptom": "A packed Node cell exposes an earlier member's MCP registrations to a later member's factory, so `pi.getMcpServers()` sees them and a duplicate `pi.registerMcpServer()` throws to that factory as it does in Pi.",
+      "rootCause": "A packed Node cell defers each member's MCP registrations until the whole cell publishes, so a later factory's mcpServers.check and getMcpServers saw an empty registry. Both now read the live servers plus the pending registrations of earlier cell members, matching Pi's per-extension commit.",
+      "rootCauseSource": "commit",
+      "userImpact": "Behavior differed from Pi",
+      "platform": "All platforms",
+      "class": "own",
+      "fixedIn": "Unreleased",
+      "releaseNote": "A packed Node cell exposes an earlier member's MCP registrations to a later member's factory, so `pi.getMcpServers()` sees them and a duplicate `pi.registerMcpServer()` throws to that factory as it does in Pi.",
+      "origin": "release note",
+      "commits": [
+        {
+          "hash": "6f4b6e378d",
+          "date": "2026-11-05"
+        }
+      ],
+      "tests": [
+        "test/extension-conformance/api_reference_events_test.go::TestConformance_ExtensionAPIEventSubscriptions"
+      ]
+    },
+    {
       "id": "BF-6fb1307",
       "title": "openai-codex-responses reads `instructions` from the initial system message of the resolved transcript before…",
       "symptom": "openai-codex-responses reads `instructions` from the initial system message of the resolved transcript before `transformMessages` drops an errored or aborted assistant turn (`ai/openai_responses.go`, openai-codex-responses.ts:551): a transcript that starts with such a turn followed by a system message no longer sends that message as the prompt.",
@@ -24121,6 +24143,27 @@
         }
       ],
       "tests": []
+    },
+    {
+      "id": "BF-a614c6e",
+      "title": "fix(skills): serialize empty skill paths without null",
+      "symptom": "fix(skills): serialize empty skill paths without null",
+      "rootCause": "The object form always emits paths, and the list form emits [] rather than null, matching the settings contract. The symlink regression uses the platform test helper.",
+      "rootCauseSource": "commit",
+      "userImpact": "Behavior differed from Pi",
+      "platform": "All platforms",
+      "class": "own",
+      "fixedIn": "Unreleased",
+      "origin": "commit",
+      "commits": [
+        {
+          "hash": "a614c6e16b",
+          "date": "2026-11-05"
+        }
+      ],
+      "tests": [
+        "internal/codingagent/skill_roots_test.go::TestSkillRootsDeduplicateASymlinkedRoot"
+      ]
     },
     {
       "id": "BF-a690122",

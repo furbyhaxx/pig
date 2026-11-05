@@ -539,6 +539,7 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 | [BF-6ee6eae](#bf-6ee6eae) | A Session delivers each event to its listeners the way Pi's `AgentSession` does | PiG's own defect | All platforms | 0.5.0 |
 | [BF-6f26a84](#bf-6f26a84) | Xiaomi MiMo models send only the thinking on/off toggle (no `reasoning_effort`) and expose only the `off` and… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-6f4a82f](#bf-6f4a82f) | Validation errors for `propertyNames` name the failing member in their path, `contains` reports only "must… | PiG's own defect | All platforms | 0.5.0 |
+| [BF-6f4b6e3](#bf-6f4b6e3) | A packed Node cell exposes an earlier member's MCP registrations to a later member's factory, so… | PiG's own defect | All platforms | Unreleased |
 | [BF-6fb1307](#bf-6fb1307) | openai-codex-responses reads `instructions` from the initial system message of the resolved transcript before… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-70d51e5](#bf-70d51e5) | Fixed bash and PowerShell results losing `Took` after reloading a session, and the live `Took` including… | A fix Pi shipped that PiG ported | Windows | 0.5.0 |
 | [BF-70d51e5-2](#bf-70d51e5-2) | Fixed the message-format page: it said PiG does not carry the `nestedCalls` record on tool result messages… | A fix Pi shipped that PiG ported | All platforms | 0.5.0 |
@@ -831,6 +832,7 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 | [BF-a53f72f](#bf-a53f72f) | A context an extension kept across a session replacement or reload now raises Pi's stale message from `cwd`… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-a5524c8](#bf-a5524c8) | In print and JSON mode, an extension whose `session_shutdown` handler throws after SIGTERM or SIGHUP now has… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-a5524c8-2](#bf-a5524c8-2) | In print and JSON mode, SIGTERM or SIGHUP during a tool call stops the run where Pi does while the… | PiG's own defect | All platforms | 0.5.0 |
+| [BF-a614c6e](#bf-a614c6e) | fix(skills): serialize empty skill paths without null | PiG's own defect | All platforms | Unreleased |
 | [BF-a690122](#bf-a690122) | `PIG_PROFILE=heap` and the `heap_live_bytes` of `PIG_PROFILE=metrics` count only memory PiG retains | PiG's own defect | All platforms | 0.5.0 |
 | [BF-a6932b4](#bf-a6932b4) | fix(coding): pass a Node extension request's client identity to the provider | PiG's own defect | All platforms | Unreleased |
 | [BF-a6e0ce8](#bf-a6e0ce8) | fix(codingagent): session selector page keys keep the index valid (Pi #7680) | PiG's own defect | All platforms | Unreleased |
@@ -8465,6 +8467,20 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 - **Tests:** `ai/streaming_json_oracle_test.go::TestStreamingJSONMatchesPiOnSeededInput`, `ai/validate_tool_args_oracle_test.go::TestValidateToolArgumentsMatchesPiOnSeededSchemas`, `chord/delta/own_key_order_test.go::TestDiffRevisionsVisitsArrayIndexKeysFirstInNumericOrder`, `internal/chord/chordjson/own_key_order_test.go::TestCopyFollowsPisKeyOrderAndMessages`, `internal/evals/plan_oracle_test.go::TestPlanMatchesPiOnSeededProbes`, `internal/evals/report_oracle_test.go::TestEvalReportMatchesPiOnSeededDesigns`
 - **Release note:** Validation errors for `propertyNames` name the failing member in their path, `contains` reports only "must contain at least 1 valid item", and a failing `then` branch reports only `must match "then" schema` while a failing `else` branch also lists its errors, as in Pi.
 
+### BF-6f4b6e3
+
+**A packed Node cell exposes an earlier member's MCP registrations to a later member's factory, so…**
+
+- **Source:** PiG's own defect
+- **Symptom:** A packed Node cell exposes an earlier member's MCP registrations to a later member's factory, so `pi.getMcpServers()` sees them and a duplicate `pi.registerMcpServer()` throws to that factory as it does in Pi.
+- **Root cause:** A packed Node cell defers each member's MCP registrations until the whole cell publishes, so a later factory's mcpServers.check and getMcpServers saw an empty registry. Both now read the live servers plus the pending registrations of earlier cell members, matching Pi's per-extension commit.
+- **User impact:** Behavior differed from Pi
+- **Platform:** All platforms
+- **Fixed in:** Unreleased
+- **Fix commits:** `6f4b6e378d` (2026-11-05)
+- **Tests:** `test/extension-conformance/api_reference_events_test.go::TestConformance_ExtensionAPIEventSubscriptions`
+- **Release note:** A packed Node cell exposes an earlier member's MCP registrations to a later member's factory, so `pi.getMcpServers()` sees them and a duplicate `pi.registerMcpServer()` throws to that factory as it does in Pi.
+
 ### BF-6fb1307
 
 **openai-codex-responses reads `instructions` from the initial system message of the resolved transcript before…**
@@ -12534,6 +12550,19 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 - **Fix commits:** `a5524c8b01` (2026-10-11)
 - **Tests:** None recorded.
 - **Release note:** In print and JSON mode, SIGTERM or SIGHUP during a tool call stops the run where Pi does while the extensions' `session_shutdown` handlers finish without waiting: no further provider request and no tool result. A handler that waits on a timer or I/O lets the run continue, as in Pi, and text mode then prints the run's result.
+
+### BF-a614c6e
+
+**fix(skills): serialize empty skill paths without null**
+
+- **Source:** PiG's own defect
+- **Symptom:** fix(skills): serialize empty skill paths without null
+- **Root cause:** The object form always emits paths, and the list form emits [] rather than null, matching the settings contract. The symlink regression uses the platform test helper.
+- **User impact:** Behavior differed from Pi
+- **Platform:** All platforms
+- **Fixed in:** Unreleased
+- **Fix commits:** `a614c6e16b` (2026-11-05)
+- **Tests:** `internal/codingagent/skill_roots_test.go::TestSkillRootsDeduplicateASymlinkedRoot`
 
 ### BF-a690122
 
