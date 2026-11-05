@@ -5,9 +5,9 @@ document:
   title: "Resolve the Workbench host gaps"
   description: "Slices that implement SPEC-0002..SPEC-0010 after re-steering the fork (SPEC-0001 D7-D10), with tests, wire/SDK parity and docs per slice"
   status: "draft"
-  revision: 14
+  revision: 16
   created_at: "2026-11-04T15:05:00+01:00"
-  updated_at: "2026-11-05T14:25:00+01:00"
+  updated_at: "2026-11-05T15:45:00+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -53,6 +53,12 @@ document:
     - revision: 14
       reason: "Housekeeping: the three coverage gaps move from plan prose into B-0006"
       changes: ["point the S1.3, S1.4, S1.5 and S1.6 coverage gaps at B-0006 instead of restating them"]
+    - revision: 15
+      reason: "S1.7 implemented and accepted through the built CLI"
+      changes: ["replace the S1.7 plan row with implementation evidence", "record the config/status discovery drift and its fix", "record targeted gates and the B-0004 full-package timeout"]
+    - revision: 16
+      reason: "Reproduce P29 through tree navigation, real agent turns and packed Go reloads"
+      changes: ["record the 12-round PTY reproduction and its first-try status", "mark 1.1 and the progress row implemented", "leave S1 acceptance open"]
 ---
 
 # PLAN-0001 Resolve the Workbench host gaps
@@ -64,7 +70,7 @@ Input: `../../analyses/2026-11-04-host-gap-verification/README.md`. Policy: `../
 | Slice | Goal | Specs | Status |
 |---|---|---|---|
 | S0 | Steering, gates, public fork statement | 0001 | implemented; full gate blocked (B-0004) |
-| S1 | Reliability fixes and skill roots | 0004 D1–D3, 0007 D1–D3, 0009 | now; 1.1–1.6 implemented, P29 agent-turn reproduction open, 1.7 next |
+| S1 | Reliability fixes and skill roots | 0004 D1–D3, 0007 D1–D3, 0009 | now; 1.1–1.7 implemented; S1 acceptance next |
 | S2 | Model request pipeline | 0003 | later |
 | S3 | System prompt composition | 0002 | later |
 | S4 | Headless output and dialogs | 0005 | later |
@@ -79,7 +85,7 @@ No work: U-09 and U-26 (wrong findings), U-20 (watch; regression test when it re
 
 - Per task: red test first for bugs; implementation; wire + all SDKs + `test/extension-conformance/` for extension API changes; docs in both trees (`docs/site/docs/`, `internal/pigdocs/content/`); `make generate` when settings, flags or exported API change; `changelog.d/` fragment for user-facing changes.
 - Upstream tests and parity scenarios that pin replaced behavior are rewritten or deleted in the same change (SPEC-0001 D10); the commit body cites the spec.
-- Gate per task: `make test-changed lint-changed`, `go vet` on touched packages, `-race` on edited packages. Any change to an SDK source (`extensions/sdk*`) also runs that SDK's own suite (`make test-sdk-go`, `test-sdk-py`, `test-sdk-rs`) and `go generate ./...` in that bundle directory, because a stale `.gz` mirror otherwise ships silently (B-0004). Before closing a slice: `make ci-drift ci-contracts`, `make check`.
+- Gate per task: `make test-changed lint-changed`, `go vet` on touched packages, `-race` on edited packages. Any change to an SDK source (`extensions/sdk*`) also runs that SDK's own suite (`make test-sdk-go`, `test-sdk-py`, `test-sdk-rs`), `make sdk-bundles-check`, and `go generate ./...` in that bundle directory, because a stale `.gz` mirror otherwise ships silently (B-0004). Before closing a slice: `make ci-drift ci-contracts`, `make check`.
 - A spec decision that turns out wrong is revised in the spec in the same change.
 
 ## S0 Steering and gates (now)
@@ -123,7 +129,7 @@ Done when: `make check` passes, no child `AGENTS.md` demands Pi faithfulness for
 
 | # | Task | Ref | Tests | Docs |
 |---|---|---|---|---|
-| 1.1 | Generation-unique sockets implemented; original P29 tree-navigation and agent-turn reproduction remains open | 0004 D1 | red-proven `TestSocketGenerationTeardownDoesNotUnlinkSuccessor`; 200-reload stress loop is not a P29 reproduction | `docs/runtime-cell-reload.md`, bundle `runtime-cells.md` |
+| 1.1 | Generation-unique sockets and the original P29 tree-navigation plus real-agent-turn reproduction | 0004 D1 | red-proven `TestSocketGenerationTeardownDoesNotUnlinkSuccessor`; `TestPackedGoReloadAfterTreeNavigationAndAgentTurnsNeverHangs` drives 12 rounds of two turns, `/tree` navigation, another turn and a packed Go reload | `docs/runtime-cell-reload.md`, bundle `runtime-cells.md` |
 | 1.2 | Bounded reload handshake, atomic reload, error to `ctx.Reload()`, `/reload`, RPC and the SDK loader; global setting `extensionsReloadHandshakeMs` | 0004 D2 | stuck-peer test (process never registers) keeps old generation serving; SDK per-cell publication test | `settings.md`, `extensions.md` reload section |
 | 1.3 | Event-bus cancellation reuses the existing `cancel` frame; Go, Python and Rust handler contexts end, Node keeps its `(data)` signature | 0004 D3 | `TestNativeEventBusCallerCancellationEndsListener` (Go/Python/Rust, isolated and shared-ok), `TestEventBusCancelledDispatchDoesNotStartListeners`, `TestEventBusCancelledCallerStillRegistersAndUnregisters` | `extensions.md` event bus, `extension-api.md`, `extension-api-parity.md` |
 | 1.4 | `nextTurn` bound to session and leaf; discard + `queued_message_discarded` on navigation/new/fork/resume/switch, including in-place slash forks | 0007 D1 | `TestNextTurnLeafBinding` (ordinary, errored, aborted history; keep and discard cases), interactive send guard | `events.md` both trees |
@@ -141,6 +147,7 @@ Done when: all S1 tests red-proven where they are bug fixes, `make check` passes
 - The loop's per-admission timeout explicitly retains the session context as `runtimeParent`: cancelling the operation context must not terminate the retained process being measured. The added retained-identity assertion initially exposed that fixture lifetime mistake; it was corrected without removing the assertion.
 - Focused socket/reload tests and the broader reload/retention selection pass with `-race`; `go vet`, `make lint-changed` and `make ci-drift ci-contracts` pass. The teardown regression uses the production `ListenExtension` boundary (avoiding a false-positive TempDir socket lint warning). Warm-cache reload benchmark: 3 iterations, 4,547,431 ns/op, 3,601,690 B/op, 5,657 allocs/op; CPU and allocation profiles captured locally. No before/after performance claim.
 - The owner approved flat `extensionsReloadHandshakeMs`. SPEC-0004 D2 and the settings wire, clone, serialization, global accessor, CLI wiring and schema now use it; the `extensions` path array is unchanged. D5 setting names are flat in the draft spec too.
+- P29 reproduction (05.11.2026): `TestPackedGoReloadAfterTreeNavigationAndAgentTurnsNeverHangs` runs the real binary in a PTY with a packed Go extension. Each of 12 rounds performs two real faux-model turns, opens `/tree`, navigates to an earlier assistant entry, runs another real turn, then executes `/reloadme`; the extension logs `agent_end` (36 observed turns), the test waits for each tree screen, and each reload must log `start:reload`, `returned` and the new factory before the next round. All 12 rounds pass in one 5.13 s run. The test passed first try, so it is reported as reproduction and regression coverage, not red-proven; the socket path defect keeps its earlier red-proven teardown regression. Linux only, as the packed-Go P29 probes were.
 
 ### S1.2 progress and remaining work (04.11.2026)
 
@@ -226,6 +233,17 @@ pig --continue                 resume   true
 - Gates: `make generate`, `make lint-changed` (0 issues), `go vet`, `make changelog-check`, `make ci-drift` (port-lint baseline down by two `ctxbackground` entries, one cold `os.Stat` annotated for perf-lint). `make ci-contracts` fails only the known `porter-check` hook test (B-0004).
 - Environment note: `with-isolated-pig-home.sh` hid rustup, so Rust rows needed `RUSTUP_HOME` and `CARGO_HOME` exported by hand. Fixed in `ddcf654d8` (05.11.2026); the wrapper now runs Rust rows without a manual setup (B-0004).
 - Open: the `pig --resume` picker path was not driven end to end. It reaches the same `CreateAgentSessionRuntime` call with a selected existing file, so it should report `resume`, but no test exercises it. UNVERIFIED (B-0006).
+
+### S1.7 evidence: `skills.roots[]` (05.11.2026)
+
+- `skills` accepts the documented object `{roots, paths}` and keeps the list shorthand as `{paths}`. Legacy `customDirectories` migrates to `paths` unless `paths` is present; `enableSkillCommands` moves to the top level. The Pi settings-file byte oracle still passes for the legacy list form, and legacy objects canonicalize without losing either member.
+- A malformed `skills.roots` or `skills.paths` element is dropped on its own with a diagnostic; it no longer hides the object type error and later erases `roots` on the next settings write. `TestSkillRootsWrongTypedEntryDoesNotEraseTheObject` proves the preserved roots through a setter write.
+- Roots support absolute and `~/` paths, paths relative to the settings file, and `@project`, `@project-agents`, `@agent`, `@user-agents`. A project `roots` replaces the global list and applies only in a trusted project. Root list order is precedence, duplicate real paths (including symlinks) are searched once, missing roots are skipped and a file root is reported by `DrainErrors`.
+- `AmbientSkillResourcesIn` is the single discovery mechanism. `coding/cli` config/status inventory now calls it instead of scanning fixed directories again, which closes the drift the first CLI probe exposed.
+- Acceptance through the built binary: with `skills.roots` set to the project skills directory, `pig status --json` listed only `project-skill`; adding `@user-agents` listed `home-skill` and `project-skill`. The same behavior is pinned by `TestStatusHonorsConfiguredSkillRoots`.
+- Unit coverage: `TestSkillRootsSettingsSurviveMigrationAndRoundTrip`, `TestSkillRootsReplaceDefaultDiscoveryInOrder`, `TestProjectSkillRootsOverrideGlobalAndRequireTrust`, `TestSkillRootsPersistAcrossPathSettersAndLegacyFileMigration`, `TestSkillRootTokensRelativePathsDuplicatesAndDiagnostics`, `TestSkillRootsWrongTypedEntryDoesNotEraseTheObject`, `TestSkillRootsDeduplicateASymlinkedRoot`.
+- Docs: `skills.md` and `settings.md` in both trees, `settings-examples.md`, generated `schemas/settings.schema.json`, and the root `AGENTS.md` test-isolation bullet.
+- Gates: targeted settings/schema/skill-root/status tests pass, including `-race`; `make generate-schemas`, `make docs-drift`, `make changelog-check`, `go vet` and `make lint-changed` (0 issues) pass. Full `internal/codingagent` fails only the known `TestSessionSearchRegexMatchesPi` oracle (5 of 3000 patterns, B-0004); full `coding/cli` reaches the known parallel RPC timeout (B-0004). No S1.7 assertion failed.
 
 ## S2 Model request pipeline (later)
 Goal: SPEC-0003 D1–D6. Key steps: move hooks into `ModelRuntime` (`coding/services.go`), `purpose`/`origin`, re-entrancy guard, fail-closed table, `block` result, phases, `extensions.hookTimeoutMs`, wire + SDKs, benchmark of the no-handler path. Docs: `extensions.md`, `extension-api.md`, `events.md`, `security.md`, `compaction.md`, `settings.md`.

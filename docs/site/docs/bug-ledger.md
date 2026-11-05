@@ -1101,6 +1101,9 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 | [BF-e25a09f](#bf-e25a09f) | A tool argument or event payload with a number outside the double range (`1e400`), at any nesting depth, no… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-e2db931](#bf-e2db931) | On Windows, refreshing an MCP server's OAuth token no longer fails with `EPERM` when another `pig` process is… | PiG's own defect | Windows | 0.5.0 |
 | [BF-e32c60c](#bf-e32c60c) | A Piglet or Package installed under a symlinked agent directory keeps the origin integrity recorded in its… | PiG's own defect | All platforms | 0.5.0 |
+| [BF-e3d7d18](#bf-e3d7d18) | SSH `loginShell` starts work when the account shell is fish as well as a POSIX shell | PiG's own defect | All platforms | Unreleased |
+| [BF-e3d7d18-2](#bf-e3d7d18-2) | An X11 `DISPLAY` with an explicit `unix:` host is rejected as `xcb_connect` rejects it; `unix/:` remains the… | PiG's own defect | All platforms | Unreleased |
+| [BF-e3d7d18-3](#bf-e3d7d18-3) | Historical `Eire` `Date` strings use the names the qualified Node prints | PiG's own defect | All platforms | Unreleased |
 | [BF-e3f39b7](#bf-e3f39b7) | Automatic retry now triggers for the gateway error "Unable to forward upstream stream" | PiG's own defect | All platforms | 0.5.0 |
 | [BF-e4252b4](#bf-e4252b4) | Fix in shipped code | PiG's own defect | All platforms | Unreleased |
 | [BF-e42ae82](#bf-e42ae82) | `SettingsManager` structured getters (settings-manager.ts getBranchSummarySettings, getRetrySettings… | PiG's own defect | All platforms | 0.5.0 |
@@ -16281,6 +16284,48 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 - **Fix commits:** `e32c60c500` (2026-10-06)
 - **Tests:** `coding/extension/host/subprocess/node_frame_buffer_test.go::TestNodeProviderSocketFrameCopyIsLinear`, `coding/piglet/origin_integrity_test.go::TestReadNPMOriginIntegrityResolvesLockfileKeys`, `env/watch_test.go::TestRemoteWatcherOpensAgainAfterALostConnectionAndReportsOverflow`, `test/ci-images/macos_shards_test.go::TestMacOSShardsTestTheMacOSSensitivePackages`
 - **Release note:** A Piglet or Package installed under a symlinked agent directory keeps the origin integrity recorded in its npm lockfile. Lockfile entries that npm writes relative to a symlinked install root were not found.
+
+### BF-e3d7d18
+
+**SSH `loginShell` starts work when the account shell is fish as well as a POSIX shell**
+
+- **Source:** PiG's own defect
+- **Symptom:** SSH `loginShell` starts work when the account shell is fish as well as a POSIX shell.
+- **Root cause:** SSH login shells now run fish as well as POSIX shells by passing the daemon through a POSIX sh branch, and an explicit unix: X11 host is rejected like xcb while unix/ stays local. The Eire zone row is regenerated from the pinned Node 24.22.1.
+- **User impact:** Behavior differed from Pi
+- **Platform:** All platforms
+- **Fixed in:** Unreleased
+- **Fix commits:** `e3d7d18f28` (2026-11-05)
+- **Tests:** None recorded.
+- **Release note:** SSH `loginShell` starts work when the account shell is fish as well as a POSIX shell.
+
+### BF-e3d7d18-2
+
+**An X11 `DISPLAY` with an explicit `unix:` host is rejected as `xcb_connect` rejects it; `unix/:` remains the…**
+
+- **Source:** PiG's own defect
+- **Symptom:** An X11 `DISPLAY` with an explicit `unix:` host is rejected as `xcb_connect` rejects it; `unix/:` remains the local transport.
+- **Root cause:** SSH login shells now run fish as well as POSIX shells by passing the daemon through a POSIX sh branch, and an explicit unix: X11 host is rejected like xcb while unix/ stays local. The Eire zone row is regenerated from the pinned Node 24.22.1.
+- **User impact:** An operation failed or was rejected
+- **Platform:** All platforms
+- **Fixed in:** Unreleased
+- **Fix commits:** `e3d7d18f28` (2026-11-05)
+- **Tests:** None recorded.
+- **Release note:** An X11 `DISPLAY` with an explicit `unix:` host is rejected as `xcb_connect` rejects it; `unix/:` remains the local transport.
+
+### BF-e3d7d18-3
+
+**Historical `Eire` `Date` strings use the names the qualified Node prints**
+
+- **Source:** PiG's own defect
+- **Symptom:** Historical `Eire` `Date` strings use the names the qualified Node prints.
+- **Root cause:** SSH login shells now run fish as well as POSIX shells by passing the daemon through a POSIX sh branch, and an explicit unix: X11 host is rejected like xcb while unix/ stays local. The Eire zone row is regenerated from the pinned Node 24.22.1.
+- **User impact:** Behavior differed from Pi
+- **Platform:** All platforms
+- **Fixed in:** Unreleased
+- **Fix commits:** `e3d7d18f28` (2026-11-05)
+- **Tests:** None recorded.
+- **Release note:** Historical `Eire` `Date` strings use the names the qualified Node prints.
 
 ### BF-e3f39b7
 

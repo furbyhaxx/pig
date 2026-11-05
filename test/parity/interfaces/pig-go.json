@@ -256457,6 +256457,17 @@
       "shapeHash": "sha256:646eeb5d56f4c80cf64f7a22f1cb54d6a99901e99928b5b0752fb52a51bcfec8"
     },
     {
+      "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#SettingsManager.noteInvalidSkillRoots",
+      "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
+      "name": "SettingsManager.noteInvalidSkillRoots",
+      "kind": "function",
+      "exported": false,
+      "shape": {
+        "type": "func(scope string, path string, baseDir string, loaded Settings)"
+      },
+      "shapeHash": "sha256:a4890006fe4eb9f68fce8d27abcbeaf5d6bd1af16dab636701fa73e7babcc012"
+    },
+    {
       "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#SettingsManager.remergeLocked",
       "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
       "name": "SettingsManager.remergeLocked",
@@ -264377,6 +264388,17 @@
       "shapeHash": "sha256:402de5d9737b26a023db40e5c1da052fb48ecb869b3910a5a6466aecc998f270"
     },
     {
+      "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#configuredSkillRoot",
+      "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
+      "name": "configuredSkillRoot",
+      "kind": "type",
+      "exported": false,
+      "shape": {
+        "type": "configuredSkillRoot"
+      },
+      "shapeHash": "sha256:3fe6de6434d3cef34cba30f2077574c77b3d437d927c417c4a734e55c34f8514"
+    },
+    {
       "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#confirmSlash",
       "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
       "name": "confirmSlash",
@@ -266366,6 +266388,17 @@
         "type": "func(dir string) bool"
       },
       "shapeHash": "sha256:451b0d543749447787c9a569018000fef5d03bb4235deb5a55dbf6b58d4ae8a5"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#discoverConfiguredSkillRoot",
+      "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
+      "name": "discoverConfiguredSkillRoot",
+      "kind": "function",
+      "exported": false,
+      "shape": {
+        "type": "func(root configuredSkillRoot) []string"
+      },
+      "shapeHash": "sha256:b3c98e94ed7a95aa98584c898b47d36d3b603671c7f3237fadd677e2b1dd58c6"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#dispatchModalInput",
@@ -268786,6 +268819,17 @@
         "type": "func(sessions []SessionInfo, query string, sortMode sessionSortMode, search func(SessionInfo) *sessionSearch) []SessionInfo"
       },
       "shapeHash": "sha256:50cbf9f6af9f0387e878ac291c0a41974d019d49d785c9be153bc7c3649a1415"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#filteredStringArray",
+      "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
+      "name": "filteredStringArray",
+      "kind": "function",
+      "exported": false,
+      "shape": {
+        "type": "func(raw encoding/json.RawMessage) (encoding/json.RawMessage, bool)"
+      },
+      "shapeHash": "sha256:3083baa81c80c695ae6c8aeafd09f20eb1ddaa451ab0af976b85d11a40abeb4b"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#findExtensionModelDefaults",
@@ -285915,6 +285959,17 @@
       "shapeHash": "sha256:364517b76838ea74bafaaf9cb97fd882c546c5fcb6dbde12eea9662189597a69"
     },
     {
+      "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#resolveConfiguredSkillRoots",
+      "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
+      "name": "resolveConfiguredSkillRoots",
+      "kind": "function",
+      "exported": false,
+      "shape": {
+        "type": "func(scan *AgentsSkillScan, cwd string, agentDir string, sm *SettingsManager, project bool, user bool) ([]configuredSkillRoot, bool)"
+      },
+      "shapeHash": "sha256:d5ef18ef79747382241e5f8e576eb4a3773d7b341beb40b079629730f5723257"
+    },
+    {
       "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#resolveDefaultTools",
       "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
       "name": "resolveDefaultTools",
@@ -286540,6 +286595,17 @@
         "type": "func(a github.com/MichaelKinsy/PiG/tui.TerminalColors, b github.com/MichaelKinsy/PiG/tui.TerminalColors) bool"
       },
       "shapeHash": "sha256:ae229c435d4fbbcebb5b14c58f6a70c002ca6137e4246b4f7c5ddd55780ddbc1"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#sanitizeSkillsObjectShape",
+      "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
+      "name": "sanitizeSkillsObjectShape",
+      "kind": "function",
+      "exported": false,
+      "shape": {
+        "type": "func(raw map[string]any) []string"
+      },
+      "shapeHash": "sha256:f2d3b62291a8dafffe8213efcb04341bd7b82c81c3fe5140155ff6f241f21836"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#sanitizeStatusText",
@@ -289884,6 +289950,39 @@
         "type": "*github.com/MichaelKinsy/PiG/internal/lazyregexp.Regexp"
       },
       "shapeHash": "sha256:b2bada16c90e0a1f7a12c5d87c11865788ab6be78d85f83e367aec2254fdade4"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#skillsSettingsWire",
+      "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
+      "name": "skillsSettingsWire",
+      "kind": "type",
+      "exported": false,
+      "shape": {
+        "type": "skillsSettingsWire"
+      },
+      "shapeHash": "sha256:c054a27f0164539e1ccf1c6c6a6bd6a30f5e8c3ff7f035b6a3e6489a65eb6e1d"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#skillsSettingsWire.MarshalJSON",
+      "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
+      "name": "skillsSettingsWire.MarshalJSON",
+      "kind": "function",
+      "exported": true,
+      "shape": {
+        "type": "func() ([]byte, error)"
+      },
+      "shapeHash": "sha256:57179946cef7df4d918e29b424f6d9096a9653a12925304bcb5da9ee7ff359ee"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#skillsSettingsWire.UnmarshalJSON",
+      "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
+      "name": "skillsSettingsWire.UnmarshalJSON",
+      "kind": "function",
+      "exported": true,
+      "shape": {
+        "type": "func(data []byte) error"
+      },
+      "shapeHash": "sha256:2e7a46ef7c2011cd2aa41a3ad171f9b6f5461f06a15b57547cff43508937a222"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#skipJSONSpace",
