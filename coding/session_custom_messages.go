@@ -233,13 +233,7 @@ func (s *Session) appendCustomMessage(message agent.AgentMessage) error {
 }
 
 func (s *Session) emitQueuedMessageDiscards(ctx context.Context, messages []agent.AgentMessage, reason string) {
-	for _, message := range messages {
-		customType, _ := message.Custom["customType"].(string)
-		icodingagent.LogQueuedMessageDiscarded(customType, reason)
-		if runner := s.currentRunner(); runner != nil {
-			_, _ = runner.Emit(ctx, extension.QueuedMessageDiscardedEvent{Type: "queued_message_discarded", CustomType: customType, Reason: reason})
-		}
-	}
+	icodingagent.EmitQueuedMessageDiscards(ctx, s.currentRunner(), messages, reason)
 }
 
 type publishedSessionEvent struct{ agent.AgentEvent }

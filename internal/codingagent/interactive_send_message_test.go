@@ -8,9 +8,39 @@ import (
 	"github.com/MichaelKinsy/PiG/agent"
 	"github.com/MichaelKinsy/PiG/ai"
 	"github.com/MichaelKinsy/PiG/coding/extension"
+	"github.com/MichaelKinsy/PiG/coding/extension/host/inproc"
 	"github.com/MichaelKinsy/PiG/coding/extension/host/subprocess"
 	"github.com/MichaelKinsy/PiG/tui"
 )
+
+func TestInteractiveForkDiscardsNextTurn(t *testing.T) {
+	m, handle, send := newSendMessageHarness(t, false)
+	m.agent.BindNextTurnSession(handle.inner.ID(), handle.inner.GetLeafID)
+	root, err := handle.inner.AppendMessage(agent.AgentMessage{Assistant: &agent.AssistantMessage{Role: agent.RoleAssistant, Content: []ai.AssistantContentBlock{ai.TextContent{Text: "root"}}, StopReason: ai.StopReasonStop}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := handle.inner.AppendMessage(agent.AgentMessage{Assistant: &agent.AssistantMessage{Role: agent.RoleAssistant, Content: []ai.AssistantContentBlock{ai.TextContent{Text: "tail"}}, StopReason: ai.StopReasonStop}}); err != nil {
+		t.Fatal(err)
+	}
+	var discarded []extension.QueuedMessageDiscardedEvent
+	m.newRunner = inproc.NewRunner([]extension.Extension{{Handlers: map[string][]extension.HandlerFn{"queued_message_discarded": {func(args ...any) (any, error) {
+		discarded = append(discarded, args[0].(extension.QueuedMessageDiscardedEvent))
+		return nil, nil
+	}}}}}, t.TempDir())
+	if err := send(extension.CustomMessageRef{CustomType: "branch-note"}, extension.SendMessageOptions{DeliverAs: extension.DeliverAsNextTurn}); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.buildSlashContext(t.Context()).ForkAtEntry(root); err != nil {
+		t.Fatal(err)
+	}
+	if pending := m.agent.TakePendingNextTurn(); len(pending) != 0 {
+		t.Errorf("fork retained nextTurn = %+v", pending)
+	}
+	if len(discarded) != 1 || discarded[0].CustomType != "branch-note" || discarded[0].Reason != "fork" {
+		t.Errorf("discards = %+v", discarded)
+	}
+}
 
 // newSendMessageHarness is an interactive mode whose agent streams for the test (turnActive is what the mode reads as upstream isStreaming) and the registered sendMessage host action, the entry point of every SDK's pi.sendMessage.
 func newSendMessageHarness(t *testing.T, streaming bool) (*InteractiveMode, *recordingCompactHandle, func(extension.CustomMessageRef, extension.SendMessageOptions) error) {

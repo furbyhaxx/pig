@@ -233632,6 +233632,17 @@
       "shapeHash": "sha256:75bcaef3d1ef750399a8cd279d7ad48cd3e0782eebd63032bce8a8f4b3b75313"
     },
     {
+      "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#EmitQueuedMessageDiscards",
+      "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
+      "name": "EmitQueuedMessageDiscards",
+      "kind": "function",
+      "exported": true,
+      "shape": {
+        "type": "func(ctx context.Context, runner *github.com/MichaelKinsy/PiG/coding/extension/host/inproc.Runner, messages []github.com/MichaelKinsy/PiG/agent.AgentMessage, reason string)"
+      },
+      "shapeHash": "sha256:ea1326fb3d041e7329d48f6e6526e48908d1af1f2e929bb1e6c2a976571eb9e3"
+    },
+    {
       "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#EndSessionMarker",
       "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
       "name": "EndSessionMarker",
@@ -246291,17 +246302,6 @@
         "type": "func(sm *SettingsManager, paths []string) ([]ThemeFile, []github.com/MichaelKinsy/PiG/coding/extension.ResourceDiagnostic)"
       },
       "shapeHash": "sha256:8c6fc4647bfb76a24edb597941c02aa3d376560941e47e931e375aa8dcbeb668"
-    },
-    {
-      "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#LogQueuedMessageDiscarded",
-      "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
-      "name": "LogQueuedMessageDiscarded",
-      "kind": "function",
-      "exported": true,
-      "shape": {
-        "type": "func(customType string, reason string)"
-      },
-      "shapeHash": "sha256:647fa3df717c3febb6b386a2e272f06df659c17bf5b1b66350e0d7cec9db69ed"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#LoginHeaderOptions",
