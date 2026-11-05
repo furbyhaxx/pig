@@ -18,6 +18,10 @@ for rust_dir in RUSTUP_HOME:.rustup CARGO_HOME:.cargo; do
     export "$name=$HOME/${rust_dir#*:}"
   fi
 done
+# pin install-oracle links the repo's node_modules at this cache; a cache under the temporary HOME would leave a dangling link after cleanup.
+if [ -z "${PIG_DEV_HOME:-}" ]; then
+  export PIG_DEV_HOME="${PIG_CACHE_HOME:-${XDG_CACHE_HOME:-$HOME/.cache}}/pig-dev"
+fi
 
 directory=$(mktemp -d "${TMPDIR:-${TMP:-/tmp}}/pig-validation.XXXXXXXX")
 trap 'rm -rf -- "$directory"' EXIT
