@@ -739,6 +739,7 @@ func NewSession(svcs *AgentSessionServices, opts SessionOptions) (*Session, erro
 			transport:       opts.Transport,
 		},
 	}
+	agent.BindNextTurnSession(inner.ID(), inner.GetLeafID)
 	sess.resourceLoader.Store(resourceLoader)
 	sess.SetScopedModels(opts.ScopedModels)
 	var initialToolNames []string
@@ -1422,13 +1423,21 @@ func (s *Session) Inner() *icodingagent.Session { return s.inner }
 // ReplaceInner aborts work owned by the old Session, then installs the new
 // Session state, including whether its manager persists to a file.
 func (s *Session) ReplaceInner(sess *icodingagent.Session) {
+	s.replaceInner(s.backgroundContext(), sess, "switch")
+}
+
+func (s *Session) replaceInner(ctx context.Context, sess *icodingagent.Session, reason string) {
 	// pig divergence (D61): Services, Resources, and built-in tools remain bound
 	// to the startup project.
 	s.AbortCompaction()
 	s.AbortBranchSummary()
 	s.installCacheWarmer(sess, nil)
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	discarded := s.agent.RebindNextTurnSession(sess.ID(), sess.GetLeafID)
+	defer func() {
+		s.mu.Unlock()
+		s.emitQueuedMessageDiscards(ctx, discarded, reason)
+	}()
 	s.inner = sess
 	// upstream: runner.ts:889-891. Extensions see the log the Session now owns, and nothing keeps the replaced one alive.
 	if runner := s.currentRunner(); runner != nil {
@@ -3165,6 +3174,11 @@ func (s *Session) navigateTree(ctx context.Context, targetID string, opts Naviga
 
 	s.mu.Lock()
 	summaryID, err := s.moveTreeLeaf(targetID, newLeafID, summary, label)
+	var discarded []agent.AgentMessage
+	if derefLeafID(s.inner.GetLeafID()) != derefLeafID(oldLeafID) {
+		discarded = s.agent.DiscardPendingNextTurn(s.inner.ID(), s.inner.GetLeafID())
+	}
+	defer s.emitQueuedMessageDiscards(ctx, discarded, "tree")
 	if err != nil {
 		s.mu.Unlock()
 		return NavigateTreeResult{}, fmt.Errorf("coding: NavigateTree: %w", err)

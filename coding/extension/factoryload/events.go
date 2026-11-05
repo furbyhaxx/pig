@@ -128,6 +128,10 @@ func (a *api) OnSessionCompactFailed(handler extension.ExtensionHandlerNoResult[
 	return onEvent(a, "session_compact_failed", handler)
 }
 
+func (a *api) OnQueuedMessageDiscarded(handler extension.ExtensionHandlerNoResult[extension.QueuedMessageDiscardedEvent]) func() {
+	return onEvent(a, "queued_message_discarded", handler)
+}
+
 func (a *api) OnSessionShutdown(handler extension.ExtensionHandlerNoResult[extension.SessionShutdownEvent]) func() {
 	return onEvent(a, "session_shutdown", handler)
 }

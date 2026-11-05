@@ -201,6 +201,17 @@
       "shapeHash": "sha256:e751bf881143fee673686ea3463fa2a71a70fca1a52a8ab2818052607156bb53"
     },
     {
+      "id": "go:github.com/MichaelKinsy/PiG/agent#Agent.BindNextTurnSession",
+      "package": "github.com/MichaelKinsy/PiG/agent",
+      "name": "Agent.BindNextTurnSession",
+      "kind": "function",
+      "exported": true,
+      "shape": {
+        "type": "func(sessionID string, leaf func() *string)"
+      },
+      "shapeHash": "sha256:202613a907194cfc58d8aa130fbe735194da49cdc1578d9bdb755d9410019c54"
+    },
+    {
       "id": "go:github.com/MichaelKinsy/PiG/agent#Agent.ClearAllQueues",
       "package": "github.com/MichaelKinsy/PiG/agent",
       "name": "Agent.ClearAllQueues",
@@ -298,6 +309,17 @@
         "type": "func() error"
       },
       "shapeHash": "sha256:6af1cd6889de8772da28bb1f2998d0262659331d5ba93f6bf1933b49a3efd5e9"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/agent#Agent.DiscardPendingNextTurn",
+      "package": "github.com/MichaelKinsy/PiG/agent",
+      "name": "Agent.DiscardPendingNextTurn",
+      "kind": "function",
+      "exported": true,
+      "shape": {
+        "type": "func(sessionID string, leafID *string) []AgentMessage"
+      },
+      "shapeHash": "sha256:fbcff61e0aaefa18ba334182f06f250b6a5ee5ec7a83ee24798261ac4511a97b"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/agent#Agent.EffectiveStreamFunction",
@@ -606,6 +628,17 @@
         "type": "func(msg AgentMessage)"
       },
       "shapeHash": "sha256:80a274a1f97b4a52b966472fa8def45a494301651a21a983c2cb2450ec8944d4"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/agent#Agent.RebindNextTurnSession",
+      "package": "github.com/MichaelKinsy/PiG/agent",
+      "name": "Agent.RebindNextTurnSession",
+      "kind": "function",
+      "exported": true,
+      "shape": {
+        "type": "func(sessionID string, leaf func() *string) []AgentMessage"
+      },
+      "shapeHash": "sha256:e4a205304dc844f9e5675b8b65cdfeb8e42c156c248da2af714c01738734a64d"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/agent#Agent.Reset",
@@ -1277,6 +1310,17 @@
         "type": "func(skipInitialSteeringPoll bool) AgentLoopConfig"
       },
       "shapeHash": "sha256:ea545b89f13c93536bfd4263658e72d87f19cf01a18311ce1aa09a931a2f2f73"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/agent#Agent.discardPendingNextTurnLocked",
+      "package": "github.com/MichaelKinsy/PiG/agent",
+      "name": "Agent.discardPendingNextTurnLocked",
+      "kind": "function",
+      "exported": false,
+      "shape": {
+        "type": "func(sessionID string, leafID *string) []AgentMessage"
+      },
+      "shapeHash": "sha256:fbcff61e0aaefa18ba334182f06f250b6a5ee5ec7a83ee24798261ac4511a97b"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/agent#Agent.dropStreamingCapture",
@@ -5919,6 +5963,17 @@
         "type": "func(raw encoding/json.RawMessage) (int, bool)"
       },
       "shapeHash": "sha256:5bab1cb30178dc07084253c5edf7b1a3e9eadbbff3bd43b41d1a935d5dc4e1b1"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/agent#pendingNextTurnMessage",
+      "package": "github.com/MichaelKinsy/PiG/agent",
+      "name": "pendingNextTurnMessage",
+      "kind": "type",
+      "exported": false,
+      "shape": {
+        "type": "pendingNextTurnMessage"
+      },
+      "shapeHash": "sha256:6384480ae256ed78f2da2a149b50c6c07c06f796add4318f1ddecd188885e6ba"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/agent#pendingToolCall",
@@ -76145,6 +76200,17 @@
       "shapeHash": "sha256:032e891204f123caf14d3d421fa9728efc3f31299c17e98859c219dccddd74fb"
     },
     {
+      "id": "go:github.com/MichaelKinsy/PiG/coding#Session.emitQueuedMessageDiscards",
+      "package": "github.com/MichaelKinsy/PiG/coding",
+      "name": "Session.emitQueuedMessageDiscards",
+      "kind": "function",
+      "exported": false,
+      "shape": {
+        "type": "func(ctx context.Context, messages []github.com/MichaelKinsy/PiG/agent.AgentMessage, reason string)"
+      },
+      "shapeHash": "sha256:22982a49f4adee849379a2e92a84d6649909a89c8bc6206e1c4d69fdaa22ce55"
+    },
+    {
       "id": "go:github.com/MichaelKinsy/PiG/coding#Session.emitSessionBeforeTree",
       "package": "github.com/MichaelKinsy/PiG/coding",
       "name": "Session.emitSessionBeforeTree",
@@ -77320,6 +77386,17 @@
         "type": "func(message github.com/MichaelKinsy/PiG/agent.AgentMessage, entryID string)"
       },
       "shapeHash": "sha256:bdcf60348296cef33874b381c70abf9baed7ffae09cac78099210c61c71a075d"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/coding#Session.replaceInner",
+      "package": "github.com/MichaelKinsy/PiG/coding",
+      "name": "Session.replaceInner",
+      "kind": "function",
+      "exported": false,
+      "shape": {
+        "type": "func(ctx context.Context, sess *github.com/MichaelKinsy/PiG/internal/codingagent.Session, reason string)"
+      },
+      "shapeHash": "sha256:fd7a4155dd80590116327d1912a19c3fc82498788278f70324d7c48f3306e669"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/coding#Session.reportAgentEventPanic",
@@ -106648,6 +106725,28 @@
       "shapeHash": "sha256:fc0dd2d848a6581066bfa5c671132f84e440ea0bb1dc9d4dd705548b9f82b6e3"
     },
     {
+      "id": "go:github.com/MichaelKinsy/PiG/coding/extension#QueuedMessageDiscardedEvent",
+      "package": "github.com/MichaelKinsy/PiG/coding/extension",
+      "name": "QueuedMessageDiscardedEvent",
+      "kind": "type",
+      "exported": true,
+      "shape": {
+        "type": "QueuedMessageDiscardedEvent"
+      },
+      "shapeHash": "sha256:ad85df4225a23015f6a7aa4afc407577cc7c58f70e11ed125d37093a5984fac6"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/coding/extension#QueuedMessageDiscardedEvent.extensionEvent",
+      "package": "github.com/MichaelKinsy/PiG/coding/extension",
+      "name": "QueuedMessageDiscardedEvent.extensionEvent",
+      "kind": "function",
+      "exported": false,
+      "shape": {
+        "type": "func()"
+      },
+      "shapeHash": "sha256:032e891204f123caf14d3d421fa9728efc3f31299c17e98859c219dccddd74fb"
+    },
+    {
       "id": "go:github.com/MichaelKinsy/PiG/coding/extension#ReadMcpResourceTool",
       "package": "github.com/MichaelKinsy/PiG/coding/extension",
       "name": "ReadMcpResourceTool",
@@ -114665,6 +114764,17 @@
         "type": "func(handler github.com/MichaelKinsy/PiG/coding/extension.ExtensionHandlerNoResult[github.com/MichaelKinsy/PiG/coding/extension.ProviderStreamEvent]) func()"
       },
       "shapeHash": "sha256:a8defae8dcdfdee2e7e2457f487a53c4be468a04f085706c45b5bd2ee7bd508b"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/coding/extension/factoryload#api.OnQueuedMessageDiscarded",
+      "package": "github.com/MichaelKinsy/PiG/coding/extension/factoryload",
+      "name": "api.OnQueuedMessageDiscarded",
+      "kind": "function",
+      "exported": true,
+      "shape": {
+        "type": "func(handler github.com/MichaelKinsy/PiG/coding/extension.ExtensionHandlerNoResult[github.com/MichaelKinsy/PiG/coding/extension.QueuedMessageDiscardedEvent]) func()"
+      },
+      "shapeHash": "sha256:e242a90800999418087ef1ae39c4a5183ab37dd7030a983ff39ff134d6e62fa9"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/coding/extension/factoryload#api.OnResourcesDiscover",
@@ -186024,6 +186134,17 @@
       "shapeHash": "sha256:7eabd192b9f1c379102c8dc793881875f1f949f6b752e15a20b93080cb0b311d"
     },
     {
+      "id": "go:github.com/MichaelKinsy/PiG/extensions/sdk#EventQueuedMessageDiscarded",
+      "package": "github.com/MichaelKinsy/PiG/extensions/sdk",
+      "name": "EventQueuedMessageDiscarded",
+      "kind": "constant",
+      "exported": true,
+      "shape": {
+        "type": "untyped string"
+      },
+      "shapeHash": "sha256:7eabd192b9f1c379102c8dc793881875f1f949f6b752e15a20b93080cb0b311d"
+    },
+    {
       "id": "go:github.com/MichaelKinsy/PiG/extensions/sdk#EventResourcesDiscover",
       "package": "github.com/MichaelKinsy/PiG/extensions/sdk",
       "name": "EventResourcesDiscover",
@@ -246170,6 +246291,17 @@
         "type": "func(sm *SettingsManager, paths []string) ([]ThemeFile, []github.com/MichaelKinsy/PiG/coding/extension.ResourceDiagnostic)"
       },
       "shapeHash": "sha256:8c6fc4647bfb76a24edb597941c02aa3d376560941e47e931e375aa8dcbeb668"
+    },
+    {
+      "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#LogQueuedMessageDiscarded",
+      "package": "github.com/MichaelKinsy/PiG/internal/codingagent",
+      "name": "LogQueuedMessageDiscarded",
+      "kind": "function",
+      "exported": true,
+      "shape": {
+        "type": "func(customType string, reason string)"
+      },
+      "shapeHash": "sha256:647fa3df717c3febb6b386a2e272f06df659c17bf5b1b66350e0d7cec9db69ed"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/internal/codingagent#LoginHeaderOptions",

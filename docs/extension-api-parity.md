@@ -55,6 +55,10 @@ On 2026-09-28, owner Michael Kinsy approves recording the remaining SDK Provider
 
 Foreign configuration readers receive snapshot data, not transparent author-held aliases; implemented callable capabilities do not confer container identity. On 2026-09-29 the owner narrowed D83 (Q2 = A) and retired D77 (Q1 = B): every Node realm shares one bus and foreign listeners receive the original payload by reference; D83 keeps only the named cross-realm scheduling, cycle, brand-check and native-realm boundaries. A remote partial message does not acquire later producer revisions. None of these decisions changes callback waiting, cancellation, error propagation, listener order, terminal results, persistence or resource ownership. The strict RPC33 scenario remains enabled, unchanged in strength and durability, and records its raw failure.
 
+## Fork-specific delivery events
+
+`queued_message_discarded` (SPEC-0007 D1) is an awaited notification with `customType` and `reason`, sent after removal from the nextTurn queue. Handler failures use the normal extension error reporting; they cannot restore a removed message. Go, Rust and Python expose the event name for their generic subscriptions; TypeScript adds a typed `pi.on` overload. `TestConformance_EventPayloadsReachEverySDKUnchanged` exercises the payload across isolated, packed and fused extensions. Session and Agent regression tests cover branch binding and replacement; this event does not alter the subprocess envelope.
+
 ## Loading and resources
 
 | Upstream Pi interface | Required Pig equivalent | Test requirement | Status |

@@ -68,6 +68,13 @@ type ResourcesDiscoverResult struct {
 
 // ─── Session Events ──────────────────────────────────────────────────────
 
+// QueuedMessageDiscardedEvent reports a nextTurn message invalidated by navigation or session replacement (SPEC-0007 D1).
+type QueuedMessageDiscardedEvent struct {
+	Type       string `json:"type"`
+	CustomType string `json:"customType"`
+	Reason     string `json:"reason"`
+}
+
 // SessionStartEvent: upstream types.ts SessionStartEvent.
 type SessionStartEvent struct {
 	Type                string `json:"type"`

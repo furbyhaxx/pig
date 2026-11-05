@@ -12,6 +12,7 @@ import (
 
 // subscribedEventNames lists every pi.on event name of the Pi 1.1.0 extension API (types.ts:1569-1650); everyEventEmit must dispatch each one.
 var subscribedEventNames = []string{
+	"queued_message_discarded",
 	"resources_discover",
 	"session_start",
 	"session_info_changed",
@@ -60,6 +61,7 @@ func everyEventEmit() map[string]func(context.Context, *harness) error {
 	message := wireAgentMessage(map[string]any{"role": "user", "content": "hello", "timestamp": float64(1)})
 	ignore := func(_ any, err error) error { return err }
 	return map[string]func(context.Context, *harness) error{
+		"queued_message_discarded": genericEmit(extension.QueuedMessageDiscardedEvent{Type: "queued_message_discarded", CustomType: "note", Reason: "tree"}),
 		"resources_discover": func(ctx context.Context, h *harness) error {
 			return ignore(h.runner.EmitResourcesDiscover(ctx, ".", "startup"))
 		},

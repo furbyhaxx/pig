@@ -280,6 +280,7 @@ func (rt *Runtime) teardownCurrent(ctx context.Context, reason, target string) e
 	if err := session.Abort(ctx); err != nil {
 		return err
 	}
+	session.emitQueuedMessageDiscards(ctx, session.agent.TakePendingNextTurn(), reason)
 	if runner := session.currentRunner(); runner != nil {
 		if _, err := runner.Emit(ctx, extension.SessionShutdownEvent{Type: "session_shutdown", Reason: reason, TargetSessionFile: target}); err != nil {
 			return err

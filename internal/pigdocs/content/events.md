@@ -61,6 +61,16 @@ the persisted entry and identifies an extension-provided result. Use the SDK
 helper when one exists. Use `OnEvent` only when you need a named event without
 a helper.
 
+## Branch-bound `nextTurn` messages
+
+In this personal fork, `deliverAs: "nextTurn"` binds a custom message to the session and leaf where it is queued (SPEC-0007 D1). Tree navigation, in-place fork and session replacement remove stale messages before another prompt can consume them. Navigating to the same leaf keeps the queue, including selecting a user entry whose parent is that leaf. Normal transcript growth during a turn does not discard deferred context.
+
+### `queued_message_discarded`
+
+Each removed message emits `{"type":"queued_message_discarded","customType":"branch-note","reason":"tree"}` to extensions, in queue order. The host also writes a line to the debug log when `PIG_DEBUG` is set. Register with `pi.on("queued_message_discarded", handler)` or the Go SDK’s `OnEvent(sdk.EventQueuedMessageDiscarded, handler)`.
+
+`reason` is `tree`, `new`, `fork`, `resume` (including switching to an existing session file), or `switch` (direct SDK `ReplaceInner`). A Runtime replacement discards the outgoing Agent’s queue before extension shutdown; it does not transfer queued context to the replacement. Cancelled operations retain the queue. Extensions can prepare fresh context for the destination instead of relying on a deferred message from the old branch.
+
 ## Hooks are external Resources
 
 Some harnesses use declarative command triggers called hooks. A Package can

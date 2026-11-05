@@ -65,6 +65,11 @@ func debugLog(format string, args ...any) {
 	_, _ = fmt.Fprintf(f, format+"\n", args...)
 }
 
+// LogQueuedMessageDiscarded records a deferred message's invalidated branch binding in the PIG_DEBUG log.
+func LogQueuedMessageDiscarded(customType, reason string) {
+	debugLog("queued_message_discarded customType=%q reason=%q", customType, reason)
+}
+
 // showWarning appends a padded, theme-colored warning with Pi's textual prefix.
 func (m *InteractiveMode) showWarning(msg string) {
 	m.appendChatBlock(themedNotice("warning", "Warning: "+msg, 1))

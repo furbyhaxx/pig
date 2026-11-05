@@ -50,6 +50,11 @@ const sprite: PiGSpriteDefinition = {
 };
 
 export default function extension(pi: ExtensionAPI): void {
+  pi.on("queued_message_discarded", (event) => {
+    const customType: string = event.customType;
+    const reason: "tree" | "new" | "fork" | "resume" | "switch" = event.reason;
+    void [customType, reason];
+  });
   pi.on("session_start", async (_event, ctx) => {
     await ctx.ui.setLogin(login);
     await ctx.ui.registerSprite(sprite);

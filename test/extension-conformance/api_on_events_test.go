@@ -117,6 +117,17 @@ func TestConformanceAPIOnVoidEventsReachTheTypedHandlers(t *testing.T) {
 			event:    extension.SessionCompactEvent{Type: "session_compact"},
 		},
 		{
+			name: "queued_message_discarded",
+			register: func(api extension.API, record func(any), fail error) {
+				api.OnQueuedMessageDiscarded(func(_ context.Context, evt extension.QueuedMessageDiscardedEvent) error { record(evt); return fail })
+				api.OnQueuedMessageDiscarded(func(_ context.Context, evt extension.QueuedMessageDiscardedEvent) error { record(evt); return nil })
+			},
+			handlers: func(f *extensiontest.Fake) []extension.HandlerFn {
+				return bridgeVoid(f.OnQueuedMessageDiscardedHandlers)
+			},
+			event: extension.QueuedMessageDiscardedEvent{Type: "queued_message_discarded", CustomType: "note", Reason: "tree"},
+		},
+		{
 			name: "session_compact_failed",
 			register: func(api extension.API, record func(any), fail error) {
 				api.OnSessionCompactFailed(func(_ context.Context, evt extension.SessionCompactFailedEvent) error { record(evt); return fail })

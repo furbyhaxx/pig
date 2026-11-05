@@ -32,6 +32,8 @@ func TestConformance_EventPayloadsReachEverySDKUnchanged(t *testing.T) {
 		emit  func(context.Context, *harness) error
 		want  string
 	}{
+		{"queued_message_discarded", genericEmit(extension.QueuedMessageDiscardedEvent{Type: "queued_message_discarded", CustomType: "branch-note", Reason: "tree"}),
+			`{"type":"queued_message_discarded","customType":"branch-note","reason":"tree"}`},
 		{"session_start", genericEmit(extension.SessionStartEvent{Type: "session_start", Reason: "fork", PreviousSessionFile: "/prev.jsonl"}),
 			`{"type":"session_start","reason":"fork","previousSessionFile":"/prev.jsonl"}`},
 		{"session_start", genericEmit(extension.SessionStartEvent{Type: "session_start", Reason: "resume", Initial: true}),

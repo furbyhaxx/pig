@@ -79,7 +79,7 @@ def test_event_constants_match_upstream_names() -> None:
     names = [
         "project_trust", "resources_discover", "session_start", "session_info_changed",
         "session_before_switch", "session_before_fork", "session_before_compact", "session_compact",
-        "session_compact_failed", "session_shutdown", "session_before_tree", "session_tree", "context",
+        "queued_message_discarded", "session_compact_failed", "session_shutdown", "session_before_tree", "session_tree", "context",
         "context_with_system", "cache_warming_decision", "before_provider_request",
         "before_provider_headers", "after_provider_response", "before_agent_start", "agent_start",
         "agent_end", "agent_before_settle", "agent_settled", "ui_prompt_start", "ui_prompt_end",

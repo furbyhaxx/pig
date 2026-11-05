@@ -896,8 +896,10 @@ type Agent struct {
 	// follow-up queues because they are not continuations of a running turn:
 	// they are context for the next user prompt, injected beside the user
 	// message before the first model call (agent-session.ts:1226).
-	pendingNextTurn   []AgentMessage
+	pendingNextTurn   []pendingNextTurnMessage
 	pendingNextTurnMu sync.Mutex
+	nextTurnSessionID string
+	nextTurnLeaf      func() *string
 	streaming         bool // true while Send/Continue is actively streaming
 	runContext        context.Context
 	runCancel         context.CancelFunc
@@ -1640,8 +1642,7 @@ func (a *Agent) Steer(msg AgentMessage) { a.steeringQueue.Enqueue(msg) }
 // starting a fresh outer-loop iteration.
 func (a *Agent) FollowUp(msg AgentMessage) { a.followUpQueue.Enqueue(msg) }
 
-// QueueNextTurn defers a message to the start of the next user turn, where it
-// is injected beside the user message as context for the first model call.
+// QueueNextTurn binds a message to the current session leaf and defers it to the next user turn, beside the user message. Session navigation discards invalidated bindings (SPEC-0007 D1).
 //
 // This is not FollowUp. A follow-up continues the turn that is running, so it
 // reaches the model only after the current response completes; a message meant
@@ -1650,7 +1651,60 @@ func (a *Agent) FollowUp(msg AgentMessage) { a.followUpQueue.Enqueue(msg) }
 func (a *Agent) QueueNextTurn(msg AgentMessage) {
 	a.pendingNextTurnMu.Lock()
 	defer a.pendingNextTurnMu.Unlock()
-	a.pendingNextTurn = append(a.pendingNextTurn, msg)
+	pending := pendingNextTurnMessage{message: msg, sessionID: a.nextTurnSessionID}
+	if a.nextTurnLeaf != nil {
+		if leaf := a.nextTurnLeaf(); leaf != nil {
+			pending.leafID = *leaf
+		}
+	}
+	a.pendingNextTurn = append(a.pendingNextTurn, pending)
+}
+
+type pendingNextTurnMessage struct {
+	message   AgentMessage
+	sessionID string
+	leafID    string
+}
+
+// BindNextTurnSession supplies the session identity and current leaf reader used when QueueNextTurn stamps a message. The reader must not call back into Agent.
+func (a *Agent) BindNextTurnSession(sessionID string, leaf func() *string) {
+	a.pendingNextTurnMu.Lock()
+	defer a.pendingNextTurnMu.Unlock()
+	a.nextTurnSessionID, a.nextTurnLeaf = sessionID, leaf
+}
+
+// DiscardPendingNextTurn removes messages bound to a different session or leaf and returns them in queue order. Nil identifies the root before the first entry.
+func (a *Agent) DiscardPendingNextTurn(sessionID string, leafID *string) []AgentMessage {
+	a.pendingNextTurnMu.Lock()
+	defer a.pendingNextTurnMu.Unlock()
+	return a.discardPendingNextTurnLocked(sessionID, leafID)
+}
+
+// RebindNextTurnSession atomically installs the destination reader and removes messages from other session leaves, returning them in queue order.
+func (a *Agent) RebindNextTurnSession(sessionID string, leaf func() *string) []AgentMessage {
+	a.pendingNextTurnMu.Lock()
+	defer a.pendingNextTurnMu.Unlock()
+	a.nextTurnSessionID, a.nextTurnLeaf = sessionID, leaf
+	return a.discardPendingNextTurnLocked(sessionID, leaf())
+}
+
+func (a *Agent) discardPendingNextTurnLocked(sessionID string, leafID *string) []AgentMessage {
+	leaf := ""
+	if leafID != nil {
+		leaf = *leafID
+	}
+	var discarded []AgentMessage
+	kept := a.pendingNextTurn[:0]
+	for _, pending := range a.pendingNextTurn {
+		if pending.sessionID != sessionID || pending.leafID != leaf {
+			discarded = append(discarded, pending.message)
+		} else {
+			kept = append(kept, pending)
+		}
+	}
+	clear(a.pendingNextTurn[len(kept):])
+	a.pendingNextTurn = kept
+	return discarded
 }
 
 // TakePendingNextTurn removes and returns the messages QueueNextTurn deferred. A run that starts from built messages delivers them beside its starting message (agent-session.ts:1918-1920 _prepareRun).
@@ -1660,9 +1714,12 @@ func (a *Agent) TakePendingNextTurn() []AgentMessage { return a.takePendingNextT
 func (a *Agent) takePendingNextTurn() []AgentMessage {
 	a.pendingNextTurnMu.Lock()
 	defer a.pendingNextTurnMu.Unlock()
-	msgs := a.pendingNextTurn
+	var messages []AgentMessage
+	for _, pending := range a.pendingNextTurn {
+		messages = append(messages, pending.message)
+	}
 	a.pendingNextTurn = nil
-	return msgs
+	return messages
 }
 
 // ClearSteeringQueue removes all queued steering messages. Mirrors upstream agent.ts clearSteeringQueue, which returns nothing.
