@@ -7488,6 +7488,34 @@
       "tests": []
     },
     {
+      "id": "BF-4536517",
+      "title": "A launch with `--continue`, `--resume`, or `--session` naming an existing file reports `session_start` reason…",
+      "symptom": "A launch with `--continue`, `--resume`, or `--session` naming an existing file reports `session_start` reason `resume` instead of `startup`, in print, JSON, RPC and interactive mode (SPEC-0007 D2).",
+      "rootCause": "A launch with --continue, --resume or --session naming an existing file reported session_start reason \"startup\", so an extension could not tell a continued conversation from a fresh one, and no session_start marked the start of a run. The CLI now decides \"resume\" when it selects the startup Session and passes the event to CreateAgentSessionRuntime, and the first session_start of a Runtime carries initial: true; replacements and reloads omit it. The owner chose Runtime scope over a process-global flag (SPEC-0007 D2, revision 2).",
+      "rootCauseSource": "commit",
+      "userImpact": "Wrong output or ordering",
+      "platform": "All platforms",
+      "class": "own",
+      "fixedIn": "Unreleased",
+      "releaseNote": "A launch with `--continue`, `--resume`, or `--session` naming an existing file reports `session_start` reason `resume` instead of `startup`, in print, JSON, RPC and interactive mode (SPEC-0007 D2).",
+      "origin": "release note",
+      "commits": [
+        {
+          "hash": "4536517438",
+          "date": "2026-11-05"
+        }
+      ],
+      "tests": [
+        "coding/cli/rpc_mode_test.go::TestRPCRunEmitsSessionStartOnce",
+        "coding/cli/session_start_reason_test.go::TestInteractiveSessionStartReportsResumeAndInitial",
+        "coding/cli/session_start_reason_test.go::TestSessionStartReportsResumeAndInitialAtProcessStart",
+        "coding/runtime_session_start_initial_test.go::TestRuntimeMarksOnlyItsFirstSessionStartInitial",
+        "coding/session_fork_active_upstream_test.go::TestAgentSessionRuntimeKeepsTheSessionStartEventUpstream",
+        "coding/session_runtime_replacement_upstream_test.go::TestRuntimeOriginalNewResumeEvents",
+        "test/extension-conformance/event_payload_test.go::TestConformance_EventPayloadsReachEverySDKUnchanged"
+      ]
+    },
+    {
       "id": "BF-4599fab",
       "title": "fix(ai): an iteration's shared cancellation does not compare contexts",
       "symptom": "fix(ai): an iteration's shared cancellation does not compare contexts",
@@ -33089,6 +33117,31 @@
         "ai/mistral_chunk_member_type_oracle_test.go::TestMistralChunkMistypedMembersMatchPi",
         "ai/openai_completions_member_type_oracle_test.go::TestOpenAICompletionsMistypedMembersMatchPi",
         "ai/openai_responses_member_type_oracle_test.go::TestOpenAIResponsesMistypedMembersMatchPi"
+      ]
+    },
+    {
+      "id": "BF-e14430c",
+      "title": "`sendMessage` and `sendUserMessage` reject an unknown `deliverAs` with an error on the call instead of…",
+      "symptom": "`sendMessage` and `sendUserMessage` reject an unknown `deliverAs` with an error on the call instead of silently taking the steering path or ignoring the value.",
+      "rootCause": "An unknown deliverAs took the steering path on sendMessage and was ignored on an idle sendUserMessage, so a misspelt mode silently changed the delivery. Both calls now fail with an error naming the rejected value and the accepted modes, and an omitted value still keeps the call's default. sendUserMessage also rejects nextTurn, which only sendMessage defines (SPEC-0007 D3).",
+      "rootCauseSource": "commit",
+      "userImpact": "An operation failed or was rejected",
+      "platform": "All platforms",
+      "class": "own",
+      "fixedIn": "Unreleased",
+      "releaseNote": "`sendMessage` and `sendUserMessage` reject an unknown `deliverAs` with an error on the call instead of silently taking the steering path or ignoring the value. An omitted `deliverAs` keeps the call's default; `sendUserMessage` also rejects `\"nextTurn\"`, which only `sendMessage` defines (SPEC-0007 D3).",
+      "origin": "release note",
+      "commits": [
+        {
+          "hash": "e14430cfad",
+          "date": "2026-11-04"
+        }
+      ],
+      "tests": [
+        "coding/session_deliver_as_test.go::TestKnownDeliverAsValuesAreAccepted",
+        "coding/session_deliver_as_test.go::TestSendMessageRejectsUnknownDeliverAs",
+        "coding/session_deliver_as_test.go::TestSendUserMessageRejectsNextTurn",
+        "coding/session_deliver_as_test.go::TestSendUserMessageRejectsUnknownDeliverAs"
       ]
     },
     {

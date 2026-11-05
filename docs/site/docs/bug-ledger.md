@@ -259,6 +259,7 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 | [BF-448ff71-2](#bf-448ff71-2) | MCP notifications no longer swallow every panic from the notify callback; only the "MCP failed to load"… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-44f8d86](#bf-44f8d86) | Fix in shipped code | PiG's own defect | All platforms | Unreleased |
 | [BF-4534a2b](#bf-4534a2b) | fix(durable): put the lifetime note of the publication goroutine on its line | PiG's own defect | All platforms | Unreleased |
+| [BF-4536517](#bf-4536517) | A launch with `--continue`, `--resume`, or `--session` naming an existing file reports `session_start` reason… | PiG's own defect | All platforms | Unreleased |
 | [BF-4599fab](#bf-4599fab) | fix(ai): an iteration's shared cancellation does not compare contexts | PiG's own defect | All platforms | Unreleased |
 | [BF-45ec149](#bf-45ec149) | Read-only credential storage reports an unreadable or malformed `auth.json` as Pi does: `Failed to read… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-4610c9f](#bf-4610c9f) | A `!` or `!!` command's block draws the bytes Pi's `BashExecutionComponent` draws: its rows are padded to the… | PiG's own defect | All platforms | 0.5.0 |
@@ -1091,6 +1092,7 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 | [BF-dfa57b3](#bf-dfa57b3) | An OpenAI Responses request for a conversation with no messages sends `"input": []` instead of `"input": null` | PiG's own defect | All platforms | 0.5.0 |
 | [BF-e045fa5](#bf-e045fa5) | fix(durable/codemode): count image blocks in a generateImages result as Pi does, and compare the code mode… | PiG's own defect | All platforms | Unreleased |
 | [BF-e098463](#bf-e098463) | A Gemini stream chunk with a member of an unexpected type is read as Pi's JavaScript reads it instead of… | PiG's own defect | All platforms | 0.5.0 |
+| [BF-e14430c](#bf-e14430c) | `sendMessage` and `sendUserMessage` reject an unknown `deliverAs` with an error on the call instead of… | PiG's own defect | All platforms | Unreleased |
 | [BF-e16cbba](#bf-e16cbba) | Tool search ranks a tool first when the query is its name, with `-` and other non-identifier characters read… | PiG's own defect | All platforms | Unreleased |
 | [BF-e1764c3](#bf-e1764c3) | A live `/skill:` message renders as the collapsed `[skill] name` block instead of the raw `<skill>` XML | PiG's own defect | All platforms | 0.5.0 |
 | [BF-e1ad272](#bf-e1ad272) | The xAI, Kimi Code, Meta, Radius, OpenAI Codex, Sign in with ChatGPT and GitHub Copilot OAuth requests send… | PiG's own defect | All platforms | 0.5.0 |
@@ -4565,6 +4567,20 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 - **Fixed in:** Unreleased
 - **Fix commits:** `4534a2b904` (2026-10-26)
 - **Tests:** None recorded.
+
+### BF-4536517
+
+**A launch with `--continue`, `--resume`, or `--session` naming an existing file reports `session_start` reason…**
+
+- **Source:** PiG's own defect
+- **Symptom:** A launch with `--continue`, `--resume`, or `--session` naming an existing file reports `session_start` reason `resume` instead of `startup`, in print, JSON, RPC and interactive mode (SPEC-0007 D2).
+- **Root cause:** A launch with --continue, --resume or --session naming an existing file reported session_start reason "startup", so an extension could not tell a continued conversation from a fresh one, and no session_start marked the start of a run. The CLI now decides "resume" when it selects the startup Session and passes the event to CreateAgentSessionRuntime, and the first session_start of a Runtime carries initial: true; replacements and reloads omit it. The owner chose Runtime scope over a process-global flag (SPEC-0007 D2, revision 2).
+- **User impact:** Wrong output or ordering
+- **Platform:** All platforms
+- **Fixed in:** Unreleased
+- **Fix commits:** `4536517438` (2026-11-05)
+- **Tests:** `coding/cli/rpc_mode_test.go::TestRPCRunEmitsSessionStartOnce`, `coding/cli/session_start_reason_test.go::TestInteractiveSessionStartReportsResumeAndInitial`, `coding/cli/session_start_reason_test.go::TestSessionStartReportsResumeAndInitialAtProcessStart`, `coding/runtime_session_start_initial_test.go::TestRuntimeMarksOnlyItsFirstSessionStartInitial`, `coding/session_fork_active_upstream_test.go::TestAgentSessionRuntimeKeepsTheSessionStartEventUpstream`, `coding/session_runtime_replacement_upstream_test.go::TestRuntimeOriginalNewResumeEvents`, `test/extension-conformance/event_payload_test.go::TestConformance_EventPayloadsReachEverySDKUnchanged`
+- **Release note:** A launch with `--continue`, `--resume`, or `--session` naming an existing file reports `session_start` reason `resume` instead of `startup`, in print, JSON, RPC and interactive mode (SPEC-0007 D2).
 
 ### BF-4599fab
 
@@ -16138,6 +16154,20 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 - **Fix commits:** `366969bbae` (2026-10-11), `5078f73100` (2026-10-11), `5932542c21` (2026-10-11), `71e9d13eb9` (2026-10-11), `82414338e7` (2026-10-11), `8eb1202528` (2026-10-11), `b6afa7be1a` (2026-10-11), `e098463b19` (2026-10-11), `f1a59f9161` (2026-10-11)
 - **Tests:** `ai/anthropic_event_member_type_oracle_test.go::TestAnthropicEventMistypedMembersMatchPi`, `ai/google_chunk_member_type_oracle_test.go::TestGoogleChunkMistypedMembersMatchPi`, `ai/mistral_chunk_member_type_oracle_test.go::TestMistralChunkMistypedMembersMatchPi`, `ai/openai_completions_member_type_oracle_test.go::TestOpenAICompletionsMistypedMembersMatchPi`, `ai/openai_responses_member_type_oracle_test.go::TestOpenAIResponsesMistypedMembersMatchPi`
 - **Release note:** A Gemini stream chunk with a member of an unexpected type is read as Pi's JavaScript reads it instead of ending the turn with `google: invalid SSE JSON`: a text that is not a string (or null) appends its string form, a `thought` or `thoughtSignature` of the wrong type is ignored, a `candidates`, candidate, content or `functionCall` that is not the expected shape reads as empty, `parts` that are a string are skipped and other non-arrays end the turn with `candidate.content.parts is not iterable`, a null part ends it with Pi's `Cannot read properties of null` error after the parts before it, a finish reason that is not a string ends it with `Unhandled stop reason: <its string form>`, and usage that is not an object reads as zeros, and a `candidatesTokenCount` of `true` counts as 1, as Pi's `+` makes it.
+
+### BF-e14430c
+
+**`sendMessage` and `sendUserMessage` reject an unknown `deliverAs` with an error on the call instead of…**
+
+- **Source:** PiG's own defect
+- **Symptom:** `sendMessage` and `sendUserMessage` reject an unknown `deliverAs` with an error on the call instead of silently taking the steering path or ignoring the value.
+- **Root cause:** An unknown deliverAs took the steering path on sendMessage and was ignored on an idle sendUserMessage, so a misspelt mode silently changed the delivery. Both calls now fail with an error naming the rejected value and the accepted modes, and an omitted value still keeps the call's default. sendUserMessage also rejects nextTurn, which only sendMessage defines (SPEC-0007 D3).
+- **User impact:** An operation failed or was rejected
+- **Platform:** All platforms
+- **Fixed in:** Unreleased
+- **Fix commits:** `e14430cfad` (2026-11-04)
+- **Tests:** `coding/session_deliver_as_test.go::TestKnownDeliverAsValuesAreAccepted`, `coding/session_deliver_as_test.go::TestSendMessageRejectsUnknownDeliverAs`, `coding/session_deliver_as_test.go::TestSendUserMessageRejectsNextTurn`, `coding/session_deliver_as_test.go::TestSendUserMessageRejectsUnknownDeliverAs`
+- **Release note:** `sendMessage` and `sendUserMessage` reject an unknown `deliverAs` with an error on the call instead of silently taking the steering path or ignoring the value. An omitted `deliverAs` keeps the call's default; `sendUserMessage` also rejects `"nextTurn"`, which only `sendMessage` defines (SPEC-0007 D3).
 
 ### BF-e16cbba
 
