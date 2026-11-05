@@ -7,6 +7,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/MichaelKinsy/PiG/internal/testenv"
 )
 
 func TestSkillRootsSettingsSurviveMigrationAndRoundTrip(t *testing.T) {
@@ -272,9 +274,7 @@ func TestSkillRootsDeduplicateASymlinkedRoot(t *testing.T) {
 	if err := os.MkdirAll(agentDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Symlink(target, alias); err != nil {
-		t.Skipf("symlink unavailable: %v", err)
-	}
+	testenv.Symlink(t, target, alias)
 	data := []byte(`{"skills":{"roots":[` + strconvQuote(target) + `,` + strconvQuote(alias) + `]}}`)
 	if err := os.WriteFile(filepath.Join(agentDir, "settings.json"), data, 0o600); err != nil {
 		t.Fatal(err)

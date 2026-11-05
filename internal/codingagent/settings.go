@@ -345,13 +345,14 @@ func (s *skillsSettingsWire) UnmarshalJSON(data []byte) error {
 }
 
 func (s skillsSettingsWire) MarshalJSON() ([]byte, error) {
+	paths := append([]string{}, s.Paths...)
 	if !s.RootsSet {
-		return json.Marshal(s.Paths)
+		return json.Marshal(paths) //portlint:allow nilslicenull paths is append([]string{}, s.Paths...), which is never nil; Pi sends []
 	}
 	return json.Marshal(struct {
 		Roots []string `json:"roots"`
-		Paths []string `json:"paths,omitempty"`
-	}{Roots: s.Roots, Paths: s.Paths})
+		Paths []string `json:"paths"`
+	}{Roots: append([]string{}, s.Roots...), Paths: paths})
 }
 
 // settingsWire mirrors upstream settings JSON.
