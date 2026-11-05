@@ -358,20 +358,35 @@
         {
           "type": "object",
           "properties": {
+            "roots": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Directories searched for skills, in precedence order. Tokens: @project, @project-agents, @agent, @user-agents."
+            },
+            "paths": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Explicit skill files and directories, with +, - and ! filters."
+            },
             "enableSkillCommands": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "Deprecated: migrate to the top-level enableSkillCommands."
             },
             "customDirectories": {
               "type": "array",
               "items": {
                 "type": "string"
-              }
+              },
+              "description": "Deprecated: migrate to paths."
             }
-          },
-          "deprecated": true
+          }
         }
       ],
-      "description": "Local skill file paths or directories."
+      "description": "Skill paths as a list, or an object with roots and paths. roots replaces automatic discovery; omit it for the default roots."
     },
     "prompts": {
       "type": "array",

@@ -68,6 +68,28 @@ discovery:
   skills: [workspace]  # project Package/convention skills only
 ```
 
+### Discovery roots
+
+The default roots are `["@project", "@project-agents", "@agent", "@user-agents"]` in that precedence order. To replace them, use the object form of `skills`:
+
+```json
+{
+  "skills": {
+    "roots": ["@project", "@project-agents", "@agent"],
+    "paths": ["./one-off/SKILL.md"]
+  }
+}
+```
+
+| Token | Directory |
+|---|---|
+| `@project` | `.pig/skills` in the workspace |
+| `@project-agents` | `.agents/skills` from the workspace to the repository root |
+| `@agent` | The agent directory's `skills`, normally `~/.pig/agent/skills` |
+| `@user-agents` | `~/.agents/skills` |
+
+Absolute and `~/` paths, and paths relative to the settings file, also work. Roots are searched in list order: the earlier root wins a name collision, duplicate roots are searched once, a missing root is skipped and a file root is a settings warning. A project `skills.roots` replaces the global list and loads only in a trusted project. Leaving out `@user-agents` isolates the project from user-level shared skills. `paths` is the old list form with its `+`, `-` and `!` filters; `--skill` adds paths and `--no-skills` disables discovery.
+
 ## Share a skill
 
 Skills travel the same way as every other resource: bundle them in a [package](packages.md) and `pig install` it, or publish them to a marketplace. A package can carry skills alongside extensions, prompts, and themes.

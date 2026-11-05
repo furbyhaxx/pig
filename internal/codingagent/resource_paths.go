@@ -102,6 +102,8 @@ type PathMetadata struct {
 	BaseDir string
 	// PackageRoot is the directory of the npm, git or local-directory Package that supplied the resource; it is empty for a top-level resource and for a local source that is a single file.
 	PackageRoot string
+	// skillRoot marks a skill found under configured skills.roots, whose list order is its precedence.
+	skillRoot bool
 }
 
 // ResolvedResource is a resolved resource path with its PathMetadata (package-manager.ts ResolvedResource).
@@ -267,6 +269,20 @@ func AmbientSkillResources(cwd, agentDir string, sm *SettingsManager, project, u
 // AmbientSkillResourcesIn is AmbientSkillResources with the ancestor .agents/skills directories of scan, which must be of cwd.
 func AmbientSkillResourcesIn(scan *AgentsSkillScan, cwd, agentDir string, sm *SettingsManager, project, user bool) []ResolvedResource {
 	inputs := make([]ResolvedResource, 0)
+	if roots, configured := resolveConfiguredSkillRoots(scan, cwd, agentDir, sm, project, user); configured {
+		if project {
+			projectRoot, settings := ProjectConfigDir(cwd), sm.GetProjectSettings()
+			inputs = append(inputs, resolvedResources(packagecontent.ResolveConfiguredStates(settings.Skills, projectRoot, packagecontent.Skills), PathMetadata{Source: "local", Scope: "project", Origin: "top-level"})...)
+		}
+		if user {
+			settings := sm.GetGlobalSettings()
+			inputs = append(inputs, resolvedResources(packagecontent.ResolveConfiguredStates(settings.Skills, agentDir, packagecontent.Skills), PathMetadata{Source: "local", Scope: "user", Origin: "top-level"})...)
+		}
+		for _, root := range roots {
+			inputs = append(inputs, resolvedResources(automaticStates(discoverConfiguredSkillRoot(root), root.overrides, root.baseDir, packagecontent.Skills), PathMetadata{Source: "auto", Scope: root.scope, Origin: "top-level", BaseDir: root.baseDir, skillRoot: true})...)
+		}
+		return inputs
+	}
 	if project {
 		projectRoot := ProjectConfigDir(cwd)
 		projectSettings := sm.GetProjectSettings().Skills
@@ -475,6 +491,9 @@ func ResourcePrecedenceRank(metadata PathMetadata) int {
 	}
 	if metadata.Origin == "package" {
 		return 4
+	}
+	if metadata.skillRoot {
+		return 3
 	}
 	rank := 2
 	if metadata.Scope == "project" {

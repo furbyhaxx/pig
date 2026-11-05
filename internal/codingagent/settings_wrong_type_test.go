@@ -76,7 +76,7 @@ func TestSettingsWarnOnceForAProjectFileOfTheWrongType(t *testing.T) {
 	check := func(t *testing.T, sm *SettingsManager) {
 		t.Helper()
 		errs := sm.DrainErrors()
-		if len(errs) != 1 || errs[0].Scope != "project" || errs[0].Path != projectPath || !strings.Contains(errs[0].Error.Error(), `"skills" (expected an array of strings)`) {
+		if len(errs) != 1 || errs[0].Scope != "project" || errs[0].Path != projectPath || !strings.Contains(errs[0].Error.Error(), `"skills" (expected an array of strings or a skills object)`) {
 			t.Fatalf("project warnings = %v, want one naming \"skills\" for %s", errs, projectPath)
 		}
 		if got := sm.GetTheme(); got != "dark" {

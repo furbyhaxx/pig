@@ -40,6 +40,56 @@ func TestStatusJSONReportsHealthyEmptyState(t *testing.T) {
 	}
 }
 
+func TestStatusHonorsConfiguredSkillRoots(t *testing.T) {
+	root := t.TempDir()
+	agentDir := filepath.Join(root, "agent")
+	cwd := filepath.Join(root, "workspace")
+	if err := os.MkdirAll(cwd, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PIG_HOME", root)
+	t.Setenv("PIG_CODING_AGENT_DIR", agentDir)
+	t.Setenv("HOME", filepath.Join(root, "home"))
+	t.Chdir(cwd)
+	writeResourceFixture(t, filepath.Join(cwd, ".pig", "skills", "project-skill", "SKILL.md"), "---\nname: project-skill\ndescription: p\n---\n")
+	writeResourceFixture(t, filepath.Join(agentDir, "skills", "agent-skill", "SKILL.md"), "---\nname: agent-skill\ndescription: a\n---\n")
+	writeResourceFixture(t, filepath.Join(root, "home", ".agents", "skills", "home-skill", "SKILL.md"), "---\nname: home-skill\ndescription: h\n---\n")
+	writeRoots := func(roots ...string) {
+		t.Helper()
+		data, err := json.Marshal(map[string]any{"skills": map[string]any{"roots": roots}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		writeResourceFixture(t, filepath.Join(agentDir, "settings.json"), string(data))
+	}
+	statusSkillNames := func() []string {
+		t.Helper()
+		stdout, stderr, code := captureStdoutStderr(t, func() int { return runStatusCommand([]string{"status", "--json", "--no-input"}) })
+		if code != 0 || stderr != "" {
+			t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout, stderr)
+		}
+		var status statusOutput
+		if err := json.Unmarshal([]byte(stdout), &status); err != nil {
+			t.Fatal(err)
+		}
+		var names []string
+		for _, item := range status.Resources.Items {
+			if item.Kind == "skills" {
+				names = append(names, item.Name)
+			}
+		}
+		return names
+	}
+	writeRoots(filepath.Join(cwd, ".pig", "skills"))
+	if got := statusSkillNames(); len(got) != 1 || got[0] != "project-skill" {
+		t.Fatalf("configured roots listed %v, want only project-skill", got)
+	}
+	writeRoots(filepath.Join(cwd, ".pig", "skills"), "@user-agents")
+	if got := statusSkillNames(); len(got) != 2 || got[0] != "home-skill" || got[1] != "project-skill" {
+		t.Fatalf("configured roots with @user-agents listed %v, want home-skill and project-skill", got)
+	}
+}
+
 func TestStatusFailsOnDuplicateResourceIdentity(t *testing.T) {
 	root := t.TempDir()
 	agentDir := filepath.Join(root, "agent")

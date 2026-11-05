@@ -130,8 +130,13 @@ func settingsSchema() *Schema {
 	}, D("Package source for npm or git packages. Use the string form to load all resources or the object form to filter resources."))
 	skillsInput := Union([]*Schema{
 		stringArray(),
-		Object([]Prop{Optional("enableSkillCommands", Boolean()), Optional("customDirectories", stringArray())}, Opt{"deprecated", true}),
-	}, D("Local skill file paths or directories."))
+		Object([]Prop{
+			Optional("roots", stringArray(D(`Directories searched for skills, in precedence order. Tokens: @project, @project-agents, @agent, @user-agents.`))),
+			Optional("paths", stringArray(D(`Explicit skill files and directories, with +, - and ! filters.`))),
+			Optional("enableSkillCommands", Boolean(D("Deprecated: migrate to the top-level enableSkillCommands."))),
+			Optional("customDirectories", stringArray(D("Deprecated: migrate to paths."))),
+		}),
+	}, D("Skill paths as a list, or an object with roots and paths. roots replaces automatic discovery; omit it for the default roots."))
 	return Object([]Prop{
 		Optional("$schema", String(D("JSON Schema reference."))),
 		Optional("lastChangelogVersion", String()),

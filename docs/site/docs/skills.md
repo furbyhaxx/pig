@@ -71,6 +71,30 @@ discovery:
   skills: [workspace]  # project Package/convention skills only
 ```
 
+### Choose the discovery roots
+
+The default root list is `["@project", "@project-agents", "@agent", "@user-agents"]`, which is the scan above in precedence order. Set `skills.roots` in the global or project `settings.json` to replace it:
+
+```json
+{
+  "skills": {
+    "roots": ["@project", "@project-agents", "@agent"],
+    "paths": ["~/one-off/SKILL.md", "-noisy-skill"]
+  }
+}
+```
+
+| Root | Directory |
+|---|---|
+| `@project` | `.pig/skills` in the workspace |
+| `@project-agents` | Every `.agents/skills` from the workspace up to the repository root |
+| `@agent` | Your agent directory's `skills`, normally `~/.pig/agent/skills` |
+| `@user-agents` | `~/.agents/skills` |
+
+An entry can also be an absolute path, a `~/` path or a path relative to the settings file's directory. Roots are searched in list order, so the first root wins a name collision and the diagnostic names both files. Duplicate roots are searched once. A missing root is skipped; a root that is not a directory is reported as a settings warning.
+
+The project `skills.roots` replaces the global one, so list the tokens you still want, commonly `["@project", "@project-agents", "@agent"]`. Project roots load only after you trust the project. A list without `@user-agents` keeps `~/.agents/skills` out, which also isolates a test or a separate agent from your home skills. `paths` is the old list form and keeps its `+`, `-` and `!` filters. `--skill` still adds explicit paths and `--no-skills` still turns discovery off.
+
 ## Worked example
 
 Create the skill from the format above:
@@ -122,7 +146,7 @@ Without the `/skill:` prefix, the model still knows the skill exists, because th
 </available_skills>
 ```
 
-`--no-skills` leaves the block out and removes the `/skill:` commands. `enableSkillCommands: false` removes the commands only ([Settings](/docs/latest/settings)).
+`--no-skills` leaves the block out and removes the `/skill:` commands. `enableSkillCommands: false` removes the commands only ([Settings](/docs/latest/settings)). Setting `skills.roots` without `@user-agents` keeps the user's shared skills out of this project.
 
 ## Share a skill
 

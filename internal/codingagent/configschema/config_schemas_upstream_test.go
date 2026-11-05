@@ -169,7 +169,7 @@ func TestRepresentativeDocumentsValidateAgainstTheGeneratedSchemas(t *testing.T)
 	type pair struct{ artifact, valid, invalid string }
 	pairs := []pair{
 		{"schemas/models.schema.json", `{"providers":{"local":{"compat":{"zaiToolStream":true,"thinkingTokenBudgetField":"thinking_budget","chatTemplateKwargs":{"budget":{"$var":"thinking.budget"}},"supportsMidConvoSystemMessages":true},"models":[{"id":"model","inputLimits":{"maxRequestBytes":1024,"images":{"maxPerRequest":2}},"promptCache":{"short":300}}]}}}`, `{"providers":{"local":{"models":[{"id":""}]}}}`},
-		{"schemas/settings.schema.json", `{"theme":"dark","cacheWarming":"idle","extensionSetting":{"enabled":true},"queueMode":"all","websockets":true,"skills":{"enableSkillCommands":true,"customDirectories":["./skills"]},"retry":{"maxDelayMs":1000}}`, `{"cacheWarming":"always"}`},
+		{"schemas/settings.schema.json", `{"theme":"dark","cacheWarming":"idle","extensionSetting":{"enabled":true},"queueMode":"all","websockets":true,"skills":{"roots":["@project","@agent"],"paths":["./skills"],"enableSkillCommands":true,"customDirectories":["./skills"]},"retry":{"maxDelayMs":1000}}`, `{"cacheWarming":"always"}`},
 		{"schemas/keybindings.schema.json", `{"app.session.new":"ctrl+n","extension.action":["alt+x"]}`, `{"app.session.new":42}`},
 	}
 	var cases []validationCase

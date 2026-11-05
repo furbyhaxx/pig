@@ -166,6 +166,16 @@ The three values of `defaultProjectTrust` (global file only):
 
 `always` runs a repository's settings, extensions and Skills without asking. Use it only for folders you wrote. See [Security](/docs/latest/security) and `/trust`.
 
+## Choose where skills come from
+
+```json
+{ "skills": { "roots": ["@project", "@project-agents", "@agent"], "paths": [] } }
+```
+
+This replaces automatic discovery with the project's `.pig/skills`, the `.agents/skills` directories up to the repository root, and the agent directory's `skills`. Leaving out `@user-agents` keeps `~/.agents/skills` from loading. See [Skills](/docs/latest/skills#choose-the-discovery-roots).
+
+**Check:** put `SKILL.md` files in a user-level shared skill and in the project, then run `pig status --json`. Checked: the `resources.items` list held only `project-skill`. Adding `@user-agents` to `roots` listed `home-skill` and `project-skill`.
+
 ## Quieter, tighter screen
 
 ```json

@@ -32,7 +32,7 @@ PiG reads the project file only after you trust the project. An untrusted projec
 
 If PiG is killed (`kill -9`, power loss), it can leave `settings.json.lock` next to the settings file. A lock younger than 10 seconds counts as held, so the next start waits about 0.2 seconds for each settings load, then warns `Invalid settings file ...: Lock file is already being held` and goes on with the defaults it has. After 10 seconds the lock is taken over. You can also delete the `settings.json.lock` directory. Pi behaves the same way.
 
-A value of the wrong JSON type, such as `{"skills": 5}` or `{"enabledModels": [5]}`, is ignored, and PiG applies the other settings of the file. PiG prints one warning for each file that held such values, for example `Warning: Invalid settings file <path>: ignored settings of the wrong type: "skills" (expected an array of strings)`. Pi 1.4.0 exits with a `TypeError` for these values, or reads a string as a list of one-character patterns (D158).
+A value of the wrong JSON type, such as `{"skills": 5}` or `{"enabledModels": [5]}`, is ignored, and PiG applies the other settings of the file. PiG prints one warning for each file that held such values, for example `Warning: Invalid settings file <path>: ignored settings of the wrong type: "skills" (expected an array of strings or a skills object)`. A malformed `skills.roots` or `skills.paths` entry costs only that entry; the rest of the object survives. Pi 1.4.0 exits with a `TypeError` for these values, or reads a string as a list of one-character patterns (D158).
 
 An empty default column means PiG has no value for the key until you set one, or the value depends on what it detects.
 
@@ -139,12 +139,12 @@ To turn cache warming off, choose `off` for **Cache warming** in `/settings`, or
 |---|---|---|---|
 | `packages` | object[] |  | Packages to load. See [packages](/docs/latest/packages). |
 | `extensions` | string[] |  | Extension paths to load. See [extensions](/docs/latest/extensions). |
-| `skills` | string[] |  | Skill paths to load. See [skills](/docs/latest/skills). |
+| `skills` | string[] or object |  | Skill paths, or `{roots, paths}` to choose the discovery roots. See [skills](/docs/latest/skills). |
 | `prompts` | string[] |  | Prompt paths to load. |
 | `themes` | string[] |  | Theme paths to load. |
 | `enableSkillCommands` | boolean | `true` | Offer skills as `/skill:name` commands. |
 
-Resource paths in the global file resolve from the agent directory. Paths in the project file resolve from the project's `.pig` directory. Absolute paths and a leading `~` work. Resource lists accept glob exclusions with `!pattern`, exact inclusion with `+path`, and exact exclusion with `-path`. A leading `~` in these patterns expands to your home directory, for example `!~/claude-backup/skills/pdf`, as in Pi 1.4.0. Pi 1.1.0 matched the `~` literally, so such a pattern matched nothing ([Pi #10765](https://github.com/earendil-works/pi/issues/10765)).
+Resource paths in the global file resolve from the agent directory. Paths in the project file resolve from the project's `.pig` directory. The `roots` entries of the `skills` object resolve from the directory holding that settings file. Absolute paths and a leading `~` work. Resource lists accept glob exclusions with `!pattern`, exact inclusion with `+path`, and exact exclusion with `-path`. A leading `~` in these patterns expands to your home directory, for example `!~/claude-backup/skills/pdf`, as in Pi 1.4.0. Pi 1.1.0 matched the `~` literally, so such a pattern matched nothing ([Pi #10765](https://github.com/earendil-works/pi/issues/10765)).
 
 The built-in extensions are named `builtin:mcp`, `builtin:llama.cpp`, `builtin:codemode`, and `builtin:tool-search` in `extensions`. They load by default; `-builtin:mcp` turns one off. A `+builtin:<name>` or `-builtin:<name>` entry in the project file overrides the global file. `pig config` lists them under Built-in. `--no-extensions` turns them off too, and `-e builtin:<name>` loads one explicitly.
 

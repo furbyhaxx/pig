@@ -337,35 +337,32 @@ func collectConfigResourceItemsIn(scan *codingagent.AgentsSkillScan, cwd, agentD
 
 	if projectResourcesEnabled {
 		appendTopLevel(project.Extensions, "project", "local", projectBase, "extensions", nil)
-		appendTopLevel(project.Skills, "project", "local", projectBase, "skills", nil)
 		appendTopLevel(project.Prompts, "project", "local", projectBase, "prompts", nil)
 		appendTopLevel(project.Themes, "project", "local", projectBase, "themes", nil)
 	}
 	appendTopLevel(global.Extensions, "user", "local", userBase, "extensions", nil)
-	appendTopLevel(global.Skills, "user", "local", userBase, "skills", nil)
 	appendTopLevel(global.Prompts, "user", "local", userBase, "prompts", nil)
 	appendTopLevel(global.Themes, "user", "local", userBase, "themes", nil)
 
-	home, err := packageManagerHomeDir()
-	if err != nil {
-		return nil, err
-	}
-	userAgentsSkills := filepath.Join(home, ".agents", "skills")
 	if projectResourcesEnabled {
 		appendTopLevel(project.Extensions, "project", "auto", projectBase, "extensions", collectAutoDiscoveredResourcePaths(filepath.Join(projectBase, "extensions"), "extensions"))
-		appendTopLevel(project.Skills, "project", "auto", projectBase, "skills", collectAutoDiscoveredResourcePaths(filepath.Join(projectBase, "skills"), "skills"))
-		// Pi collects the ancestor .agents/skills directories only for a trusted project (package-manager.ts collectAncestorAgentsSkillDirs).
-		for _, dir := range scan.Dirs() {
-			appendTopLevel(project.Skills, "project", "auto", filepath.Dir(dir.Dir), "skills", dir.Skills)
-		}
 		appendTopLevel(project.Prompts, "project", "auto", projectBase, "prompts", collectAutoDiscoveredResourcePaths(filepath.Join(projectBase, "prompts"), "prompts"))
 		appendTopLevel(project.Themes, "project", "auto", projectBase, "themes", collectAutoDiscoveredResourcePaths(filepath.Join(projectBase, "themes"), "themes"))
 	}
 	appendTopLevel(global.Extensions, "user", "auto", userBase, "extensions", collectAutoDiscoveredResourcePaths(filepath.Join(userBase, "extensions"), "extensions"))
-	appendTopLevel(global.Skills, "user", "auto", userBase, "skills", collectAutoDiscoveredResourcePaths(filepath.Join(userBase, "skills"), "skills"))
-	appendTopLevel(global.Skills, "user", "auto", filepath.Dir(userAgentsSkills), "skills", discoverSkillDir(userAgentsSkills))
 	appendTopLevel(global.Prompts, "user", "auto", userBase, "prompts", collectAutoDiscoveredResourcePaths(filepath.Join(userBase, "prompts"), "prompts"))
 	appendTopLevel(global.Themes, "user", "auto", userBase, "themes", collectAutoDiscoveredResourcePaths(filepath.Join(userBase, "themes"), "themes"))
+	for _, resource := range codingagent.AmbientSkillResourcesIn(scan, cwd, agentDir, sm, projectResourcesEnabled, true) {
+		addItem(tui.ResourceItem{
+			Path:         resource.Path,
+			Enabled:      resource.Enabled,
+			ResourceType: tui.ResourceSkills,
+			Scope:        resource.Metadata.Scope,
+			Origin:       resource.Metadata.Origin,
+			Source:       resource.Metadata.Source,
+			BaseDir:      resource.Metadata.BaseDir,
+		})
+	}
 
 	pkgItems, err := packagemanager.CollectResolvedPackageResourceItems(cwd, sm.AgentDir(), sm, nil, true, resolvers...)
 	if err != nil {

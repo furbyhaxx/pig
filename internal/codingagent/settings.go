@@ -317,6 +317,43 @@ type imageSettingsWire struct {
 	BlockImages *bool `json:"blockImages,omitempty"`
 }
 
+type skillsSettingsWire struct {
+	Paths    []string `json:"paths"`
+	Roots    []string `json:"roots"`
+	RootsSet bool     `json:"-"`
+}
+
+func (s *skillsSettingsWire) UnmarshalJSON(data []byte) error {
+	if len(data) > 0 && data[0] == '[' {
+		return json.Unmarshal(data, &s.Paths)
+	}
+	var object struct {
+		Roots json.RawMessage `json:"roots"`
+		Paths []string        `json:"paths"`
+	}
+	if err := json.Unmarshal(data, &object); err != nil {
+		return err
+	}
+	s.Paths = object.Paths
+	if object.Roots != nil && string(object.Roots) != "null" {
+		if err := json.Unmarshal(object.Roots, &s.Roots); err != nil {
+			return err
+		}
+		s.RootsSet = true
+	}
+	return nil
+}
+
+func (s skillsSettingsWire) MarshalJSON() ([]byte, error) {
+	if !s.RootsSet {
+		return json.Marshal(s.Paths)
+	}
+	return json.Marshal(struct {
+		Roots []string `json:"roots"`
+		Paths []string `json:"paths,omitempty"`
+	}{Roots: s.Roots, Paths: s.Paths})
+}
+
 // settingsWire mirrors upstream settings JSON.
 type settingsWire struct {
 	LastChangelogVersion    string                  `json:"lastChangelogVersion,omitempty"`
@@ -356,7 +393,7 @@ type settingsWire struct {
 	TrackingID             string                   `json:"trackingId,omitempty"`
 	Packages               []PackageSource          `json:"packages,omitzero"`
 	Extensions             []string                 `json:"extensions,omitzero"`
-	Skills                 []string                 `json:"skills,omitzero"`
+	Skills                 *skillsSettingsWire      `json:"skills,omitzero"`
 	Prompts                []string                 `json:"prompts,omitzero"`
 	Themes                 []string                 `json:"themes,omitzero"`
 	EnableSkillCommands    *bool                    `json:"enableSkillCommands,omitempty"`
@@ -536,6 +573,8 @@ type Settings struct {
 	Packages                       []PackageSource `json:"packages,omitzero"`
 	Extensions                     []string        `json:"extensions,omitempty"`
 	Skills                         []string        `json:"skills,omitempty"`
+	SkillRoots                     []string        `json:"-"`
+	skillRootsSet                  bool            `json:"-"`
 	Prompts                        []string        `json:"prompts,omitempty"`
 	Themes                         []string        `json:"themes,omitempty"`
 	SessionDir                     string          `json:"sessionDir,omitempty"`
@@ -993,6 +1032,8 @@ func cloneSettings(s Settings) Settings {
 		Packages:                       clonePackageSources(s.Packages),
 		Extensions:                     slices.Clone(s.Extensions),
 		Skills:                         slices.Clone(s.Skills),
+		SkillRoots:                     slices.Clone(s.SkillRoots),
+		skillRootsSet:                  s.skillRootsSet,
 		Prompts:                        slices.Clone(s.Prompts),
 		Themes:                         slices.Clone(s.Themes),
 		SessionDir:                     s.SessionDir,
@@ -1070,6 +1111,10 @@ func (s Settings) themeSetting() *string {
 // MarshalJSON emits upstream's settings wire shape while preserving pig's
 // internal flattened representation.
 func (s Settings) MarshalJSON() ([]byte, error) {
+	var skills *skillsSettingsWire
+	if s.Skills != nil || s.skillRootsSet {
+		skills = &skillsSettingsWire{Paths: s.Skills, Roots: s.SkillRoots, RootsSet: s.skillRootsSet}
+	}
 	w := settingsWire{
 		LastChangelogVersion:        s.LastChangelogVersion,
 		DefaultProvider:             optionalString(s.DefaultProvider, s.emptyStrings.defaultProvider),
@@ -1100,7 +1145,7 @@ func (s Settings) MarshalJSON() ([]byte, error) {
 		TrackingID:                  s.TrackingID,
 		Packages:                    s.Packages,
 		Extensions:                  s.Extensions,
-		Skills:                      s.Skills,
+		Skills:                      skills,
 		Prompts:                     s.Prompts,
 		Themes:                      s.Themes,
 		EnableSkillCommands:         s.EnableSkillCommands,
@@ -1204,8 +1249,14 @@ func (s *Settings) UnmarshalJSON(data []byte) error {
 				legacy["enableSkillCommands"] = enabled
 			}
 		}
-		if dirs, ok := rawSkills["customDirectories"].([]any); ok && len(dirs) > 0 {
-			legacy["skills"] = dirs
+		_, hasPaths := rawSkills["paths"]
+		if dirs, ok := rawSkills["customDirectories"].([]any); ok && len(dirs) > 0 && !hasPaths {
+			rawSkills["paths"] = dirs
+			hasPaths = true
+		}
+		delete(rawSkills, "customDirectories")
+		if _, hasRoots := rawSkills["roots"]; hasRoots || hasPaths {
+			legacy["skills"] = rawSkills
 		} else {
 			delete(legacy, "skills")
 		}
@@ -1308,7 +1359,11 @@ func (s *Settings) UnmarshalJSON(data []byte) error {
 		}
 	}
 	s.Extensions = w.Extensions
-	s.Skills = w.Skills
+	if w.Skills != nil {
+		s.Skills = w.Skills.Paths
+		s.SkillRoots = w.Skills.Roots
+		s.skillRootsSet = w.Skills.RootsSet
+	}
 	s.Prompts = w.Prompts
 	s.Themes = w.Themes
 	s.EnableSkillCommands = w.EnableSkillCommands
@@ -1382,7 +1437,7 @@ func (s *Settings) UnmarshalJSON(data []byte) error {
 // pig divergence (D158): a value of the wrong JSON type is dropped here instead of reaching code that throws, as Pi's does.
 func decodeSettingsWire(raw map[string]any) (settingsWire, []string, error) {
 	sanitized := false
-	var ignored []string
+	ignored := sanitizeSkillsObjectShape(raw)
 	for {
 		normalized, err := json.Marshal(raw)
 		if err != nil {
@@ -1413,9 +1468,45 @@ func decodeSettingsWire(raw map[string]any) (settingsWire, []string, error) {
 	}
 }
 
+// sanitizeSkillsObjectShape drops a malformed skills.roots or skills.paths entry before decoding, so one bad entry neither hides nor
+// overwrites the rest of the object on the next settings write.
+func sanitizeSkillsObjectShape(raw map[string]any) []string {
+	skills, ok := raw["skills"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	var ignored []string
+	for _, field := range []string{"roots", "paths"} {
+		value, present := skills[field]
+		if !present {
+			continue
+		}
+		items, isArray := value.([]any)
+		if !isArray {
+			delete(skills, field)
+			ignored = append(ignored, fmt.Sprintf("%q (expected an array of strings)", "skills."+field))
+			continue
+		}
+		kept := make([]any, 0, len(items))
+		for _, item := range items {
+			if entry, ok := item.(string); ok {
+				kept = append(kept, entry)
+			}
+		}
+		if len(kept) != len(items) {
+			ignored = append(ignored, fmt.Sprintf("%q (an element of the wrong type)", "skills."+field))
+			skills[field] = kept
+		}
+	}
+	return ignored
+}
+
 // expectedSettingType describes the JSON type of the setting at the dotted path, read from settingsWire's field types; fallback is the type the
 // decoder reported when the path names no field.
 func expectedSettingType(path string, fallback reflect.Type) string {
+	if path == "skills" {
+		return "an array of strings or a skills object"
+	}
 	t := reflect.TypeFor[settingsWire]()
 	for name := range strings.SplitSeq(path, ".") {
 		for t.Kind() == reflect.Pointer {
@@ -1930,6 +2021,7 @@ func (sm *SettingsManager) Load() {
 			sm.globalObject = object
 			sm.globalLoadErr = nil
 			sm.noteIgnoredSettings("global", sm.errorPath(globalPath), global)
+			sm.noteInvalidSkillRoots("global", sm.errorPath(globalPath), sm.agentDir, global)
 		} else {
 			sm.globalLoadErr = err
 			if !errors.Is(err, os.ErrNotExist) {
@@ -1949,6 +2041,7 @@ func (sm *SettingsManager) Load() {
 			sm.projectObject = object
 			sm.projectLoadErr = nil
 			sm.noteIgnoredSettings("project", sm.errorPath(projectPath), project)
+			sm.noteInvalidSkillRoots("project", sm.errorPath(projectPath), ProjectConfigDir(sm.cwd), project)
 		} else {
 			sm.projectLoadErr = err
 			if !errors.Is(err, os.ErrNotExist) {
@@ -2051,6 +2144,7 @@ func (sm *SettingsManager) SetProjectTrusted(trusted bool) {
 				sm.errors = append(sm.errors, SettingsError{Scope: "project", Path: path, Error: err})
 			} else {
 				sm.noteIgnoredSettings("project", path, project)
+				sm.noteInvalidSkillRoots("project", path, ProjectConfigDir(sm.cwd), project)
 			}
 		}
 	}
@@ -3575,7 +3669,6 @@ func patchSettingsObject(current *orderedjson.Object, before, after Settings, or
 // current file before it merges the modified fields, so a legacy key is rewritten in the saved file. Keys keep JavaScript's property order: a migrated
 // value is appended unless its key exists, and a deleted key leaves the others in place.
 func migrateSettingsObject(o *orderedjson.Object) error {
-	isObject := func(raw json.RawMessage) bool { return orderedjson.IsObject(raw) }
 	if queueMode, ok := o.Get("queueMode"); ok && !o.Has("steeringMode") {
 		o.Set("steeringMode", queueMode)
 		o.Delete("queueMode")
@@ -3592,7 +3685,7 @@ func migrateSettingsObject(o *orderedjson.Object) error {
 			}
 		}
 	}
-	if raw, ok := o.Get("skills"); ok && isObject(raw) {
+	if raw, ok := o.Get("skills"); ok && orderedjson.IsObject(raw) {
 		skills, err := orderedjson.Parse(raw)
 		if err != nil {
 			return err
@@ -3600,14 +3693,35 @@ func migrateSettingsObject(o *orderedjson.Object) error {
 		if enable, ok := skills.Get("enableSkillCommands"); ok && !o.Has("enableSkillCommands") {
 			o.Set("enableSkillCommands", enable)
 		}
+		for _, field := range []string{"roots", "paths"} {
+			if raw, ok := skills.Get(field); ok {
+				if filtered, changed := filteredStringArray(raw); changed {
+					skills.Set(field, filtered)
+				}
+			}
+		}
+		paths, hasPaths := skills.Get("paths")
 		var directories []json.RawMessage
-		if raw, ok := skills.Get("customDirectories"); ok && json.Unmarshal(raw, &directories) == nil && len(directories) > 0 && bytes.HasPrefix(bytes.TrimSpace(raw), []byte("[")) {
-			o.Set("skills", slices.Clone(raw))
+		if raw, ok := skills.Get("customDirectories"); ok && !hasPaths && json.Unmarshal(raw, &directories) == nil && len(directories) > 0 && bytes.HasPrefix(bytes.TrimSpace(raw), []byte("[")) {
+			paths, hasPaths = slices.Clone(raw), true
+		}
+		if _, hasRoots := skills.Get("roots"); hasRoots {
+			if hasPaths {
+				skills.Set("paths", paths)
+			}
+			skills.Delete("customDirectories")
+			encoded, err := json.Marshal(skills)
+			if err != nil {
+				return err
+			}
+			o.Set("skills", encoded)
+		} else if hasPaths {
+			o.Set("skills", paths)
 		} else {
 			o.Delete("skills")
 		}
 	}
-	if raw, ok := o.Get("retry"); ok && isObject(raw) {
+	if raw, ok := o.Get("retry"); ok && orderedjson.IsObject(raw) {
 		retry, err := orderedjson.Parse(raw)
 		if err != nil {
 			return err
@@ -3620,7 +3734,7 @@ func migrateSettingsObject(o *orderedjson.Object) error {
 				existing = bytes.TrimSpace(value)
 			}
 			switch {
-			case isObject(existing):
+			case orderedjson.IsObject(existing):
 				if provider, err = orderedjson.Parse(existing); err != nil {
 					return err
 				}
@@ -3646,6 +3760,31 @@ func migrateSettingsObject(o *orderedjson.Object) error {
 		o.Set("retry", encoded)
 	}
 	return nil
+}
+
+func filteredStringArray(raw json.RawMessage) (json.RawMessage, bool) {
+	var items []json.RawMessage
+	if json.Unmarshal(raw, &items) != nil {
+		return raw, false
+	}
+	kept := make([]string, 0, len(items))
+	changed := false
+	for _, item := range items {
+		var value string
+		if json.Unmarshal(item, &value) == nil {
+			kept = append(kept, value)
+		} else {
+			changed = true
+		}
+	}
+	if !changed {
+		return raw, false
+	}
+	encoded, err := json.Marshal(kept)
+	if err != nil {
+		return raw, false
+	}
+	return encoded, true
 }
 
 // spreadNonObjectRoot is `{ ...parsed }` for a settings.json whose root is an array: its elements under their indexes (settings-manager.ts:738). Every
@@ -3860,6 +3999,10 @@ func mergeSettings(global, project Settings) Settings {
 	}
 	if project.Skills != nil {
 		m.Skills = append([]string{}, project.Skills...)
+	}
+	if project.skillRootsSet {
+		m.SkillRoots = slices.Clone(project.SkillRoots)
+		m.skillRootsSet = true
 	}
 	if project.Prompts != nil {
 		m.Prompts = append([]string{}, project.Prompts...)

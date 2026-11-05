@@ -138,10 +138,23 @@ set it in `~/.pig/agent/settings.json`:
 |---|---|---|---|
 | `packages` | object[] |  | Packages to load. See [packages](packages.md). |
 | `extensions` | string[] |  | Extension paths to load. See [extensions](extensions.md). |
-| `skills` | string[] |  | Skill paths to load. See [skills](skills.md). |
+| `skills` | string[] or object |  | Skill paths, or `{roots, paths}` to choose discovery roots. See [skills](skills.md). |
 | `prompts` | string[] |  | Prompt paths to load. |
 | `themes` | string[] |  | Theme paths to load. |
 | `enableSkillCommands` | boolean | `true` | Offer skills as slash commands. |
+
+## Skills roots
+
+`skills` also takes an object with `roots` and `paths`. `roots` replaces automatic discovery; `@project`, `@project-agents`, `@agent` and `@user-agents` put the default locations back. Relative roots resolve from the settings file's directory. See [skills](skills.md).
+
+```json
+{
+  "skills": {
+    "roots": ["@project", "@project-agents", "@agent"],
+    "paths": ["./one-off/SKILL.md"]
+  }
+}
+```
 
 ## Terminal capability overrides
 

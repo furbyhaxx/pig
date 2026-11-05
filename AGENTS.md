@@ -144,7 +144,7 @@ Shared provider/model/auth/tool regression matrix (explain an inapplicable row f
 
 - `PIG_CODING_AGENT_DIR` and `PI_CODING_AGENT_DIR` beat `PIG_HOME`, and every child process inherits them, including tmux sessions started from your shell. Any manual probe or test that runs pig sets or clears all of `PIG_CODING_AGENT_DIR`, `PI_CODING_AGENT_DIR`, `PIG_HOME`, `PI_HOME`, `HOME`. Otherwise `/logout` and login rewrite the real credentials.
 - Plain `go test` from an agent shell: point those four `*_DIR`/`*_HOME` variables at scratch dirs first, unless the package's `TestMain` calls `testenv.ScopeTempDir` or `testenv.RunScoped`. `make test` fails a group that changes them (`automation/ci/agent-dir-guard.sh`).
-- Skills under `~/.agents/skills` follow `HOME`, not `PIG_HOME`: set `HOME` too.
+- Skills under `~/.agents/skills` follow `HOME`, not `PIG_HOME`: set `HOME` too. A settings `skills.roots` without `@user-agents` keeps them out; use both for a hermetic probe.
 - tmux: unique session names; only `tmux kill-session -t <name>`; never `tmux kill-server`.
 
 ## Code and lint
