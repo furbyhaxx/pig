@@ -5,9 +5,9 @@ document:
   title: "Extension runtime lifetime: bounded reloads, cancellable bus, live renderer resolution, retained processes"
   description: "Generation-unique sockets and bounded handshakes for reload, cancellation through event-bus listeners, renderer re-resolution without reload, and host-owned processes that survive extension reloads"
   status: "draft"
-  revision: 6
+  revision: 7
   created_at: "2026-11-04T14:40:00+01:00"
-  updated_at: "2026-11-05T12:17:06+01:00"
+  updated_at: "2026-11-05T15:45:00+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -29,6 +29,9 @@ document:
     - revision: 6
       reason: "Implement D3 using request cancellation and verify native listener contexts through real subprocesses"
       changes: ["D3 reuses MsgCancel rather than adding events.cancel", "Go factory and loading dispatches have cancellable request scopes", "document cooperative native cancellation and the JavaScript handler limit"]
+    - revision: 7
+      reason: "Close the D1 P29 reproduction obligation with tree navigation and real agent turns"
+      changes: ["record the 12-round PTY reproduction", "state why it is reproduction coverage rather than a red-proven fix"]
 ---
 
 # SPEC-0004 Extension runtime lifetime
@@ -41,7 +44,7 @@ Resolves U-01, U-14, U-22, U-23 of `../analyses/2026-11-04-host-gap-verification
 - The old generation's listener and socket file are removed only by the old generation's teardown; the new generation never removes a path it did not create.
 - Socket directory sweep at host start removes files of dead hosts only (existing ownership check).
 - `TestSocketGenerationTeardownDoesNotUnlinkSuccessor` fails before the fix: tearing down the previous packed member removes its successor's bound socket, and a connection to the successor fails. This proves the path-ownership defect, not the complete P29 hang.
-- `TestPackedGoReloadLoopNeverHangs` exercises 200 reloads with factory-time host calls, bus subscription and tool execution; it also checks retained-process identity and shutdown cleanup. The original loop passed before the socket fix; this is stress coverage, not a red-proven hang reproduction. It does not drive tree navigation or an agent turn. The P29 sequence remains a reproduction obligation before claiming the original hang resolved.
+- `TestPackedGoReloadLoopNeverHangs` exercises 200 reloads with factory-time host calls, bus subscription and tool execution; it also checks retained-process identity and shutdown cleanup. The original loop passed before the socket fix; this is stress coverage, not a red-proven hang reproduction. `TestPackedGoReloadAfterTreeNavigationAndAgentTurnsNeverHangs` closes the original reproduction obligation: per round it performs two real faux-model turns, opens `/tree`, navigates to an earlier assistant entry, runs another turn, then reloads a packed Go extension through `/reloadme`. Twelve rounds (36 turns, 12 tree pickers, 12 reloads) pass in 5.13 s. It passed first try and is therefore reproduction and regression coverage; the path-ownership defect itself keeps the red-proven teardown regression.
 
 ## D2 Bounded reload handshake (U-01)
 

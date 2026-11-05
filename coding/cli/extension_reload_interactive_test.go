@@ -4,6 +4,7 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -83,5 +84,102 @@ func TestExtensionReloadResolvesInInteractiveMode(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func awaitReloadLogCount(t *testing.T, logPath, needle string, want int) {
+	t.Helper()
+	deadline := time.Now().Add(testbudget.Wait(t))
+	for {
+		if strings.Count(string(mustReadFile(logPath)), needle) >= want {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the probe log never held %d occurrences of %q; log:\n%s", want, needle, mustReadFile(logPath))
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+// The original P29 sequence: two real agent turns, /tree navigation to an earlier assistant entry, another real turn, then a packed Go reload. The old stable socket path made the successor's dial fail and left the Host in awaitConnection; repeating the sequence across reloads proves the navigation and turn state does not reintroduce that hang.
+func TestPackedGoReloadAfterTreeNavigationAndAgentTurnsNeverHangs(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds the pig binary and a packed Go extension")
+	}
+	binary := buildPigBinaryForSignalTest(t)
+	extension := writeReloadProbe(t, "go")
+	home, cwd, sessionDir := t.TempDir(), t.TempDir(), t.TempDir()
+	agentDir := filepath.Join(home, "pig")
+	if err := os.MkdirAll(agentDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(agentDir, "settings.json"), []byte(`{"quietStartup":true,"branchSummary":{"skipPrompt":true}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	logPath := filepath.Join(t.TempDir(), "reload.log")
+	env := []string{"HOME=" + home, "PIG_HOME=" + filepath.Join(home, ".pig"), "PIG_CODING_AGENT_DIR=" + agentDir, "PIG_TEST_FAUX=1", "PIG_TEST_FAUX_SCENARIO=parity-basic", "PIG_OFFLINE=1", "RELOAD_PROBE_LOG=" + logPath, "TERM=xterm-256color"}
+	master, slave := openPTY(t, 40, 160)
+	ctx, cancel := context.WithTimeout(t.Context(), testbudget.Wait(t))
+	defer cancel()
+	cmd := exec.CommandContext(ctx, binary, "--no-extensions", "--model", "test-faux/faux-1", "--session-dir", sessionDir, "-e", extension, "--approve")
+	cmd.Dir, cmd.Env = cwd, append(os.Environ(), env...)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = slave, slave, slave
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Setctty: true, Ctty: 0}
+	output := &ptyOutput{}
+	go func() {
+		buffer := make([]byte, 4096)
+		for {
+			n, err := master.Read(buffer)
+			if n > 0 {
+				_, _ = output.Write(buffer[:n])
+			}
+			if err != nil {
+				return
+			}
+		}
+	}()
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	_ = slave.Close()
+	done := make(chan struct{})
+	go func() { defer close(done); _ = cmd.Wait() }()
+	t.Cleanup(func() { cancel(); <-done; _ = master.Close() })
+	output.waitQuiet(0, []byte("faux-1"), 200*time.Millisecond, testbudget.Wait(t))
+	awaitReloadLogCount(t, logPath, "factory", 1)
+
+	const rounds = 12
+	for round := range rounds {
+		if _, err := master.WriteString(fmt.Sprintf("round %d first\r", round)); err != nil {
+			t.Fatal(err)
+		}
+		awaitReloadLogCount(t, logPath, "agent_end", round*3+1)
+		if _, err := master.WriteString(fmt.Sprintf("round %d second\r", round)); err != nil {
+			t.Fatal(err)
+		}
+		awaitReloadLogCount(t, logPath, "agent_end", round*3+2)
+
+		mark := output.mark()
+		if _, err := master.WriteString("/tree\r"); err != nil {
+			t.Fatal(err)
+		}
+		output.waitQuiet(mark, []byte("Session Tree"), 150*time.Millisecond, testbudget.Wait(t))
+		if _, err := master.WriteString("\x1b[A\x1b[A\r"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := master.WriteString(fmt.Sprintf("round %d after tree\r", round)); err != nil {
+			t.Fatal(err)
+		}
+		awaitReloadLogCount(t, logPath, "agent_end", round*3+3)
+
+		if _, err := master.WriteString("/reloadme\r"); err != nil {
+			t.Fatal(err)
+		}
+		awaitReloadLogCount(t, logPath, "start:reload", round+1)
+		awaitReloadLogCount(t, logPath, "returned", round+1)
+		awaitReloadLogCount(t, logPath, "factory", round+2)
+	}
+	if got := strings.Count(string(mustReadFile(logPath)), "shutdown:reload"); got != rounds {
+		t.Fatalf("reload shutdowns = %d, want %d; log:\n%s", got, rounds, mustReadFile(logPath))
 	}
 }

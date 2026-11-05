@@ -90,8 +90,12 @@ func Extension() *sdk.Extension {
 		logLine(fmt.Sprintf("shutdown:%v", event["reason"]))
 		return nil, nil
 	})
+	e.OnEvent(sdk.EventAgentEnd, func(ctx sdk.Context, event map[string]any) (any, error) {
+		logLine("agent_end")
+		return nil, nil
+	})
 	e.Command("reloadme", "Rewrite settings and a context file, then reload", func(ctx sdk.Context, args string) error {
-		if err := os.WriteFile(filepath.Join(os.Getenv("PIG_CODING_AGENT_DIR"), "settings.json"), []byte("{\"quietStartup\":false,\"defaultTools\":[\"+grep\"]}"), 0o600); err != nil {
+		if err := os.WriteFile(filepath.Join(os.Getenv("PIG_CODING_AGENT_DIR"), "settings.json"), []byte("{\"quietStartup\":false,\"defaultTools\":[\"+grep\"],\"branchSummary\":{\"skipPrompt\":true}}"), 0o600); err != nil {
 			return err
 		}
 		if err := os.WriteFile(filepath.Join(ctx.Cwd(), "AGENTS.md"), []byte("RELOAD_MARKER_CONTEXT"), 0o600); err != nil {
