@@ -131665,9 +131665,9 @@
         "call:coding/session.go#Session.UserMessagesForForking"
       ],
       "evidence": [
+        "test:coding/session_queue_upstream_test.go#TestNextTurnRuntimeReplacement",
         "test:coding/session_runtime_branching_upstream_test.go#TestRuntimeOriginalBranching",
-        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalForkEventsAndCancellation",
-        "test:coding/runtime_wrong_typed_fixes_test.go#TestInMemoryForkRunsTheReplacementHookWhenTheSupersededCloseFails"
+        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalForkEventsAndCancellation"
       ]
     },
     {
@@ -131687,9 +131687,9 @@
         "call:coding/session.go#Session.UserMessagesForForking"
       ],
       "evidence": [
+        "test:coding/session_queue_upstream_test.go#TestNextTurnRuntimeReplacement",
         "test:coding/session_runtime_branching_upstream_test.go#TestRuntimeOriginalBranching",
-        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalForkEventsAndCancellation",
-        "test:coding/runtime_wrong_typed_fixes_test.go#TestInMemoryForkRunsTheReplacementHookWhenTheSupersededCloseFails"
+        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalForkEventsAndCancellation"
       ]
     },
     {
@@ -132356,7 +132356,7 @@
       "evidence": [
         "test:coding/session_prompt_expansion_upstream_test.go#TestUpstreamSessionPromptExpansion",
         "test:coding/session_settled_upstream_test.go#TestAgentSettledUpstream",
-        "test:coding/session_invocation_test.go#TestSendUserMessageInvocationExpansion"
+        "test:coding/session_deliver_as_test.go#TestKnownDeliverAsValuesAreAccepted"
       ],
       "asyncContract": "An awaited Promise is a blocking Go call that returns the value or error; AbortSignal is the context.Context argument; no detached goroutine."
     },
@@ -132379,7 +132379,7 @@
       "evidence": [
         "test:coding/session_prompt_expansion_upstream_test.go#TestUpstreamSessionPromptExpansion",
         "test:coding/session_settled_upstream_test.go#TestAgentSettledUpstream",
-        "test:coding/session_invocation_test.go#TestSendUserMessageInvocationExpansion"
+        "test:coding/session_deliver_as_test.go#TestKnownDeliverAsValuesAreAccepted"
       ],
       "asyncContract": "An awaited Promise is a blocking Go call that returns the value or error; AbortSignal is the context.Context argument; no detached goroutine."
     },
@@ -133574,7 +133574,7 @@
         "shape": "complete"
       },
       "production": [
-        "call:coding/runtime_replacement.go#CreateAgentSessionRuntime"
+        "call:coding/cli/main.go#Main"
       ],
       "evidence": [
         "test:coding/session_fork_active_upstream_test.go#TestAgentSessionRuntimeKeepsTheSessionStartEventUpstream",
@@ -133841,9 +133841,9 @@
         "call:coding/runtime_replacement.go#Runtime.Fork"
       ],
       "evidence": [
+        "test:coding/session_queue_upstream_test.go#TestNextTurnRuntimeReplacement",
         "test:coding/session_runtime_branching_upstream_test.go#TestRuntimeOriginalBranching",
-        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalDuplicateCurrentBranch",
-        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalForkEventsAndCancellation"
+        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalDuplicateCurrentBranch"
       ],
       "asyncContract": "An awaited Promise is a blocking Go call that returns the value or error; AbortSignal is the context.Context argument; no detached goroutine."
     },
@@ -133864,9 +133864,9 @@
         "call:coding/runtime_replacement.go#Runtime.Fork"
       ],
       "evidence": [
+        "test:coding/session_queue_upstream_test.go#TestNextTurnRuntimeReplacement",
         "test:coding/session_runtime_branching_upstream_test.go#TestRuntimeOriginalBranching",
-        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalDuplicateCurrentBranch",
-        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalForkEventsAndCancellation"
+        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalDuplicateCurrentBranch"
       ],
       "asyncContract": "An awaited Promise is a blocking Go call that returns the value or error; AbortSignal is the context.Context argument; no detached goroutine."
     },
@@ -133956,8 +133956,8 @@
       ],
       "evidence": [
         "test:coding/runtime_before_invalidate_upstream_test.go#TestBeforeSessionInvalidateRunsBetweenShutdownAndRebind",
-        "test:coding/session_replaced_2860_upstream_test.go#TestReplacedSession2860Switch",
-        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalNewResumeEvents"
+        "test:coding/session_queue_upstream_test.go#TestNextTurnRuntimeReplacement",
+        "test:coding/session_replaced_2860_upstream_test.go#TestReplacedSession2860Switch"
       ],
       "asyncContract": "An awaited Promise is a blocking Go call that returns the value or error; AbortSignal is the context.Context argument; no detached goroutine."
     },
@@ -133979,8 +133979,8 @@
       ],
       "evidence": [
         "test:coding/runtime_before_invalidate_upstream_test.go#TestBeforeSessionInvalidateRunsBetweenShutdownAndRebind",
-        "test:coding/session_replaced_2860_upstream_test.go#TestReplacedSession2860Switch",
-        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalNewResumeEvents"
+        "test:coding/session_queue_upstream_test.go#TestNextTurnRuntimeReplacement",
+        "test:coding/session_replaced_2860_upstream_test.go#TestReplacedSession2860Switch"
       ],
       "asyncContract": "An awaited Promise is a blocking Go call that returns the value or error; AbortSignal is the context.Context argument; no detached goroutine."
     },
@@ -134136,8 +134136,8 @@
       ],
       "evidence": [
         "test:coding/runtime_switch_session_dir_upstream_test.go#TestSwitchSessionCreatesTheDestinationDirectoryLikePi",
-        "test:coding/session_replaced_2860_upstream_test.go#TestReplacedSession2860Switch",
-        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalCrossCWD"
+        "test:coding/session_queue_upstream_test.go#TestNextTurnRuntimeReplacement",
+        "test:coding/session_replaced_2860_upstream_test.go#TestReplacedSession2860Switch"
       ],
       "asyncContract": "An awaited Promise is a blocking Go call that returns the value or error; AbortSignal is the context.Context argument; no detached goroutine."
     },
@@ -134159,8 +134159,8 @@
       ],
       "evidence": [
         "test:coding/runtime_switch_session_dir_upstream_test.go#TestSwitchSessionCreatesTheDestinationDirectoryLikePi",
-        "test:coding/session_replaced_2860_upstream_test.go#TestReplacedSession2860Switch",
-        "test:coding/session_runtime_replacement_upstream_test.go#TestRuntimeOriginalCrossCWD"
+        "test:coding/session_queue_upstream_test.go#TestNextTurnRuntimeReplacement",
+        "test:coding/session_replaced_2860_upstream_test.go#TestReplacedSession2860Switch"
       ],
       "asyncContract": "An awaited Promise is a blocking Go call that returns the value or error; AbortSignal is the context.Context argument; no detached goroutine."
     },
