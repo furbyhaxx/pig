@@ -197,7 +197,7 @@ func resolveStartupSessionSelectionIn(flags Args, launchCWD, sessionDir string) 
 	}
 
 	if selection.resumePath != "" {
-		if info, err := os.Stat(selection.resumePath); err == nil && info.Mode().IsRegular() {
+		if info, err := os.Stat(selection.resumePath); err == nil && info.Mode().IsRegular() { //perf:ok cold: one stat per launch, before the startup Session opens
 			selection.resumesExisting = true
 		}
 	}
