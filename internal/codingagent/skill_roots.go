@@ -85,11 +85,11 @@ func (sm *SettingsManager) noteInvalidSkillRoots(scope, path, baseDir string, lo
 		}
 		resolved, err := ResolvePath(raw, baseDir)
 		if err != nil {
-			invalid = append(invalid, fmt.Sprintf("%q (%v)", raw, err))
+			invalid = append(invalid, fmt.Sprintf("%q (%v)", raw, err)) //perf:ok one diagnostic per invalid configured root at settings load
 			continue
 		}
-		if info, err := os.Stat(resolved); err == nil && !info.IsDir() {
-			invalid = append(invalid, fmt.Sprintf("%q (not a directory)", raw))
+		if info, err := os.Stat(resolved); err == nil && !info.IsDir() { //perf:ok one stat per configured root at settings load
+			invalid = append(invalid, fmt.Sprintf("%q (not a directory)", raw)) //perf:ok one diagnostic per invalid configured root at settings load
 		}
 	}
 	if len(invalid) > 0 {

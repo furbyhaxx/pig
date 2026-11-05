@@ -347,8 +347,10 @@ func (s *skillsSettingsWire) UnmarshalJSON(data []byte) error {
 func (s skillsSettingsWire) MarshalJSON() ([]byte, error) {
 	paths := append([]string{}, s.Paths...)
 	if !s.RootsSet {
+		//perf:ok one settings list encode per write
 		return json.Marshal(paths) //portlint:allow nilslicenull paths is append([]string{}, s.Paths...), which is never nil; Pi sends []
 	}
+	//perf:ok one settings object encode per write
 	return json.Marshal(struct {
 		Roots []string `json:"roots"`
 		Paths []string `json:"paths"`
@@ -1485,7 +1487,7 @@ func sanitizeSkillsObjectShape(raw map[string]any) []string {
 		items, isArray := value.([]any)
 		if !isArray {
 			delete(skills, field)
-			ignored = append(ignored, fmt.Sprintf("%q (expected an array of strings)", "skills."+field))
+			ignored = append(ignored, fmt.Sprintf("%q (expected an array of strings)", "skills."+field)) //perf:ok cold legacy skills migration, once per load
 			continue
 		}
 		kept := make([]any, 0, len(items))
@@ -1495,7 +1497,7 @@ func sanitizeSkillsObjectShape(raw map[string]any) []string {
 			}
 		}
 		if len(kept) != len(items) {
-			ignored = append(ignored, fmt.Sprintf("%q (an element of the wrong type)", "skills."+field))
+			ignored = append(ignored, fmt.Sprintf("%q (an element of the wrong type)", "skills."+field)) //perf:ok cold legacy skills migration, once per load
 			skills[field] = kept
 		}
 	}
