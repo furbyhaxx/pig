@@ -150,11 +150,11 @@ func TestPackedGoReloadAfterTreeNavigationAndAgentTurnsNeverHangs(t *testing.T) 
 
 	const rounds = 12
 	for round := range rounds {
-		if _, err := master.WriteString(fmt.Sprintf("round %d first\r", round)); err != nil {
+		if _, err := fmt.Fprintf(master, "round %d first\r", round); err != nil {
 			t.Fatal(err)
 		}
 		awaitReloadLogCount(t, logPath, "agent_end", round*3+1)
-		if _, err := master.WriteString(fmt.Sprintf("round %d second\r", round)); err != nil {
+		if _, err := fmt.Fprintf(master, "round %d second\r", round); err != nil {
 			t.Fatal(err)
 		}
 		awaitReloadLogCount(t, logPath, "agent_end", round*3+2)
@@ -167,7 +167,7 @@ func TestPackedGoReloadAfterTreeNavigationAndAgentTurnsNeverHangs(t *testing.T) 
 		if _, err := master.WriteString("\x1b[A\x1b[A\r"); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := master.WriteString(fmt.Sprintf("round %d after tree\r", round)); err != nil {
+		if _, err := fmt.Fprintf(master, "round %d after tree\r", round); err != nil {
 			t.Fatal(err)
 		}
 		awaitReloadLogCount(t, logPath, "agent_end", round*3+3)
