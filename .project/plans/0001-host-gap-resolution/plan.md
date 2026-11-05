@@ -5,9 +5,9 @@ document:
   title: "Resolve the Workbench host gaps"
   description: "Slices that implement SPEC-0002..SPEC-0010 after re-steering the fork (SPEC-0001 D7-D10), with tests, wire/SDK parity and docs per slice"
   status: "draft"
-  revision: 13
+  revision: 14
   created_at: "2026-11-04T15:05:00+01:00"
-  updated_at: "2026-11-05T15:40:00+01:00"
+  updated_at: "2026-11-05T14:25:00+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -50,6 +50,9 @@ document:
     - revision: 13
       reason: "S1.3 and S1.4 landed through delegated workers and were integrated"
       changes: ["replace the 1.3 and 1.4 rows with their real evidence", "record the S1.3 and S1.4 evidence sections", "record the two blockers found during integration: Node has no handler context, and the SDK bundles were stale"]
+    - revision: 14
+      reason: "Housekeeping: the three coverage gaps move from plan prose into B-0006"
+      changes: ["point the S1.3, S1.4, S1.5 and S1.6 coverage gaps at B-0006 instead of restating them"]
 ---
 
 # PLAN-0001 Resolve the Workbench host gaps
@@ -171,7 +174,7 @@ Done when: all S1 tests red-proven where they are bug fixes, `make check` passes
 - RPC-mode user prompts are not validated by this change: `PromptOptions.StreamingBehavior` still comes from CLI flags, and SPEC-0007 D3 names only the two extension calls. A `rpc.md` entry therefore was not added; `extensions.md` and `extension-api.md` carry the contract.
 - Verified: `go build ./...`, `go vet ./coding ./coding/extension`, the deliverAs and queue/custom-message/prompt selections in `./coding`, `cargo check --all-targets` in `extensions/sdk-rs` (pre-existing warnings only), Python parse of `pig_sdk/__init__.py`, `make lint-changed` (0 issues), `make changelog-check`, `make ci-drift`.
 - `make ci-contracts` passes its correspondence and Porter packages, then fails the Porter unit test that installs a failing repository-local `pre-commit` hook, because this host sets a global `core.hooksPath`. `make porter-check` passes all 26 tests with `GIT_CONFIG_GLOBAL=/dev/null`. Recorded in B-0004 as a host-configuration effect, not a defect of this change.
-- Not verified in this pass: no cross-SDK conformance row drives an unknown `deliverAs` through Node, Rust and Python processes. The rejection is proven at the Session boundary that every binding shares, not through each runtime. Record it as a conformance gap for S1.5 follow-up rather than a covered row.
+- Not verified in this pass: no cross-SDK conformance row drives an unknown `deliverAs` through Node, Rust and Python processes. The rejection is proven at the Session boundary that every binding shares, not through each runtime. Filed as B-0006 rather than claimed as a covered row.
 - Still open in S1: 1.7 (`skills.roots[]`) and the P29 agent-turn reproduction. 1.3, 1.4 and 1.6 landed (below). S2–S8 have not started.
 - Anchors for the next items: `events.cancel` (1.3) is the bus in `coding/extension/host/subprocess/event_bus.go`; the `nextTurn` leaf binding (1.4) is `agent.pendingNextTurn`.
 
@@ -184,7 +187,7 @@ Commits `f01e57c2e` (fix), `b9abc0da2` (changelog), `95e40703e` (docs). Implemen
 - Red → green, mutation-checked by me on the merged tree: restoring `context.WithoutCancel(ctx)` for every method turns `TestNativeEventBusCallerCancellationEndsListener/go/{isolated,shared-ok}` red after 240 s; the unmutated selection is green.
 - Node/TypeScript is a documented limit, not a gap: Pi's handler signature is `(data)`, so there is no context to end and JavaScript cannot preempt a running handler. SPEC-0004 D3 records it, the changelog says it, and the docs say it.
 - Docs: `extensions.md`, `extension-api.md` and the `pi.events` row of `extension-api-parity.md` now state the contract. `docs-drift` caught that `events.md` (added by 1.4) had no provenance classification and no navigation entry; `docs.json` gained both.
-- Not covered: the cross-SDK row cancels an emitting *command* request. Cancellation of an emit made inside a tool call that the user aborted is the same host path but has no row of its own.
+- Not covered: the cross-SDK row cancels an emitting *command* request. Cancellation of an emit made inside a tool call the user aborted is the same host path with a different parent and has no row (B-0006).
 
 ### S1.4 evidence: branch-bound `nextTurn` (05.11.2026)
 
@@ -193,7 +196,7 @@ Commits `ee8403488` (fix), `cb7bf2cff` (in-place slash forks), `8694de46c` (chan
 - A queued message records its session and leaf at queue time; navigation and every replacement path drop messages whose leaf is no longer current, including the in-place slash forks (`internal/codingagent`), and each drop emits `queued_message_discarded {customType, reason}` plus a `PIG_DEBUG` line.
 - Red → green, mutation-checked by me on the merged tree: removing the discard emission turns `TestNextTurnLeafBinding` red for the ordinary, errored and aborted history cases; the keep case (same leaf) still passes, which is what makes the discard meaningful rather than a blanket clear.
 - The extension event is typed (`extension.QueuedMessageDiscardedEvent`) and reached every SDK surface without a wire change, since it travels as an ordinary extension event.
-- Not covered: the interactive `--resume` picker path still has no end-to-end test (carried from S1.6).
+- Not covered: the interactive `--resume` picker path still has no end-to-end test (B-0006, carried from S1.6).
 
 ### Integration notes (05.11.2026)
 
@@ -222,7 +225,7 @@ pig --continue                 resume   true
 - Tests that pinned the old first event were rewritten to D2: `TestAgentSessionRuntimeKeepsTheSessionStartEventUpstream`, `TestRuntimeOriginalNewResumeEvents`, `TestRPCRunEmitsSessionStartOnce`.
 - Gates: `make generate`, `make lint-changed` (0 issues), `go vet`, `make changelog-check`, `make ci-drift` (port-lint baseline down by two `ctxbackground` entries, one cold `os.Stat` annotated for perf-lint). `make ci-contracts` fails only the known `porter-check` hook test (B-0004).
 - Environment note: `with-isolated-pig-home.sh` hid rustup, so Rust rows needed `RUSTUP_HOME` and `CARGO_HOME` exported by hand. Fixed in `ddcf654d8` (05.11.2026); the wrapper now runs Rust rows without a manual setup (B-0004).
-- Open: the `pig --resume` picker path was not driven end to end. It reaches the same `CreateAgentSessionRuntime` call with a selected existing file, so it should report `resume`, but no test exercises it. UNVERIFIED.
+- Open: the `pig --resume` picker path was not driven end to end. It reaches the same `CreateAgentSessionRuntime` call with a selected existing file, so it should report `resume`, but no test exercises it. UNVERIFIED (B-0006).
 
 ## S2 Model request pipeline (later)
 Goal: SPEC-0003 D1–D6. Key steps: move hooks into `ModelRuntime` (`coding/services.go`), `purpose`/`origin`, re-entrancy guard, fail-closed table, `block` result, phases, `extensions.hookTimeoutMs`, wire + SDKs, benchmark of the no-handler path. Docs: `extensions.md`, `extension-api.md`, `events.md`, `security.md`, `compaction.md`, `settings.md`.
