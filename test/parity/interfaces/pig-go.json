@@ -127009,6 +127009,17 @@
       "shapeHash": "sha256:596ad1669762afff527366e84cc1746c6fb6bfaedd741e5ced055e1fb45635c8"
     },
     {
+      "id": "go:github.com/MichaelKinsy/PiG/coding/extension/host/subprocess#Host.factoryMcpServers",
+      "package": "github.com/MichaelKinsy/PiG/coding/extension/host/subprocess",
+      "name": "Host.factoryMcpServers",
+      "kind": "function",
+      "exported": false,
+      "shape": {
+        "type": "func(me *managedExt) *github.com/MichaelKinsy/PiG/coding/extension.ExtensionRuntime"
+      },
+      "shapeHash": "sha256:ab7e68d253f37903dde7deec38106695f62dec02c45ffb8e70b19e762b6acb30"
+    },
+    {
       "id": "go:github.com/MichaelKinsy/PiG/coding/extension/host/subprocess#Host.fanOutStatePush",
       "package": "github.com/MichaelKinsy/PiG/coding/extension/host/subprocess",
       "name": "Host.fanOutStatePush",
@@ -127345,9 +127356,9 @@
       "kind": "function",
       "exported": false,
       "shape": {
-        "type": "func() (*CallResultPayload, error)"
+        "type": "func(me *managedExt) (*CallResultPayload, error)"
       },
-      "shapeHash": "sha256:964109981679f7d974c441bd243aacbb2788969c7eae6a4940ebada153ffb6d2"
+      "shapeHash": "sha256:9aea10770bae19c68330a6663ab19a3f09c328cde0d8a8ca1918dbc5f0ce6e0f"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/coding/extension/host/subprocess#Host.handleOAuthCallback",
