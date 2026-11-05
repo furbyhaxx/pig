@@ -5,9 +5,9 @@ document:
   title: "Personal PiG distribution"
   description: "Fork identity, upstream synchronization, versioning, release, update trust and agent-steering ownership of furbyhaxx/pig"
   status: "published"
-  revision: 4
+  revision: 5
   created_at: "2026-11-04T12:30:29+01:00"
-  updated_at: "2026-11-05T22:20:00+01:00"
+  updated_at: "2026-11-05T22:50:00+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -23,6 +23,9 @@ document:
     - revision: 4
       reason: "Verify native artifacts before publication (B-0001)"
       changes: ["split draft upload from publication", "add native linux-arm64, darwin-arm64 and windows-amd64 smoke jobs", "record the remaining cross-built targets"]
+    - revision: 5
+      reason: "Fork owns its community, conduct, support and security contacts (B-0002)"
+      changes: ["replace upstream owner, email, DCO and parity issue process with fork policy", "protect the community files with merge=ours"]
 ---
 
 # SPEC-0001 Personal PiG distribution
@@ -94,6 +97,11 @@ document:
 - A fork change that intentionally changes behavior one of them pins rewrites or deletes the affected test or scenario in the same change and cites the spec.
 - `divergence-guard` patterns are kept as engineering checks. Fork code fixes the smell; an intentional hit needs `// fork (SPEC-NNNN): <reason>`, accepted only when `.project/specs/NNNN-*.md` exists as a regular file and the reason is nonempty. Invalid markers remain findings and report an actionable problem.
 - Root `AGENTS.md` states this policy; child `AGENTS.md` files of the parity machinery apply only to maintaining it.
+
+### D11 Community and security contacts
+
+- The fork owns `.github/CODEOWNERS`, `SECURITY.md`, `CONTRIBUTING.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md`, `security-insights.yml`, the pull request template and its issue forms. They name `@furbyhaxx` and the fork's GitHub private reporting route, never an upstream maintainer, email or contribution process.
+- Upstream PiG's DCO sign-off, signed-commit requirement and parity issue form do not apply to this fork; external contributions are not accepted. The files join the `merge=ours` set in `.gitattributes` (D2).
 
 ## Consequences
 

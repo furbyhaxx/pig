@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 
 name: Bug report
-description: Report something PiG got wrong
+description: Report something this fork got wrong
 title: "bug: "
 labels:
   - bug
@@ -9,48 +9,33 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting. Only the first box is required, and pasting the error is enough. Everything else helps if you have it.
+        This is a personal fork; reports go to its owner, not to PiG or Pi.
         Do not report an undisclosed vulnerability here. Follow .github/SECURITY.md instead.
-        Do not include credentials, customer data, private configuration, or internal-only endpoints.
+        Do not include credentials, customer data, private configuration or internal-only endpoints.
   - type: textarea
     id: actual
     attributes:
-      label: What happened (an error message or a sentence is plenty)
-      description: Paste the error or describe what went wrong. `/bug` fills this in and attaches its report archive.
+      label: What happened
+      description: Paste the error or describe the wrong result.
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: PiG and upstream Pi versions
-      description: Output of `pig version`, if you have it.
+      label: Version
+      description: Output of `pig --version`, if you have it.
   - type: input
     id: platform
     attributes:
       label: Platform
-      description: Operating system, architecture, terminal and how you installed PiG, if you know them.
+      description: Operating system, architecture, terminal and installation method.
   - type: textarea
     id: reproduction
     attributes:
       label: Steps to reproduce
-      description: If you can make it happen again, how.
+      description: How to make it happen again.
   - type: textarea
     id: expected
     attributes:
       label: Expected result
-      description: What you expected instead, or what Pi does.
-  - type: textarea
-    id: upstream
-    attributes:
-      label: Upstream comparison
-      description: If you tried the same thing in Pi, what it did.
-  - type: textarea
-    id: divergence
-    attributes:
-      label: Divergence and parity evidence
-      description: Any related entry in docs/parity/DIVERGENCES.md or parity scenario. Leave empty if you don't know.
-  - type: textarea
-    id: boundaries
-    attributes:
-      label: Boundary and failure cases
-      description: Related invalid, empty, cancellation, persistence or error-path behavior.
+      description: What you expected instead.

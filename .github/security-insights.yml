@@ -2,55 +2,48 @@
 
 header:
   schema-version: 2.2.0
-  last-updated: '2026-09-17'
-  last-reviewed: '2026-09-17'
-  url: https://github.com/MichaelKinsy/PiG
-  comment: Security information for PiG, a Go implementation of Pi.
+  last-updated: '2026-11-05'
+  last-reviewed: '2026-11-05'
+  url: https://github.com/furbyhaxx/pig
+  comment: Security information for this personal PiG fork.
 
 project:
-  name: PiG
+  name: PiG (personal fork)
   administrators:
-    - name: Michael Kinsy
-      affiliation: PiG
+    - name: furbyhaxx
       primary: true
   documentation:
-    detailed-guide: https://github.com/MichaelKinsy/PiG/blob/main/.github/SECURITY.md
-    quickstart-guide: https://github.com/MichaelKinsy/PiG/blob/main/README.md
+    detailed-guide: https://github.com/furbyhaxx/pig/blob/main/.github/SECURITY.md
+    quickstart-guide: https://github.com/furbyhaxx/pig/blob/main/README.md
   repositories:
-    - name: PiG
-      url: https://github.com/MichaelKinsy/PiG
-      comment: Source, tests, documentation, and release evidence workflows.
+    - name: pig
+      url: https://github.com/furbyhaxx/pig
+      comment: Personal fork source, tests and release evidence.
   vulnerability-reporting:
     reports-accepted: true
     bug-bounty-available: false
-    policy: https://github.com/MichaelKinsy/PiG/blob/main/.github/SECURITY.md
-    contact:
-      name: Michael Kinsy
-      email: mrkinsy5@gmail.com
-      primary: true
+    policy: https://github.com/furbyhaxx/pig/blob/main/.github/SECURITY.md
 
 repository:
   status: active
-  url: https://github.com/MichaelKinsy/PiG
-  accepts-change-request: true
-  accepts-automated-change-request: true
+  url: https://github.com/furbyhaxx/pig
+  accepts-change-request: false
+  accepts-automated-change-request: false
   no-third-party-packages: false
   core-team:
-    - name: Michael Kinsy
-      affiliation: PiG
+    - name: furbyhaxx
       primary: true
   license:
-    url: https://github.com/MichaelKinsy/PiG/blob/main/LICENSE
+    url: https://github.com/furbyhaxx/pig/blob/main/LICENSE
     expression: MIT
   security:
     assessments:
       self:
-        comment: The repository threat model documents the current trust boundaries and controls.
+        comment: The fork threat model applies the PiG trust boundaries to this distribution.
   documentation:
-    contributing-guide: https://github.com/MichaelKinsy/PiG/blob/main/.github/CONTRIBUTING.md
-    governance: https://github.com/MichaelKinsy/PiG/blob/main/docs/project/GOVERNANCE.md
+    contributing-guide: https://github.com/furbyhaxx/pig/blob/main/.github/CONTRIBUTING.md
   release:
-    automated-pipeline: false
+    automated-pipeline: true
     distribution-points:
-      - uri: https://github.com/MichaelKinsy/PiG/releases
-        comment: No public release is available yet.
+      - uri: https://github.com/furbyhaxx/pig/releases
+        comment: Published fork releases.

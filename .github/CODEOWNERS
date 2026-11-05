@@ -1,28 +1,3 @@
 # SPDX-License-Identifier: MIT
 
-# The core committee in docs/project/MAINTAINERS.md reviews general source. A code owner
-# needs write access to this repository. Samarth Boranna joins this list once
-# a GitHub account is recorded in docs/project/MAINTAINERS.md.
-* @MichaelKinsy @adwaraki @Element115 @zekdevs @nicholas-recht
-
-# Keep governance, release, security, provenance, and parity controls under
-# review by the release authority and security-response owner.
-/.github/ @MichaelKinsy
-/AGENTS.md @MichaelKinsy
-/.github/CODE_OF_CONDUCT.md @MichaelKinsy
-/docs/project/CONTEXT.md @MichaelKinsy
-/docs/parity/DIVERGENCES.md @MichaelKinsy
-/docs/project/GOVERNANCE.md @MichaelKinsy
-/LICENSE @MichaelKinsy
-/docs/project/MAINTAINERS.md @MichaelKinsy
-/NOTICE @MichaelKinsy
-/docs/parity/PORT_MAP.md @MichaelKinsy
-/docs/project/PROVENANCE.md @MichaelKinsy
-/docs/project/RELEASING.md @MichaelKinsy
-/.github/SECURITY.md @MichaelKinsy
-/THIRD_PARTY_NOTICES.md @MichaelKinsy
-/docs/supply-chain.md @MichaelKinsy
-/docs/threat-model.md @MichaelKinsy
-/test/parity/ @MichaelKinsy
-/automation/ci/check-dco.sh @MichaelKinsy
-/automation/release/validate-sbom.py @MichaelKinsy
+* @furbyhaxx

@@ -33,3 +33,15 @@ test/parity/interfaces/*.json linguist-generated=true
 # Needs `git config merge.ours.driver true`. AGENTS.md files under testdata are fixtures and merge normally.
 AGENTS.md merge=ours
 **/testdata/**/AGENTS.md merge=text
+
+# Fork-owned community and security contacts stay on the fork side (SPEC-0001 D11).
+/.github/CODEOWNERS merge=ours
+/.github/SECURITY.md merge=ours
+/.github/CONTRIBUTING.md merge=ours
+/.github/SUPPORT.md merge=ours
+/.github/CODE_OF_CONDUCT.md merge=ours
+/.github/security-insights.yml merge=ours
+/.github/pull_request_template.md merge=ours
+/.github/ISSUE_TEMPLATE/bug.yml merge=ours
+/.github/ISSUE_TEMPLATE/feature.yml merge=ours
+/.github/ISSUE_TEMPLATE/parity.yml merge=ours

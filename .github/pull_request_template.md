@@ -2,72 +2,30 @@
 SPDX-License-Identifier: MIT
 -->
 
-Tracking: <issue URL or “No issue: <reason>”>
+Tracking: <issue URL or "No issue: <reason>">
 
 ## Problem and outcome
 
-Describe the user-visible problem and the required result. State what remains unchanged.
-
-## Upstream and divergence
-
-- Pinned upstream Pi version reviewed:
-- Upstream source files or behavior probes reviewed:
-- Observable contract exercised:
-- PiG behavior:
-  - [ ] Matches upstream Pi.
-  - [ ] Uses an existing numbered divergence: `D<number>`.
-  - [ ] Introduces a reviewed numbered divergence: `D<number>`.
-  - [ ] Is an additive feature outside parity-bound core.
-  - [ ] Not applicable. Explain why:
-
-Do not use a weaker parity comparator, skip, normalization, or coverage claim to hide a behavior difference.
+Describe the problem and the required result. State what remains unchanged.
 
 ## Changes
 
-List the concrete source, contract, documentation, dependency, and generated-file changes.
+List the source, contract, documentation, dependency and generated-file changes.
 
 ## Verification
 
-- Regression or contract test that fails without the change:
-- Invalid, empty, boundary, and error cases exercised:
-- Relevant parity scenarios and comparator strength:
+- Regression or contract test:
 - Commands and observable results:
+- `make check`:
+- Documentation and generated-file drift:
 
-Complete each applicable gate or explain why it does not apply:
+## Fork policy
 
-- [ ] `go test ./...`
-- [ ] `go vet ./...`
-- [ ] `make lint`
-- [ ] `make lint-scenarios`
-- [ ] `reuse lint`
-- [ ] `make check`
-- [ ] Shared paths are data-driven like Pi; no hard-coded provider/model choices; tested across provider shapes.
-- [ ] Relevant declared-run parity scenarios
-- [ ] Cross-platform build or native test
-- [ ] `make generate` and the resulting generated-file changes are committed.
-- [ ] Documentation and generated-file drift checks
-
-## Security, licensing, and provenance
-
-- [ ] No credential, customer data, private configuration, or internal-only endpoint is included.
-- [ ] New or changed dependencies have reviewed licenses and vulnerability results.
-- [ ] Copied, ported, generated, or vendored material has its source and license recorded.
-- [ ] SPDX declarations, `NOTICE`, third-party notices, and SBOM inputs are updated where required.
-- [ ] Workflow permissions remain least-privilege, and untrusted code cannot access release credentials.
-
-List any dependency, license, provenance, secret-scan, SBOM, or supply-chain impact:
-
-## Release and compatibility impact
-
-State any effect on public APIs, persisted formats, supported platforms, installation, updates, release artifacts, changelog, or documentation. State “None” only after checking these surfaces.
+- [ ] A deliberate behavior change cites its `.project/specs/` decision.
+- [ ] User docs and a `changelog.d/` fragment are updated for a user-facing change.
+- [ ] Generated files are committed and were not hand-edited.
+- [ ] No credentials, private data or unrelated changes are included.
 
 ## Risk and rollback
 
-Describe what can fail and how to return to the previous state without losing user data or release evidence.
-
-## Contributor declaration
-
-- [ ] I understand and reviewed any agent-assisted material in this submission.
-- [ ] Every commit includes a Developer Certificate of Origin `Signed-off-by` line.
-- [ ] Every commit has a cryptographic signature that GitHub marks **Verified** (separate from DCO sign-off; see `.github/CONTRIBUTING.md`).
-- [ ] This contribution is submitted under the repository license and preserves third-party terms.
+Describe what can fail and how to return to the previous state.

@@ -31,29 +31,25 @@ Examples of unacceptable behavior include:
 
 ## Enforcement Responsibilities
 
-Community leaders are responsible for clarifying and enforcing our standards of acceptable behavior and will take appropriate and fair corrective action in response to any behavior that they deem inappropriate, threatening, offensive, or harmful.
-
-Community leaders have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct, and will communicate reasons for moderation decisions when appropriate.
+The repository owner clarifies and enforces these standards and takes appropriate and fair corrective action in response to behavior that they deem inappropriate, threatening, offensive, or harmful. The owner may remove, edit or reject comments, commits, code, wiki edits, issues and other contributions that are not aligned to this Code of Conduct, and will communicate reasons for moderation decisions when appropriate.
 
 ## Scope
 
-This Code of Conduct applies within all community spaces, and also applies when an individual is officially representing the community in public spaces. Examples of representing our community include using an official email address, posting through an official social media account, or acting as an appointed representative at an online or offline event.
+This Code of Conduct applies within all community spaces, and also applies when an individual is officially representing the community in public spaces.
 
 ## Enforcement
 
-Report abusive, harassing, or otherwise unacceptable behavior privately to Michael Kinsy at `mrkinsy5@gmail.com`. Do not report conduct incidents in a public issue.
-
-Community leaders respect the privacy and security of each reporter. Community leaders review each complaint and determine an appropriate response based on the available information.
+Report abusive, harassing or otherwise unacceptable behavior privately to the repository owner through GitHub. Do not report conduct incidents in a public issue. The owner respects the privacy and security of each reporter and reviews each complaint based on the available information.
 
 ## Enforcement Guidelines
 
-Community leaders will follow these Community Impact Guidelines in determining the consequences for any action they deem in violation of this Code of Conduct:
+The repository owner follows these Community Impact Guidelines in determining the consequences of any action they deem in violation of this Code of Conduct:
 
 ### 1. Correction
 
 **Community Impact**: Use of inappropriate language or other behavior deemed unprofessional or unwelcome in the community.
 
-**Consequence**: A private, written warning from community leaders, providing clarity around the nature of the violation and an explanation of why the behavior was inappropriate. A public apology may be requested.
+**Consequence**: A private, written warning, providing clarity around the nature of the violation and an explanation of why the behavior was inappropriate. A public apology may be requested.
 
 ### 2. Warning
 
@@ -65,7 +61,7 @@ Community leaders will follow these Community Impact Guidelines in determining t
 
 **Community Impact**: A serious violation of community standards, including sustained inappropriate behavior.
 
-**Consequence**: A temporary ban from any sort of interaction or public communication with the community for a specified period of time. No public or private interaction with the people involved, including unsolicited interaction with those enforcing the Code of Conduct, is allowed during this period. Violating these terms may lead to a permanent ban.
+**Consequence**: A temporary ban from any sort of interaction or public communication with the community for a specified period of time. No public or private interaction with the people involved is allowed during this period. Violating these terms may lead to a permanent ban.
 
 ### 4. Permanent Ban
 
@@ -79,7 +75,7 @@ This Code of Conduct is adapted from the [Contributor Covenant][homepage], versi
 
 Community Impact Guidelines were inspired by [Mozilla's code of conduct enforcement ladder][Mozilla CoC].
 
-For answers to common questions about this code of conduct, see the [Contributor Covenant FAQ][FAQ]. Translations are available from the [Contributor Covenant translations page][translations].
+For answers to common questions about this code of conduct, see the [Contributor Covenant FAQ][FAQ]. Translations are available at the [Contributor Covenant translations page][translations].
 
 [homepage]: https://www.contributor-covenant.org
 [v2.1]: https://www.contributor-covenant.org/version/2/1/code_of_conduct.html
