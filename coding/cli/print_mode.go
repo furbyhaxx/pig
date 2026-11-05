@@ -440,7 +440,7 @@ func runPrintModeIn(ctx context.Context, rt *coding.Runtime, opts printModeOptio
 		// Drive the extension session lifecycle so extensions that initialize on
 		// session_start (and clean up on session_shutdown) run in print mode too,
 		// not only interactive. The Session emits session_start, extends its resource loader with what resources_discover returns and rebuilds its system prompt from the loader (agent-session.ts bindExtensions).
-		if err := session.EmitSessionStartEvent(event); err != nil {
+		if err := session.EmitSessionStartEvent(ctx, event); err != nil {
 			return err
 		}
 		// print-mode.ts:76-108 subscribes the writer after `await session.bindExtensions()`, so what a session_start handler emitted (events, entry_appended) is not written. A reload keeps the writer subscribed.

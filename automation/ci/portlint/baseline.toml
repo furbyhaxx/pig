@@ -6064,18 +6064,6 @@ snippet = "complete, err := s.beginModelChangeWithThinking(context.Background(),
 [[hit]]
 check = "ctxbackground"
 file = "coding/session.go"
-func = "Session.EmitSessionStartTransition"
-snippet = "_, _ = runner.Emit(context.Background(), extension.SessionStartEvent{"
-
-[[hit]]
-check = "ctxbackground"
-file = "coding/session.go"
-func = "Session.EmitSessionStartTransition"
-snippet = "return s.extendResourcesFromExtensions(context.Background(), reason)"
-
-[[hit]]
-check = "ctxbackground"
-file = "coding/session.go"
 func = "Session.EmitSessionShutdownTransition"
 snippet = "_, _ = runner.Emit(context.Background(), extension.SessionShutdownEvent{"
 

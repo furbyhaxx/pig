@@ -73786,9 +73786,9 @@
       "kind": "function",
       "exported": true,
       "shape": {
-        "type": "func(event github.com/MichaelKinsy/PiG/coding/extension.SessionStartEvent) error"
+        "type": "func(ctx context.Context, event github.com/MichaelKinsy/PiG/coding/extension.SessionStartEvent) error"
       },
-      "shapeHash": "sha256:2df05faafe9e010aed893bd0e2bcdf3142717d70869a72ce2db97bf99f11a458"
+      "shapeHash": "sha256:0a99b9ca7ef032b35549e9a3da7eaa3cce6097cc01ae03aa2a8cea4a574e6486"
     },
     {
       "id": "go:github.com/MichaelKinsy/PiG/coding#Session.EmitSessionStartTransition",

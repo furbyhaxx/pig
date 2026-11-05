@@ -1455,22 +1455,23 @@ func (s *Session) EmitSessionStart(reason string) error {
 
 // EmitSessionStartTransition dispatches session_start with the replaced Session's previous file when a runtime host changes Sessions, then extends the Session's resource loader with what resources_discover returns. A discovery error returns to the caller, as bindExtensions rejects with it (agent-session.ts:3207).
 func (s *Session) EmitSessionStartTransition(reason, previousSessionFile string) error {
-	return s.EmitSessionStartEvent(extension.SessionStartEvent{Reason: reason, PreviousSessionFile: previousSessionFile})
+	//portlint:allow ctxbackground the context-free SDK entry point has no caller signal; modes call EmitSessionStartEvent with theirs
+	return s.EmitSessionStartEvent(context.Background(), extension.SessionStartEvent{Reason: reason, PreviousSessionFile: previousSessionFile})
 }
 
-// EmitSessionStartEvent is EmitSessionStartTransition for a complete event, so a mode forwards every member of the event the Runtime chose, initial included. Its type is always session_start.
-func (s *Session) EmitSessionStartEvent(event extension.SessionStartEvent) error {
+// EmitSessionStartEvent is EmitSessionStartTransition for a complete event, so a mode forwards every member of the event the Runtime chose, initial included. Its type is always session_start. ctx bounds the handlers and resource discovery.
+func (s *Session) EmitSessionStartEvent(ctx context.Context, event extension.SessionStartEvent) error {
 	runner := s.currentRunner()
 	if runner == nil {
 		return nil
 	}
 	event.Type = icodingagent.EventSessionStart
 	if runner.HasHandlers(icodingagent.EventSessionStart) {
-		_, _ = runner.Emit(context.Background(), event)
+		_, _ = runner.Emit(ctx, event)
 	}
 	// upstream: agent-session.ts:3207 (bindExtensions)
 	runner.ReportUnhandledMcpServers()
-	return s.extendResourcesFromExtensions(context.Background(), event.Reason)
+	return s.extendResourcesFromExtensions(ctx, event.Reason)
 }
 
 // EmitSessionShutdown dispatches a session_shutdown event to extension handlers.

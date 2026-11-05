@@ -257,7 +257,7 @@ func (h *rpcHost) bind(ctx context.Context, session *coding.Session, event exten
 func (h *rpcHost) announce(ctx context.Context, session *coding.Session, st *rpcModeSession, event extension.SessionStartEvent) error {
 	runner := session.ExtensionRunner()
 	// The Session emits session_start, extends its resource loader with what resources_discover returns and rebuilds its system prompt from the loader (agent-session.ts bindExtensions).
-	if err := session.EmitSessionStartEvent(event); err != nil {
+	if err := session.EmitSessionStartEvent(ctx, event); err != nil {
 		return err
 	}
 	catalog := st.Catalog
