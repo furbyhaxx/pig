@@ -220,8 +220,11 @@ func TestAgentSessionRuntimeKeepsTheSessionStartEventUpstream(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() { _ = runtime.Close() })
-		if got := runtime.Session().StartEvent(); got != resume {
-			t.Fatalf("session_start = %+v, want the Session's own %+v", got, resume)
+		// SPEC-0007 D2: the Runtime's first session_start keeps the Session's event and marks it initial.
+		want := resume
+		want.Initial = true
+		if got := runtime.Session().StartEvent(); got != want {
+			t.Fatalf("session_start = %+v, want the Session's own %+v marked initial", got, want)
 		}
 	})
 	t.Run("createAgentSessionRuntime", func(t *testing.T) {
@@ -242,8 +245,10 @@ func TestAgentSessionRuntimeKeepsTheSessionStartEventUpstream(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() { _ = runtime.Close() })
-		if got := runtime.Session().StartEvent(); got != resume {
-			t.Fatalf("session_start = %+v, want options.sessionStartEvent %+v", got, resume)
+		want := resume
+		want.Initial = true
+		if got := runtime.Session().StartEvent(); got != want {
+			t.Fatalf("session_start = %+v, want options.sessionStartEvent %+v marked initial", got, want)
 		}
 	})
 }

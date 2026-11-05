@@ -74,6 +74,8 @@ type printModeRuntime struct {
 	Session     coding.SessionStartOptions
 	ResumePath  string
 	SessionName string
+	// StartEvent is the first Session's session_start event; nil keeps the startup default.
+	StartEvent *extension.SessionStartEvent
 	// ToolRegistryAllowed and ToolRegistryExcluded bound the tool registry
 	// pi.getAllTools() reports (see toolRegistryFilters).
 	ToolRegistryAllowed  map[string]struct{}
@@ -145,7 +147,7 @@ func startPrintMode(ctx context.Context, host printModeRuntime, opts printModeOp
 		}
 	}
 	rt, err := coding.CreateAgentSessionRuntime(ctx, factory.Factory(), coding.CreateAgentSessionRuntimeOptions{
-		CWD: host.Services.CWD(), AgentDir: host.Services.AgentDir(), SessionManager: manager,
+		CWD: host.Services.CWD(), AgentDir: host.Services.AgentDir(), SessionManager: manager, SessionStartEvent: host.StartEvent,
 	})
 	if err != nil {
 		return 1, fmt.Errorf("construct session: %w", err)
@@ -438,7 +440,7 @@ func runPrintModeIn(ctx context.Context, rt *coding.Runtime, opts printModeOptio
 		// Drive the extension session lifecycle so extensions that initialize on
 		// session_start (and clean up on session_shutdown) run in print mode too,
 		// not only interactive. The Session emits session_start, extends its resource loader with what resources_discover returns and rebuilds its system prompt from the loader (agent-session.ts bindExtensions).
-		if err := session.EmitSessionStartTransition(event.Reason, event.PreviousSessionFile); err != nil {
+		if err := session.EmitSessionStartEvent(event); err != nil {
 			return err
 		}
 		// print-mode.ts:76-108 subscribes the writer after `await session.bindExtensions()`, so what a session_start handler emitted (events, entry_appended) is not written. A reload keeps the writer subscribed.

@@ -34,6 +34,8 @@ func TestConformance_EventPayloadsReachEverySDKUnchanged(t *testing.T) {
 	}{
 		{"session_start", genericEmit(extension.SessionStartEvent{Type: "session_start", Reason: "fork", PreviousSessionFile: "/prev.jsonl"}),
 			`{"type":"session_start","reason":"fork","previousSessionFile":"/prev.jsonl"}`},
+		{"session_start", genericEmit(extension.SessionStartEvent{Type: "session_start", Reason: "resume", Initial: true}),
+			`{"type":"session_start","reason":"resume","initial":true}`},
 		{"session_tree", genericEmit(extension.SessionTreeEvent{Type: "session_tree", NewLeafID: new("n1"), OldLeafID: nil, SummaryEntry: summaryEntry, FromExtension: true}),
 			`{"type":"session_tree","newLeafId":"n1","oldLeafId":null,"summaryEntry":{"type":"branch_summary","id":"s1","parentId":"n0","timestamp":"2026-01-01T00:00:00.000Z","fromId":"o1","summary":"branch summary","fromHook":true},"fromExtension":true}`},
 		{"thinking_level_select", genericEmit(extension.ThinkingLevelSelectEvent{Type: "thinking_level_select", Level: ai.ThinkingHigh, PreviousLevel: ai.ThinkingLow}),

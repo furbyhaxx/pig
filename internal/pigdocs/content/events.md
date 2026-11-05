@@ -47,6 +47,8 @@ The Go SDK exposes helpers for common events:
 | `OnEvent("session_compact_failed", handler)` | `session_compact_failed` |
 | `OnEvent(name, handler)` | any named event |
 
+`session_start` carries `reason` (`startup`, `resume`, `new`, `fork`, `reload`) and `initial: true` on the first Session of a run. A launch with `--continue`, `--resume`, or `--session` naming an existing file reports `resume`; a new Session at launch reports `startup`. Replacements and reloads omit `initial`. An SDK program gets `initial` on the first `session_start` of each `AgentSessionRuntime` (SPEC-0007 D2).
+
 The lower-level event bridge also emits agent, turn, message, tool-execution,
 input, model-selection, and session lifecycle events. The
 `session_info_changed` event contains the effective Session name. Its `name`

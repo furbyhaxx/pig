@@ -169,6 +169,20 @@ flowchart TD
 | Run notification work after automatic processing has stopped | `agent_settled` |
 | Initialize or release session-scoped resources | `session_start`, `session_shutdown` |
 
+`session_start` carries `reason` and, for the first Session of a run, `initial: true`:
+
+| Start | `reason` | `initial` |
+|---|---|---|
+| new Session at launch | `startup` | `true` |
+| `--continue`, `--resume`, or `--session` naming an existing file | `resume` | `true` |
+| `--fork` at launch | `startup` | `true` |
+| `/new`, `ctx.newSession()`, RPC `new_session` | `new` | absent |
+| `/resume`, `ctx.switchSession()`, RPC `switch_session` | `resume` | absent |
+| `/fork`, `/clone`, `ctx.fork()` | `fork` | absent |
+| `/reload`, `ctx.reload()` | `reload` | absent |
+
+Use `initial` for work that runs once per launch, and `reason` to tell a continued conversation from a fresh one. An SDK program receives `initial` on the first `session_start` of each `AgentSessionRuntime` it creates. Pi reports `startup` for a continued Session and has no `initial` field (SPEC-0007 D2).
+
 <a id="agent_start--agent_end--agent_before_settle--agent_settled"></a>
 
 Use `agent_before_settle` when an extension must append entries or request one final continuation. Use `agent_settled` for notification-only work that should run after Pi has no automatic continuation remaining.

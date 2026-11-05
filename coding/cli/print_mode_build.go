@@ -17,6 +17,8 @@ type printStartup struct {
 	NoSession   bool
 	SessionID   string
 	CWDOverride *string
+	// StartEvent is the first Session's session_start event; nil keeps the startup default.
+	StartEvent *extension.SessionStartEvent
 }
 
 // printHost builds print and JSON mode's runtime inputs from a build; owner is the process context the extension processes a reload starts live under. A replacement Session rebuilds through the same builder for its destination cwd.
@@ -64,6 +66,7 @@ func (b *cliRuntimeBuilder) printHost(owner context.Context, build *cliBuild, st
 		host.Session.CWDOverride = startup.CWDOverride
 		host.ResumePath = startup.ResumePath
 		host.SessionName = startup.SessionName
+		host.StartEvent = startup.StartEvent
 	}
 	host.Rebuild = func(ctx context.Context, options coding.CreateAgentSessionRuntimeOptions) (printModeRuntime, error) {
 		next, err := b.rebuild(ctx, options)

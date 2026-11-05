@@ -72,13 +72,13 @@ func TestRPCRunEmitsSessionStartOnce(t *testing.T) {
 			return true
 		}
 		selector, ok := call.Fun.(*ast.SelectorExpr)
-		if ok && selector.Sel.Name == "EmitSessionStartTransition" {
+		if ok && selector.Sel.Name == "EmitSessionStartEvent" {
 			count++
 		}
 		return true
 	})
 	if count != 1 {
-		t.Fatalf("rpc_mode_runtime.go contains %d EmitSessionStartTransition calls, want the one rebind announcement", count)
+		t.Fatalf("rpc_mode_runtime.go contains %d EmitSessionStartEvent calls, want the one rebind announcement", count)
 	}
 	rpc, err := parser.ParseFile(token.NewFileSet(), "rpc_mode.go", nil, 0)
 	if err != nil {

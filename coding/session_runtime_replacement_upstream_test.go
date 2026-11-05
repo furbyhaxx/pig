@@ -193,8 +193,8 @@ func TestRuntimeOriginalNewResumeEvents(t *testing.T) {
 	recordRuntimeOriginal(t, 249)
 	var events []any
 	h := newRuntimeTestHarness(t, runtimeTestOptions{extension: func() extension.Extension { return runtimeEventRecorder(&events, nil, nil) }})
-	if !reflect.DeepEqual(events, []any{extension.SessionStartEvent{Type: "session_start", Reason: "startup"}}) {
-		t.Fatalf("startup=%#v", events)
+	if !reflect.DeepEqual(events, []any{extension.SessionStartEvent{Type: "session_start", Reason: "startup", Initial: true}}) {
+		t.Fatalf("startup=%#v (SPEC-0007 D2: the Runtime's first session_start is initial)", events)
 	}
 	events = nil
 	runtimePrompt(t, h.runtime, "hello")

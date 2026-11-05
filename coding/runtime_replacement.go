@@ -85,13 +85,11 @@ func NewAgentSessionRuntime(ctx context.Context, session *Session, services *Age
 		extCtx:      &icodingagent.ExtensionContext{CWD: services.CWD(), AbortSignal: abortCtx, AbortFunc: abort},
 	}
 	result := CreateAgentSessionRuntimeResult{Session: session, Services: services, ExtensionsResult: session.ResourceLoader().GetExtensions(), Diagnostics: diagnostics, ModelFallbackMessage: modelFallbackMessage}
-	var event *extension.SessionStartEvent
-	if session.sessionStartEvent.Type != "" {
-		// The Session keeps the start event it was constructed with. Copy it: applyRuntime resets the Session's field before it reads event.
-		kept := session.sessionStartEvent
-		event = &kept
-	}
-	if err := runtime.applyRuntime(result, event); err != nil {
+	// The Session keeps the start event it was constructed with. Copy it: applyRuntime resets the Session's field before it reads event.
+	event := session.StartEvent()
+	// fork (SPEC-0007): the first session_start of a Runtime is its initial one; replacements build their own event without it.
+	event.Initial = true
+	if err := runtime.applyRuntime(result, &event); err != nil {
 		abort()
 		return nil, err
 	}

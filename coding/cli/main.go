@@ -1263,7 +1263,7 @@ func Main(args []string, options *MainOptions) {
 		timings.PrintTimings()
 		startAutomaticExtensionCacheGC(ctx)
 		exitProcess(runRPCMode(ctx, flags, activePiglet, rpcModeResources{
-			Builder: builder, Build: build, SessionManager: startupSession.manager, ResumePath: resumePath,
+			Builder: builder, Build: build, SessionManager: startupSession.manager, ResumePath: resumePath, StartEvent: startupSession.startEvent(),
 		}))
 	}
 
@@ -1294,6 +1294,7 @@ func Main(args []string, options *MainOptions) {
 		host := builder.printHost(ctx, build, &printStartup{
 			Manager: startupSession.manager, ResumePath: printResumePath, SessionName: sessionName,
 			SessionDir: sessionDir, NoSession: flags.NoSession, SessionID: flags.SessionID, CWDOverride: flags.sessionCwdOverride,
+			StartEvent: startupSession.startEvent(),
 		})
 		timings.PrintTimings()
 		startAutomaticExtensionCacheGC(ctx)
@@ -1350,7 +1351,7 @@ func Main(args []string, options *MainOptions) {
 		}
 	}
 	rt, err := coding.CreateAgentSessionRuntime(ctx, sessionFactory.Factory(), coding.CreateAgentSessionRuntimeOptions{
-		CWD: cwd, AgentDir: agentDir, SessionManager: startManager,
+		CWD: cwd, AgentDir: agentDir, SessionManager: startManager, SessionStartEvent: startupSession.startEvent(),
 	})
 	if err != nil {
 		printCLIError("construct session: %v", err)
@@ -1435,6 +1436,7 @@ func Main(args []string, options *MainOptions) {
 		ContextFiles:               projectCtxFiles,
 		SystemPromptSourcePaths:    resolvedPrompts.sourcePaths,
 		SessionHandle:              codingSess,
+		SessionStartEvent:          new(codingSess.StartEvent()),
 		ResumePath:                 displayResumePath,
 		ModelBuilder: func(spec string) (*ai.Model, error) {
 			return coding.BuildModel(spec, services)

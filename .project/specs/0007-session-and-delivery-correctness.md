@@ -5,15 +5,18 @@ document:
   title: "Session and delivery correctness"
   description: "Queued nextTurn messages bound to their branch, resume reason for continued sessions, strict deliverAs, deduplicated session listing, lighter listing payloads, custom data in branch projections and an explicit no-op compaction result"
   status: "draft"
-  revision: 1
+  revision: 2
   created_at: "2026-11-04T14:52:00+01:00"
-  updated_at: "2026-11-04T14:52:00+01:00"
+  updated_at: "2026-11-05T00:20:00+01:00"
   created_by: "orchestrator"
-  updated_by: "orchestrator"
+  updated_by: "coding-agent"
   changelog:
     - revision: 1
       reason: "Resolve U-08, U-17, U-18, U-21 and the session minor items of the host-gap verification"
       changes: ["document creation"]
+    - revision: 2
+      reason: "Owner decided the initial flag is Runtime-scoped; implement D2 and D3"
+      changes: ["D2 initial marks the first session_start of a Runtime, not of the OS process", "D2 record where resume is decided and how every mode receives it", "D3 record the shared validation boundary"]
 ---
 
 # SPEC-0007 Session and delivery correctness
@@ -28,12 +31,14 @@ Resolves U-08, U-17, U-18, U-21 and the `GetBranch`, `allMessagesText` and "Noth
 
 ## D2 Resume reason (U-17)
 
-- Process start with an existing session (`--continue`, `--resume`, `--session <file>`) reports `session_start.reason = "resume"`; a fresh session at process start reports `startup`.
-- New field `initial: true` on the first `session_start` of the process, for extensions that need "process just started".
+- Process start with an existing session (`--continue`, `--resume`, `--session <file>` naming an existing file) reports `session_start.reason = "resume"`; a fresh session at process start reports `startup`. `--fork` at launch creates a new log and stays `startup`.
+- New field `initial: true` on the first `session_start` of a `Runtime`; replacements and reloads omit it. In the CLI one process owns one Runtime, so this is "process just started". An SDK program that creates several Runtimes sees `initial` once per Runtime. Owner decision 04.11.2026: a package-level once-flag would match "process" literally but is a hidden global that makes event tests order-dependent; a CLI-only marker would give embedders a different contract for the same event.
+- The CLI decides `resume` when it selects the startup Session, before anything can create the file, and passes the event to `CreateAgentSessionRuntime`; `NewAgentSessionRuntime` marks it `initial`. Print, JSON and RPC forward the whole event (`Session.EmitSessionStartEvent`); interactive mode receives it through `InteractiveOptions.SessionStartEvent`.
+- Evidence: `TestRuntimeMarksOnlyItsFirstSessionStartInitial`, `TestSessionStartReportsResumeAndInitialAtProcessStart` (print and RPC), `TestInteractiveSessionStartReportsResumeAndInitial`, each red before the change; the payload row in `TestConformance_EventPayloadsReachEverySDKUnchanged` carries `initial` to Go, Node, Rust and Python, isolated, packed and fused.
 
 ## D3 Strict `deliverAs` (U-18)
 
-- The host rejects an unknown `deliverAs` with an error on the `sendMessage`/`sendUserMessage` call.
+- The host rejects an unknown `deliverAs` with an error on the `sendMessage`/`sendUserMessage` call. One validation at the Session actions (`extension.ValidateDeliverAs`) serves every binding; `sendUserMessage` also rejects `nextTurn`.
 - SDKs expose typed constants (`DeliverSteer`, `DeliverFollowUp`, `DeliverNextTurn`).
 
 ## D4 Session listing (U-21, `allMessagesText`)

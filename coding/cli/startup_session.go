@@ -15,6 +15,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/MichaelKinsy/PiG/coding"
+	"github.com/MichaelKinsy/PiG/coding/extension"
 	"github.com/MichaelKinsy/PiG/internal/codingagent"
 	"github.com/MichaelKinsy/PiG/internal/nodepath"
 	"github.com/MichaelKinsy/PiG/internal/nodeurl"
@@ -28,6 +29,16 @@ type startupSessionSelection struct {
 	missingCWD   *missingSessionCWD
 	crossProject *crossProjectSession
 	manager      *coding.SessionManager
+	// resumesExisting reports that resumePath named a log that existed when the selection was made, before anything could create it.
+	resumesExisting bool
+}
+
+// startEvent is the session_start event of the process's first Session: reason resume when it continues an existing log, nil to keep the startup default (SPEC-0007 D2). A forked startup creates a new log and stays startup.
+func (s startupSessionSelection) startEvent() *extension.SessionStartEvent {
+	if !s.resumesExisting {
+		return nil
+	}
+	return &extension.SessionStartEvent{Type: "session_start", Reason: "resume"}
 }
 
 // applyName writes startup metadata before model validation. New Sessions carry the name to the mode that constructs them.
@@ -185,6 +196,11 @@ func resolveStartupSessionSelectionIn(flags Args, launchCWD, sessionDir string) 
 		}
 	}
 
+	if selection.resumePath != "" {
+		if info, err := os.Stat(selection.resumePath); err == nil && info.Mode().IsRegular() {
+			selection.resumesExisting = true
+		}
+	}
 	path := selection.resumePath
 	if selection.forkPath != "" {
 		path = selection.forkPath

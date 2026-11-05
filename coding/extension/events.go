@@ -73,6 +73,8 @@ type SessionStartEvent struct {
 	Type                string `json:"type"`
 	Reason              string `json:"reason"` // "startup" | "reload" | "new" | "resume" | "fork"
 	PreviousSessionFile string `json:"previousSessionFile,omitempty"`
+	// Initial marks the first session_start of a Runtime: the Session the process started with, whether fresh or resumed. Replacements and reloads leave it false (SPEC-0007 D2).
+	Initial bool `json:"initial,omitempty"`
 }
 
 // SessionInfoChangedEvent: upstream types.ts SessionInfoChangedEvent

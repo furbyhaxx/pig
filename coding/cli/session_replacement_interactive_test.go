@@ -50,17 +50,22 @@ func startInteractivePig(t *testing.T) *interactivePig {
 	return startInteractivePigWith(t, sessionReplaceFixture(t))
 }
 
-func startInteractivePigWith(t *testing.T, fixture string) *interactivePig {
+func startInteractivePigWith(t *testing.T, fixture string, args ...string) *interactivePig {
+	t.Helper()
+	// The home holds the Session cwds the resume picker prints; a t.TempDir name repeats the test name and, under a nested TMPDIR, pushes the Session name out of the 140-column picker.
+	return startInteractivePigIn(t, &interactivePig{t: t, log: filepath.Join(t.TempDir(), "replace.log"), output: &ptyOutput{}, home: shortTempDir(t), dir: t.TempDir()}, fixture, args...)
+}
+
+// startInteractivePigIn starts pig in p's home and directory, so a test can seed Sessions there first.
+func startInteractivePigIn(t *testing.T, p *interactivePig, fixture string, args ...string) *interactivePig {
 	t.Helper()
 	binary := buildPigBinaryForSignalTest(t)
-	// The home holds the Session cwds the resume picker prints; a t.TempDir name repeats the test name and, under a nested TMPDIR, pushes the Session name out of the 140-column picker.
-	p := &interactivePig{t: t, log: filepath.Join(t.TempDir(), "replace.log"), output: &ptyOutput{}, home: shortTempDir(t), dir: t.TempDir()}
 	home := p.home
 	seedFirstRunDone(t, filepath.Join(home, "agent"))
 	master, slave := openPTY(t, 40, 140)
 	p.master = master
 	t.Cleanup(func() { _ = master.Close() })
-	cmd := exec.Command(binary, "--model", "test-faux/faux-1", "-e", fixture, "--session-dir", filepath.Join(home, "sessions"))
+	cmd := exec.Command(binary, append([]string{"--model", "test-faux/faux-1", "-e", fixture, "--session-dir", filepath.Join(home, "sessions")}, args...)...)
 	cmd.Dir = p.dir
 	cmd.Env = append(os.Environ(), "PIG_HOME="+home, "PIG_CODING_AGENT_DIR="+filepath.Join(home, "agent"),
 		"PIG_TEST_FAUX=1", "PIG_TEST_FAUX_SCENARIO=parity-basic", "PIG_TEST_REPLACE_LOG="+p.log, "TERM=xterm-256color")

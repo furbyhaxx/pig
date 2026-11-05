@@ -78,6 +78,8 @@ type rpcModeResources struct {
 	// SessionManager is the startup Session log, or nil to start a new one.
 	SessionManager *coding.SessionManager
 	ResumePath     string
+	// StartEvent is the first Session's session_start event; nil keeps the startup default.
+	StartEvent *extension.SessionStartEvent
 }
 
 type headlessCommandRunner interface {
@@ -327,7 +329,7 @@ func runRPCMode(ctx context.Context, flags Args, activePiglet *piglet.Piglet, re
 		}
 	}
 	rt, err := coding.CreateAgentSessionRuntime(ctx, factory.Factory(), coding.CreateAgentSessionRuntimeOptions{
-		CWD: initial.CWD, AgentDir: initial.Services.AgentDir(), SessionManager: manager,
+		CWD: initial.CWD, AgentDir: initial.Services.AgentDir(), SessionManager: manager, SessionStartEvent: resources.StartEvent,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "pig --rpc: session: %v\n", err)
