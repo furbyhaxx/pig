@@ -18169,6 +18169,28 @@
       ]
     },
     {
+      "id": "BF-838c5d6",
+      "title": "A retained packed process now has one watcher for its lifetime instead of one per reload, and a crash is…",
+      "symptom": "A retained packed process now has one watcher for its lifetime instead of one per reload, and a crash is attributed to the current generation.",
+      "rootCause": "A retained admission created a packedProcessState and watcher per reload; 200 reloads left 201 watched states. One watcher now belongs to the process share, and the share's atomic current state supplies crash attribution for the live generation. Publishing a generation also advances packedCellActiveGeneration so node recovery is not rejected as stale.",
+      "rootCauseSource": "commit",
+      "userImpact": "Crash, hang or runaway process",
+      "platform": "All platforms",
+      "class": "own",
+      "fixedIn": "Unreleased",
+      "releaseNote": "A retained packed process now has one watcher for its lifetime instead of one per reload, and a crash is attributed to the current generation. 200 reloads leave one watched state rather than 201.",
+      "origin": "release note",
+      "commits": [
+        {
+          "hash": "838c5d6520",
+          "date": "2026-11-05"
+        }
+      ],
+      "tests": [
+        "coding/extension/host/subprocess/reload_generation_test.go::TestPackedGoReloadLoopNeverHangs"
+      ]
+    },
+    {
       "id": "BF-83d5488",
       "title": "`pig install \u003cdir\u003e` of a local directory with no package manifest and no `extensions/`, `skills/`, `prompts/`…",
       "symptom": "Previously Pig recorded the Package and loaded nothing from it.",

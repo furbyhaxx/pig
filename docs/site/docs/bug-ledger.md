@@ -622,6 +622,7 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 | [BF-8241433](#bf-8241433) | A Mistral stream chunk with a member of an unexpected type is read as Pi's JavaScript reads it instead of… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-82ca8da](#bf-82ca8da) | On Windows, the host reports the load error of a Node extension that exits right after it sends the error | PiG's own defect | Windows | Unreleased |
 | [BF-82d1808](#bf-82d1808) | Subprocess extensions no longer slow down each streamed token in long sessions: the state sent before each… | PiG's own defect | All platforms | 0.5.0 |
+| [BF-838c5d6](#bf-838c5d6) | A retained packed process now has one watcher for its lifetime instead of one per reload, and a crash is… | PiG's own defect | All platforms | Unreleased |
 | [BF-83d5488](#bf-83d5488) | `pig install <dir>` of a local directory with no package manifest and no `extensions/`, `skills/`, `prompts/`… | PiG's own defect | All platforms | 0.5.0 |
 | [BF-83fea11](#bf-83fea11) | On Windows, a refused connection reads as Node's `connect ECONNREFUSED` and is not retried, as in Pi; it was… | PiG's own defect | Windows | 0.5.0 |
 | [BF-844d215](#bf-844d215) | Repairing a partial tool-call arguments text follows partial-json's `obj["__proto__"] = value`: a… | PiG's own defect | All platforms | 0.5.0 |
@@ -9615,6 +9616,20 @@ Entries are listed by ID. The page carries no totals, so a pull request that add
 - **Fix commits:** `10aebd5c05` (2026-10-09), `82d1808c64` (2026-10-10)
 - **Tests:** `ai/complexity_scaling_norace_test.go::TestScalingProviderRequestPerTurn`, `ai/complexity_scaling_norace_test.go::TestScalingProviderStreamPerDelta`, `coding/cli/complexity_scaling_norace_test.go::TestScalingExtensionEventStatePush`, `coding/complexity_scaling_norace_test.go::TestScalingSessionTurn`, `coding/extension/host/subprocess/complexity_scaling_norace_test.go::TestScalingMessageUpdatePayload`, `coding/session_context_usage_reuse_test.go::TestContextUsageReusesTheEstimateUntilTheLogOrWindowChanges`, `internal/codingagent/compaction/complexity_scaling_norace_test.go::TestScalingCompactionAndContextEstimate`, `internal/codingagent/complexity_scaling_norace_test.go::TestScalingSessionLogOperations` and 7 more in docs/bug-ledger.json
 - **Release note:** Subprocess extensions no longer slow down each streamed token in long sessions: the state sent before each event reuses the context usage estimate and the session name until the session changes.
+
+### BF-838c5d6
+
+**A retained packed process now has one watcher for its lifetime instead of one per reload, and a crash is…**
+
+- **Source:** PiG's own defect
+- **Symptom:** A retained packed process now has one watcher for its lifetime instead of one per reload, and a crash is attributed to the current generation.
+- **Root cause:** A retained admission created a packedProcessState and watcher per reload; 200 reloads left 201 watched states. One watcher now belongs to the process share, and the share's atomic current state supplies crash attribution for the live generation. Publishing a generation also advances packedCellActiveGeneration so node recovery is not rejected as stale.
+- **User impact:** Crash, hang or runaway process
+- **Platform:** All platforms
+- **Fixed in:** Unreleased
+- **Fix commits:** `838c5d6520` (2026-11-05)
+- **Tests:** `coding/extension/host/subprocess/reload_generation_test.go::TestPackedGoReloadLoopNeverHangs`
+- **Release note:** A retained packed process now has one watcher for its lifetime instead of one per reload, and a crash is attributed to the current generation. 200 reloads leave one watched state rather than 201.
 
 ### BF-83d5488
 
