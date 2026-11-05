@@ -16,10 +16,10 @@ import (
 	"github.com/MichaelKinsy/PiG/internal/testbudget"
 )
 
-// Pi linux-platform-x11.c:185 delegates to xcb_connect, whose parser (libxcb 1.15 xcb_util.c:176 and :186) reads the display and screen with C strtoul
+// Pi linux-platform-x11.c:185 delegates to xcb_connect, whose parser (libxcb 1.17 xcb_util.c:176 and :186) reads the display and screen with C strtoul
 // into an int: leading white space and a sign are accepted, a minus negates modulo 2^64, an overflow saturates at ULONG_MAX, and the int keeps the low
-// 32 bits. Local display numbers name Unix sockets; a network display's port is the low 16 bits of 6000 plus the number (xcb_util.c:244). The rows are
-// what xcb_parse_display returns for each spelling on libxcb 1.15.
+// 32 bits. Local display numbers name Unix sockets; a network display's port is the low 16 bits of 6000 plus the number (xcb_util.c:244). An explicit
+// `unix:` host is not a local transport to xcb (`unix/:` is); the rows are what xcb accepts and rejects for each spelling.
 func TestX11DisplayNumbersParseAsXcbDoes(t *testing.T) {
 	for _, tc := range []struct {
 		input string
@@ -27,7 +27,7 @@ func TestX11DisplayNumbersParseAsXcbDoes(t *testing.T) {
 	}{
 		{":59535", x11Display{number: 59535, local: true}},
 		{":60000", x11Display{number: 60000, local: true}},
-		{"unix/:65536.2", x11Display{host: "unix", number: 65536, screen: 2, local: true}},
+		{"unix/:65536.2", x11Display{number: 65536, screen: 2, local: true}},
 		{"localhost:59536", x11Display{host: "localhost", number: 59536}},
 		{"tcp/localhost:60000", x11Display{host: "localhost", number: 60000}},
 		{"[::1]:60000", x11Display{host: "::1", number: 60000}},
@@ -36,12 +36,10 @@ func TestX11DisplayNumbersParseAsXcbDoes(t *testing.T) {
 		{":+1", x11Display{number: 1, local: true}},
 		{":01", x11Display{number: 1, local: true}},
 		{":-1", x11Display{number: -1, local: true}},
-		{"unix:-1", x11Display{host: "unix", number: -1, local: true}},
 		{":1.+2", x11Display{number: 1, screen: 2, local: true}},
 		{":1. 2", x11Display{number: 1, screen: 2, local: true}},
 		{":1.\v2", x11Display{number: 1, screen: 2, local: true}},
 		{":1.-1", x11Display{number: 1, screen: -1, local: true}},
-		{"unix:60000.-1", x11Display{host: "unix", number: 60000, screen: -1, local: true}},
 		{":4294967297", x11Display{number: 1, local: true}},
 		{":2147483648", x11Display{number: -2147483648, local: true}},
 		{":-2147483649", x11Display{number: 2147483647, local: true}},
@@ -56,7 +54,7 @@ func TestX11DisplayNumbersParseAsXcbDoes(t *testing.T) {
 			}
 		})
 	}
-	for _, input := range []string{":", ":1 ", ":0x1", ":1.", ":1.2 ", ":1.0x", "host:1.0.0", "unix:invalid", ":+", ": -"} {
+	for _, input := range []string{":", ":1 ", ":0x1", ":1.", ":1.2 ", ":1.0x", "host:1.0.0", "unix:invalid", "unix:-1", "unix:60000.-1", "unix:0.-1", "host/unix:2", ":+", ": -"} {
 		t.Run("reject "+input, func(t *testing.T) {
 			if got, err := parseX11Display(input); err == nil {
 				t.Fatalf("xcb_parse_display rejects %q, PiG accepted %+v", input, got)

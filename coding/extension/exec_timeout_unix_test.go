@@ -22,12 +22,12 @@ import (
 var execTimerScript, _ = filepath.Abs("testdata/exec_timer.mjs")
 
 // exec.ts:75 starts the timeout once spawn has returned, so the time spawn takes to find and start the program does not
-// count against it. A PATH of many directories that each cost a long symlink walk makes finding the program take seconds,
-// in Node's spawn (libuv searches the PATH before spawn returns) and in PiG; a timeout of one second must then end the
-// program a second after spawn returned, not while spawn was still finding it. The program outlives the timeout many
+// count against it. A PATH of many directories that each cost a long symlink walk makes finding the program take longer
+// than the timeout, in Node's spawn (libuv searches the PATH before spawn returns) and in PiG; a 50 ms timeout must then
+// end the program 50 ms after spawn returned, not while spawn was still finding it. The program outlives the timeout many
 // times over, so the timer ends it, and the test reads when spawn returned and how long after that the call resolved: a
 // lower bound that a loaded host can only lengthen. A program that had to finish inside the timeout would fail whenever
-// the host took a second to start it. Pi's execCommand, with its spawn timed, is the oracle.
+// the host took longer to start it. Pi's execCommand, with its spawn timed, is the oracle.
 func TestExecCommandStartsTheTimeoutAfterTheSpawnAsPiDoes(t *testing.T) {
 	dir := t.TempDir()
 	// Relative PATH entries resolve in the working directory, which is dir in
@@ -39,12 +39,12 @@ func TestExecCommandStartsTheTimeoutAfterTheSpawnAsPiDoes(t *testing.T) {
 	link := "d"
 	for i := range 30 {
 		name := "l" + strconv.Itoa(i)
-		if err := os.Symlink(strings.Repeat("d/../", 200)+link, name); err != nil {
+		if err := os.Symlink(strings.Repeat("d/../", 10)+link, name); err != nil {
 			t.Fatal(err)
 		}
 		link = name
 	}
-	timeout := 1000.0
+	timeout := 50.0
 	limit := time.Duration(timeout) * time.Millisecond
 	// Each entry is 4 bytes; 30,000 keep the variable under the kernel's 128 KiB limit for one environment string.
 	const maxEntries = 30000

@@ -220,21 +220,19 @@ func javascriptObjectKeyOrder(keys []string) []string {
 
 func orderedSchemaKeys(value map[string]any, order schemaObjectOrder, path string) []string {
 	keys := make([]string, 0, len(value))
-	seen := make(map[string]bool, len(value))
 	for _, key := range order[path] {
-		if _, ok := value[key]; ok && !seen[key] {
+		if _, ok := value[key]; ok && !slices.Contains(keys, key) {
 			keys = append(keys, key)
-			seen[key] = true
 		}
 	}
-	var rest []string
+	rest := len(keys)
 	for key := range value {
-		if !seen[key] {
-			rest = append(rest, key)
+		if !slices.Contains(keys[:rest], key) {
+			keys = append(keys, key)
 		}
 	}
-	slices.Sort(rest)
-	return javascriptObjectKeyOrder(append(keys, rest...))
+	slices.Sort(keys[rest:])
+	return javascriptObjectKeyOrder(keys)
 }
 
 func marshalSchemaWithOrder(value any, order schemaObjectOrder, path string) ([]byte, error) {

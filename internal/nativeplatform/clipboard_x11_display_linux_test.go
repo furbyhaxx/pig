@@ -25,13 +25,19 @@ func TestX11DisplayTransportPrefixes(t *testing.T) {
 		{"tcp/127.0.0.1:2", x11Display{host: "127.0.0.1", number: 2}},
 		{"[::1]:2", x11Display{host: "::1", number: 2}},
 		{"tcp/[::1]:2.3", x11Display{host: "::1", number: 2, screen: 3}},
-		{"unix/:2", x11Display{host: "unix", number: 2, local: true}},
-		{"host/unix:2", x11Display{host: "unix", number: 2, local: true}},
+		{"unix/:2", x11Display{host: "", number: 2, local: true}},
 	} {
 		t.Run(tc.input, func(t *testing.T) {
 			got, err := parseX11Display(tc.input)
 			if err != nil || !reflect.DeepEqual(got, tc.want) {
 				t.Fatalf("display = %+v, %v; want %+v", got, err, tc.want)
+			}
+		})
+	}
+	for _, input := range []string{"unix:2", "host/unix:2"} {
+		t.Run("reject "+input, func(t *testing.T) {
+			if got, err := parseX11Display(input); err == nil {
+				t.Fatalf("xcb_connect rejects %q, PiG accepted %+v", input, got)
 			}
 		})
 	}

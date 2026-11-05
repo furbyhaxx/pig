@@ -878,9 +878,11 @@ func launchCommand(remote RemotePlatform, file string, loginShell bool) string {
 		}
 		return file
 	}
-	// $0 is the daemon, "$@" its arguments; $SHELL is the login shell's own name for itself.
+	// $0 is the daemon, "$@" its arguments; $SHELL is the login shell's own name for itself. Fish rejects POSIX positional parameters, so a POSIX
+	// sh branches on the account shell and hands fish its argv form; the daemon path and arguments follow as outer positional parameters.
 	if loginShell {
-		return `exec "$SHELL" -lc 'exec "$0" "$@"' ` + quotePosix(file)
+		script := `shell=$1; shift; case "$shell" in *fish) exec "$shell" -lc "exec \$argv" "$@" ;; *) exec "$shell" -lc "exec \"\$@\"" "$@" ;; esac`
+		return `/bin/sh -c ` + quotePosix(script) + ` pi-env-login "$SHELL" ` + quotePosix(file)
 	}
 	return quotePosix(file)
 }

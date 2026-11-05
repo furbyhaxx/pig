@@ -240,12 +240,6 @@ func TestStartupAllocationPerDirectoryLevel(t *testing.T) {
 	if err := os.MkdirAll(deep, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if runtime.GOOS != "windows" {
-		// measuredEnvironment passes no HOME, so pig asks the system's user database for the home directory, and the per-level work depends on the answer: with no entry for the user (a container run as a uid its
-		// passwd file does not list) there is no home, the user's ~/.agents/skills becomes the relative ".agents/skills", and every level's comparison against it resolves that path again, 17 objects a level
-		// instead of 13. The fixture's home states the home directory, as it does for every user who has one. Windows always has one, and its budgets were measured without HOME.
-		fixture.env = []string{"HOME=" + fixture.home}
-	}
 	fixture.measure(ctx, t, fixture.cwd, startupPrompt...) // stages the embedded docs and SDKs
 	perLevel := func(shallow, deep uint64) uint64 {
 		if deep < shallow {
@@ -306,8 +300,6 @@ var startupPrompt = []string{"--model", "test-faux/faux-1", "--no-extensions", "
 // host temp directory.
 type startupFixture struct {
 	binary, cwd, home, agentDir, tmp string
-	// env is added to the measured environment.
-	env []string
 }
 
 func newStartupFixture(t *testing.T) *startupFixture {
@@ -331,7 +323,7 @@ func (f *startupFixture) measure(ctx context.Context, t *testing.T, cwd string, 
 	}
 	command := exec.CommandContext(ctx, f.binary, args...)
 	command.Dir = cwd
-	command.Env = append(append(measuredEnvironment(os.Environ()), f.env...), "TMPDIR="+f.tmp, "PIG_HOME="+f.home, "PIG_CODING_AGENT_DIR="+f.agentDir, "PIG_PROFILE=metrics", "PIG_PROFILE_DIR="+dir, "GOMAXPROCS=1",
+	command.Env = append(measuredEnvironment(os.Environ()), "HOME="+f.home, "TMPDIR="+f.tmp, "PIG_HOME="+f.home, "PIG_CODING_AGENT_DIR="+f.agentDir, "PIG_PROFILE=metrics", "PIG_PROFILE_DIR="+dir, "GOMAXPROCS=1",
 		"PIG_TEST_FAUX=1", "PIG_TEST_FAUX_SCENARIO=parity-basic")
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("pig %v: %v\n%s", args, err, output)

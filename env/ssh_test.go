@@ -262,6 +262,8 @@ func TestSSHBootstrap(t *testing.T) {
 		// The login shell is the account's shell: sh and bash read .profile, zsh (the macOS default) reads .zprofile.
 		mustDo(os.WriteFile(filepath.Join(home, ".profile"), []byte("export PI_ENV_LOGIN=yes\n"), 0o600))
 		mustDo(os.WriteFile(filepath.Join(home, ".zprofile"), []byte("export PI_ENV_LOGIN=yes\n"), 0o600))
+		mustDo(os.MkdirAll(filepath.Join(home, ".config", "fish"), 0o700))
+		mustDo(os.WriteFile(filepath.Join(home, ".config", "fish", "config.fish"), []byte("if status is-login\n    set -gx PI_ENV_LOGIN yes\nend\n"), 0o600))
 		login := func(loginShell bool) string {
 			connection, _, err := ConnectSsh(ctx, SshConnectOptions{SshTarget: target, Binary: new(daemon), LoginShell: loginShell})
 			mustDo(err)

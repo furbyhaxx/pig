@@ -39,14 +39,17 @@ func parseX11Display(display string) (x11Display, error) {
 		switch {
 		case before == "tcp":
 			host = after
-		case before == "unix" || after == "unix":
-			host = "unix"
+		case before == "unix" && after == "":
+			host = ""
 		default:
 			return x11Display{}, fmt.Errorf("unsupported X11 transport %q", host)
 		}
 	}
+	if host == "unix" {
+		return x11Display{}, fmt.Errorf("unsupported X11 host %q", host)
+	}
 	host = strings.TrimSuffix(strings.TrimPrefix(host, "["), "]")
-	local := host == "" || host == "unix"
+	local := host == ""
 	number, rest, ok := xcbDisplayNumber(tail)
 	if !ok {
 		return x11Display{}, fmt.Errorf("invalid X11 display number %q", tail)

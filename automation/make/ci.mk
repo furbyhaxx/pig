@@ -36,7 +36,7 @@ parity-fast-1:
 parity-fast-2:
 	@$(MAKE) -s parity-fast PARITY_SHARD=2/2
 # module-size's install proof is the one drift gate the light pull-request run leaves to the full run.
-ci-drift: ci-drift-pr module-size
+ci-drift: ci-drift-pr sdk-bundles-check module-size
 ci-drift-pr: port-lint any-trap perf-lint
 ci-contracts: correspondence-check porter-check interface-inventory interface-inventory-test interface-go-drift interface-recommendations-drift interface-mapping-quality interface-delta interface-gaps behavior-contracts test-inventory-drift test-inventory test-porting-release format-version-inventory sdk-surface-drift sdk-apidiff piglet-strip-build
 ci-closure: closure-check

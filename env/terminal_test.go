@@ -402,13 +402,10 @@ func TestOpenTerminalRunsTheUsersShellAsALoginShellByDefault(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		terminal.Write("echo \"arg0=$0 term=$TERM home=${HOME-unset}\"; exit 5\n")
-		// On macOS both daemons' login shell gets the user's HOME back (observed for Pi's and PiG's daemon alike); elsewhere it stays unset.
-		home := "unset"
-		if runtime.GOOS == "darwin" {
-			home = os.Getenv("HOME")
-		}
-		output.waitFor(t, "arg0=-sh term=dumb home="+home)
+		t.Setenv("PIG_TERMINAL_INHERIT_PROBE", "leaked")
+		terminal.Write("echo \"arg0=$0 term=$TERM marker=${PIG_TERMINAL_INHERIT_PROBE-unset}\"; exit 5\n")
+		// A login shell may set HOME itself from the account database (/etc/profile on Linux, or the macOS login shell), so the probe checks an inherited marker instead of that host-dependent value.
+		output.waitFor(t, "arg0=-sh term=dumb marker=unset")
 		if code, err := waitExit(t, terminal); err != nil || code != 5 {
 			t.Fatalf("exit = %d, %v", code, err)
 		}

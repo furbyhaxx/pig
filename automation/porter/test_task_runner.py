@@ -58,7 +58,7 @@ class RunnerTests(unittest.TestCase):
         tsv.write_text("".join(f"closure\t{scope}\t3\n" for scope in tasks))
         self.ran = Path(self.tmp.name) / "ran.txt"
         env = {**os.environ, "PATH": f"{self.shims}:{os.environ['PATH']}", "PIG_PORTER_RUNLOG": str(self.runlog), "FAKE_TASKS_RUN": str(self.ran),
-               "PIG_PORTER_TASK_TIMEOUT": "2", "PIG_PORTER_BUILD_CMD": "true", **extra}
+               "PIG_PORTER_TASK_TIMEOUT": "2", "PIG_PORTER_BUILD_CMD": "true", "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull, **extra}
         return subprocess.run([str(RUNNER), str(tsv), str(self.logs), str(self.repo)], env=env, capture_output=True, text=True, timeout=120)
 
     def last(self, fmt):

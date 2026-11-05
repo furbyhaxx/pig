@@ -342,7 +342,7 @@ func TestLaunchCommand(t *testing.T) {
 		want       string
 	}{
 		{"POSIX quotes the path", RemotePlatform{Platform: "linux"}, "/home/it's/pi-env", false, `'/home/it'\''s/pi-env'`},
-		{"POSIX through the login shell", RemotePlatform{Platform: "darwin"}, "/h/pi-env", true, `exec "$SHELL" -lc 'exec "$0" "$@"' '/h/pi-env'`},
+		{"POSIX through the login shell", RemotePlatform{Platform: "darwin"}, "/h/pi-env", true, `/bin/sh -c 'shell=$1; shift; case "$shell" in *fish) exec "$shell" -lc "exec \$argv" "$@" ;; *) exec "$shell" -lc "exec \"\$@\"" "$@" ;; esac' pi-env-login "$SHELL" '/h/pi-env'`},
 		{"cmd.exe quotes only a path with a space", RemotePlatform{Platform: "windows", Shell: "cmd"}, `C:\Users\a b\pi-env.exe`, false, `"C:\Users\a b\pi-env.exe"`},
 		{"cmd.exe keeps a plain path bare", RemotePlatform{Platform: "windows", Shell: "cmd"}, `C:\Users\me\pi-env.exe`, false, `C:\Users\me\pi-env.exe`},
 		{"PowerShell needs the call operator", RemotePlatform{Platform: "windows", Shell: "powershell"}, `C:\Users\it's\pi-env.exe`, false, `& 'C:\Users\it''s\pi-env.exe'`},

@@ -345,7 +345,13 @@ test-sdk-rs: ## Run the Rust extension SDK's unit tests
 test-sdk-py: ## Run the Python extension SDK's pytest suite with its hash-locked dev dependencies
 	@PIG_CACHE_HOME="$(PIG_CACHE_HOME)" ./automation/ci/test-sdk-py.sh
 
-.PHONY: test-sdk-py
+# The embedded .gz bundles stage what a packed extension runs. A source edit whose bundle was not regenerated would ship
+# stale SDK code; the full SDK suites in `check` catch it, but the per-slice drift gate is where the change lands.
+sdk-bundles-check: ## Verify the embedded SDK bundles match their sources
+	@cd extensions/sdk && GOWORK=off go test -run '^TestCompressedCopiesHoldTheirFilesText$$' .
+	@go test -run '^TestCompressedCopiesHoldTheirFilesText$$' ./extensions/sdk-py ./extensions/sdk-rs
+
+.PHONY: test-sdk-py sdk-bundles-check
 
 # The SDK scenario table (test/extension-conformance/sdkscenarios) runs once per SDK through the real host, with the Go, Node, Python and Rust scenario drivers, and each SDK must produce the observation the table gives. A row in a scenario's Red map must still produce exactly its recorded Got, so the lane that fixes it deletes the entry and a regression inside a red row still fails. CI runs it in the test-conformance shard and in the Windows and macOS extension-conformance shards, because it is a test of ./test/extension-conformance; this target runs it alone, with the wiring checks that tie the table to the wire methods the code derives.
 test-sdk-conformance: ## Run the SDK conformance scenario table against every extension SDK through the real host
