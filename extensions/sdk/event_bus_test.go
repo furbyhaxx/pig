@@ -243,6 +243,42 @@ func TestEventBusDispatchDuringLoadIsServed(t *testing.T) {
 	stopBusExtension(t, host, done)
 }
 
+func TestEventBusDispatchCancellationBeforeReady(t *testing.T) {
+	ext := New("bus")
+	started := make(chan struct{})
+	cancelled := make(chan string, 1)
+	if _, err := ext.Events().On("ch", func(ctx Context, _ any) error {
+		close(started)
+		<-ctx.Done()
+		cancelled <- ctx.CancellationReason()
+		return ctx.Err()
+	}); err != nil {
+		t.Fatal(err)
+	}
+	host, done := startBusExtension(t, ext)
+	on, _ := readBusCall(t, host, "events.on", "null")
+	for host.readEnvelope(t).Type != msgRegister {
+	}
+	args, _ := json.Marshal(map[string]any{"handlerId": on.HandlerID, "channel": "ch", "json": 73})
+	host.writeEnvelope(t, envelope{Type: msgRequest, ID: "early", Request: &requestMsg{Method: methodEventsDispatch, Args: args}})
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("load-time listener did not start")
+	}
+	host.writeEnvelope(t, envelope{Type: msgCancel, ID: "early", Cancel: &cancelMsg{RequestID: "early", Reason: "caller aborted"}})
+	select {
+	case reason := <-cancelled:
+		if reason != "caller aborted" {
+			t.Fatalf("cancellation reason = %q", reason)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("load-time listener context did not end")
+	}
+	host.writeEnvelope(t, envelope{Type: msgReady, Ready: &readyMsg{Cwd: "/tmp", Width: 80}})
+	stopBusExtension(t, host, done)
+}
+
 // A listener served while the extension loads may unsubscribe itself; the Host then releases it with an events.release notify that can arrive before ready. The load does not fail on it, and the released listener is gone.
 func TestEventBusReleaseDuringLoadIsServed(t *testing.T) {
 	var unsubscribe func()

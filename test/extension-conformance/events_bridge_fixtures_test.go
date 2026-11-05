@@ -28,7 +28,7 @@ import (
 //	kept                           node only: log "<name>|kept|[payloads kept by the keep action]"
 //	unkeep                         node only: drop the payloads the keep action kept
 //
-// An action list joins operations with "+": later (node only: record from a microtask, the listener's first continuation), record, echo=<channel> (emit {by, got} from the handler), inc (data.n++), fail (return or throw an error), panic (a Go panic, a thrown non-Error), unsub=<index>, exit (end the process), sleep=<ms>, count (count the delivery), hang (block until <log>.release exists), keep (node only: keep the payload past its delivery).
+// An action list joins operations with "+": later (node only: record from a microtask, the listener's first continuation), record, echo=<channel> (emit {by, got} from the handler), inc (data.n++), fail (return or throw an error), panic (a Go panic, a thrown non-Error), unsub=<index>, exit (end the process), sleep=<ms>, count (count the delivery), hang (block until <log>.release exists), awaitcancel (native only: log entry and wait for request cancellation), keep (node only: keep the payload past its delivery).
 type busFixture struct {
 	Name      string          `json:"name"`
 	Log       string          `json:"log"`
@@ -80,6 +80,7 @@ export default function (pi) {
       else if (name === "count") counts[channel] = (counts[channel] ?? 0) + 1;
       else if (name === "hang") { while (!fs.existsSync(cfg.log + ".release")) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5); }
       else if (name === "keep") kept.push(data);
+      else if (name === "awaitcancel") throw new Error("event handlers have no AbortSignal");
     }
   };
   const subscribe = (channel, actions) => { subs.push(pi.events.on(channel, data => run(channel, actions, data))); return subs.length - 1; };
@@ -200,6 +201,11 @@ func Extension() *sdk.Extension {
 				mu.Lock()
 				counts[channel]++
 				mu.Unlock()
+			case "awaitcancel":
+				logf(channel+":waiting", data)
+				<-ctx.Done()
+				logf(channel+":cancelled", ctx.CancellationReason())
+				return ctx.Err()
 			case "hang":
 				for {
 					if _, err := os.Stat(cfg.Log + ".release"); err == nil {
@@ -374,6 +380,11 @@ def new_extension():
             elif op_name == "count":
                 with lock:
                     counts[channel] = counts.get(channel, 0) + 1
+            elif op_name == "awaitcancel":
+                logf(channel + ":waiting", data)
+                while not ctx.is_cancelled():
+                    time.sleep(0.005)
+                logf(channel + ":cancelled", ctx.cancellation_reason())
             elif op_name == "hang":
                 while not os.path.exists(CFG["log"] + ".release"):
                     time.sleep(0.005)
@@ -466,6 +477,11 @@ fn run(shared: &Arc<Shared>, ctx: &Context, channel: &str, actions: &str, data: 
             "exit" => std::process::exit(3),
             "sleep" => std::thread::sleep(std::time::Duration::from_millis(arg.parse().unwrap())),
             "count" => { *shared.counts.lock().unwrap().entry(channel.to_string()).or_insert(0) += 1; }
+            "awaitcancel" => {
+                log(shared, &format!("{channel}:waiting"), &data);
+                while !ctx.is_cancelled() { std::thread::sleep(std::time::Duration::from_millis(5)); }
+                log(shared, &format!("{channel}:cancelled"), &json!(ctx.cancellation_reason()));
+            }
             "hang" => { let release = format!("{}.release", shared.cfg["log"].as_str().unwrap()); while !std::path::Path::new(&release).exists() { std::thread::sleep(std::time::Duration::from_millis(5)); } }
             _ => {}
         }

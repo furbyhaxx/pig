@@ -491,8 +491,14 @@ func (h *Host) handleEventBusCall(ctx context.Context, me *managedExt, conn *Con
 	if err := json.Unmarshal(call.Args, &args); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", call.Method, err)
 	}
-	// Pi's emit cannot be interrupted between listeners; a dispatch ends only when its listener's realm answers or exits.
-	dispatchCtx := context.WithoutCancel(ctx)
+	dispatchCtx := ctx
+	if call.Method == callEventsOn || call.Method == callEventsOff {
+		// Registration notifications and registry mutations must finish together.
+		dispatchCtx = context.WithoutCancel(ctx)
+	}
+	if err := dispatchCtx.Err(); err != nil {
+		return nil, err
+	}
 	realm := h.xref.realmOf(conn)
 	if args.Value {
 		var err error
@@ -530,6 +536,13 @@ func (h *Host) handleEventBusCall(ctx context.Context, me *managedExt, conn *Con
 			delete(h.eventBus.emissions, id)
 		}
 		h.eventBus.mu.Unlock()
+		if err := dispatchCtx.Err(); err != nil {
+			// Release earlier JavaScript listeners waiting for this emission's settlement.
+			if settleErr := h.eventBus.settle(dispatchCtx, id); settleErr != nil {
+				return nil, settleErr
+			}
+			return nil, err
+		}
 		if !handled && *args.Channel == "error" {
 			return &CallResultPayload{Result: json.RawMessage(`{"unhandledError":true}`)}, nil
 		}
@@ -562,6 +575,9 @@ func (h *Host) dispatchEvent(ctx context.Context, channel string, payload *busPa
 	listeners := h.eventBus.snapshot(channel)
 	defer h.eventBus.finish(listeners)
 	for i := 0; i < len(listeners); {
+		if ctx.Err() != nil {
+			break
+		}
 		listener := listeners[i]
 		if listener.value {
 			// Native listeners keep their per-listener dispatch.

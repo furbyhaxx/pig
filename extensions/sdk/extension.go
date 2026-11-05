@@ -1180,6 +1180,10 @@ func (e *Extension) runWithConn(nc net.Conn, started *conn, sockPath string) err
 			})
 			continue
 		}
+		if env.Type == msgCancel {
+			e.cancelRequest(env)
+			continue
+		}
 		// A listener that a load-time dispatch unsubscribed is released as soon as its dispatch ends, which can precede ready.
 		if env.Type == msgNotify && env.Notify != nil && env.Notify.Method == notifyEventsRelease {
 			e.releaseEventListener(env.Notify.Args)
@@ -1331,12 +1335,16 @@ func (e *Extension) armRequest(id string) (Context, func()) {
 }
 
 func (e *Extension) armRequestScope(id string) (Context, *requestScope) {
+	return e.armRequestScopeOn(id, e.conn)
+}
+
+func (e *Extension) armRequestScopeOn(id string, c *conn) (Context, *requestScope) {
 	requestRoot := e.runCtx
 	if requestRoot == nil {
 		requestRoot = context.Background()
 	}
 	reqCtx, cancel := context.WithCancelCause(requestRoot)
-	parent := e.conn.armParent(id, requestRoot, reqCtx)
+	parent := c.armParent(id, requestRoot, reqCtx)
 	e.requestsMu.Lock()
 	e.requests[id] = cancel
 	e.requestsMu.Unlock()
@@ -2028,6 +2036,10 @@ func (e *Extension) handleNotifyAt(env envelope, seq uint64) {
 }
 
 func (e *Extension) cancelRequest(env envelope) {
+	e.cancelRequestOn(env, e.conn)
+}
+
+func (e *Extension) cancelRequestOn(env envelope, c *conn) {
 	id := env.ID
 	if id == "" && env.Cancel != nil {
 		id = env.Cancel.RequestID
@@ -2038,8 +2050,8 @@ func (e *Extension) cancelRequest(env envelope) {
 	e.requestsMu.Lock()
 	cancel := e.requests[id]
 	e.requestsMu.Unlock()
-	if e.conn != nil {
-		e.conn.cancelParentCalls(id)
+	if c != nil {
+		c.cancelParentCalls(id)
 	}
 	if cancel != nil {
 		var cause error

@@ -120,6 +120,42 @@ func TestHostCallAnswersOnDeliveringConn(t *testing.T) {
 	}
 }
 
+func TestEventBusCancelledCallerStillRegistersAndUnregisters(t *testing.T) {
+	h := NewHostWithConfigRoot(t.TempDir(), t.TempDir())
+	conn, peer := startedPipeConn(t, "caller")
+	me := withConn(&managedExt{config: ExtConfig{Name: "caller"}, host: h, nodeRealm: true}, conn)
+	h.runCall(me, conn, "hello", &CallPayload{Method: callXrefHello, Args: []byte(`{"realm":"cancel-realm"}`)}, nil)
+	if env := readFramed(t, peer); env.CallResult == nil || env.CallResult.Error != nil {
+		t.Fatalf("xref.hello reply = %+v", env)
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	for _, method := range []string{callEventsOn, callEventsOff} {
+		_, err := h.handleEventBusCall(ctx, me, conn, "registration", &CallPayload{Method: method, Args: []byte(`{"channel":"c","handlerId":"h"}`)})
+		if err != nil {
+			t.Fatalf("%s: %v", method, err)
+		}
+		registered := h.eventBus.lookup(busHandlerKey{"cancel-realm", "h"}) != nil
+		if registered != (method == callEventsOn) {
+			t.Fatalf("%s: registered = %v", method, registered)
+		}
+	}
+}
+
+func TestEventBusCancelledDispatchDoesNotStartListeners(t *testing.T) {
+	h := NewHostWithConfigRoot(t.TempDir(), t.TempDir())
+	// A nil connection would panic if the cancelled dispatch reached this listener.
+	h.eventBus.add(&busListener{realm: "listener", handlerID: "h", channel: "c", value: true})
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	if !h.dispatchEvent(ctx, "c", nil, nil, "emitter", "", nil) {
+		t.Fatal("dispatch lost the registered listener snapshot")
+	}
+	if retained := h.EventBusRetention(); retained.Snapshots != 0 {
+		t.Fatalf("cancelled dispatch retained snapshots: %+v", retained)
+	}
+}
+
 // setConnLocked is the only store of managedExt.conn, and each call holds Host.mu, so a Host.mu holder observes a stable connection.
 func TestManagedConnStoresHoldHostLock(t *testing.T) {
 	files, err := filepath.Glob("*.go")

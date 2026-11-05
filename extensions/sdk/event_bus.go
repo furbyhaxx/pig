@@ -5,7 +5,6 @@ package sdk
 // Ports packages/coding-agent/src/core/event-bus.ts
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -23,7 +22,7 @@ type EventBusHandler func(ctx Context, data any) error
 
 // EventBus is upstream's `pi.events`, shared with every other realm of the session: node extensions, and Go, Rust and Python extensions in any cell.
 //
-// Payloads cross by value as JSON. Listeners run in registration order, each listener's work finishes before Emit returns, and a listener that never returns blocks its emitter, as in upstream. Call [Context.Events] from a handler: a call made through [Extension.Events] is not tied to a request, so it waits behind the extension's other calls that are not tied to one.
+// Payloads cross by value as JSON. Listeners run in registration order, each listener's work finishes before Emit returns unless the caller cancels, and cancellation ends the active listener's context and stops further dispatch. Call [Context.Events] from a handler: a call made through [Extension.Events] is not tied to a request, so it waits behind the extension's other calls that are not tied to one.
 type EventBus struct {
 	ext   *Extension
 	ctx   Context
@@ -259,6 +258,7 @@ func (p *factoryPump) serve(e *Extension, c *conn) {
 			return
 		case env, ok := <-c.incoming:
 			if !ok {
+				e.cancelAllRequests()
 				return
 			}
 			e.serveLoadingEnvelope(c, env)
@@ -270,8 +270,10 @@ func (p *factoryPump) serve(e *Extension, c *conn) {
 func (e *Extension) serveLoadingEnvelope(c *conn, env envelope) {
 	switch {
 	case env.Type == msgRequest && env.Request != nil && env.Request.Method == methodEventsDispatch:
-		ctx := Context{ext: e, ctx: context.Background(), loading: c}
+		ctx, scope := e.armRequestScopeOn(env.ID, c)
+		ctx.loading = c
 		e.requestWG.Go(func() {
+			defer scope.end()
 			defer func() {
 				if recovered := recover(); recovered != nil {
 					_ = c.respond(env.ID, nil, fmt.Errorf("handler panicked: %v", recovered))
@@ -279,6 +281,8 @@ func (e *Extension) serveLoadingEnvelope(c *conn, env envelope) {
 			}()
 			e.dispatchEventBus(ctx, env.ID, env.Request)
 		})
+	case env.Type == msgCancel:
+		e.cancelRequestOn(env, c)
 	case env.Type == msgNotify && env.Notify != nil && env.Notify.Method == notifyEventsRelease:
 		e.releaseEventListener(env.Notify.Args)
 		e.markNotifyHandled()

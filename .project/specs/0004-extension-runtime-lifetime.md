@@ -5,9 +5,9 @@ document:
   title: "Extension runtime lifetime: bounded reloads, cancellable bus, live renderer resolution, retained processes"
   description: "Generation-unique sockets and bounded handshakes for reload, cancellation through event-bus listeners, renderer re-resolution without reload, and host-owned processes that survive extension reloads"
   status: "draft"
-  revision: 5
+  revision: 6
   created_at: "2026-11-04T14:40:00+01:00"
-  updated_at: "2026-11-04T23:10:42+01:00"
+  updated_at: "2026-11-05T12:17:06+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -26,6 +26,9 @@ document:
     - revision: 5
       reason: "Decide the SDK loader contract: per-cell publication over one persistent Host"
       changes: ["D2 SDK reloads reuse one Host and publish per cell", "D2 runtime facade: fresh snapshot per reload, caller-supplied Runtime keeps identity", "D2 factory failures retain the serving extension record"]
+    - revision: 6
+      reason: "Implement D3 using request cancellation and verify native listener contexts through real subprocesses"
+      changes: ["D3 reuses MsgCancel rather than adding events.cancel", "Go factory and loading dispatches have cancellable request scopes", "document cooperative native cancellation and the JavaScript handler limit"]
 ---
 
 # SPEC-0004 Extension runtime lifetime
@@ -51,8 +54,11 @@ Resolves U-01, U-14, U-22, U-23 of `../analyses/2026-11-04-host-gap-verification
 
 ## D3 Cancellable event bus (U-23)
 
-- `events.emit` carries the caller's request id. When the caller's context ends, the host sends `events.cancel` to every listener process still running that emit.
-- SDKs cancel the listener handler's context. Late replies stay discarded.
+- `events.emit` carries the caller's parent request id. Dispatch follows that request's context. When it ends, `Conn.request` sends the existing `MsgCancel` frame with `CancelPayload{RequestID, Reason}` for each outstanding listener dispatch; no `events.cancel` method is added. Late replies stay discarded. The host starts no further listener requests after cancellation is observed; ordinary listener errors remain reported without stopping later listeners.
+- Go, Python and Rust handlers receive a cooperatively cancellable request context. Go factory-pump dispatches and pre-ready dispatches use the same request cancellation mechanism as registered handlers. The caller may return before a listener observes cancellation; handlers must stop their own work when their context ends.
+- Real subprocess conformance cancels an emitting Go command request and checks the Go, Python and Rust listener's cancellation reason, later-listener suppression and snapshot cleanup in isolated and shared-ok placements. A separate Go SDK wire regression covers cancellation before Run and before ready.
+- Node/TypeScript keeps the `(data)` handler signature. A handler receives no request context or AbortSignal, and JavaScript cannot preempt a synchronous handler or cancel a continuation the handler already scheduled. The host stops waiting and stops subsequent cross-process dispatch when its caller ends; this does not promise that JavaScript handler work stops.
+- `events.on`/`events.off` notifications and registry mutation remain unconditional even for a cancelled caller, preventing partially applied registration. An already-cancelled emit starts no realm join or listener dispatch.
 - Same for in-process listeners: the handler context derives from the caller's.
 
 ## D4 Live renderer resolution (U-22)
@@ -78,7 +84,7 @@ Host-owned processes that outlive an extension reload:
 
 ## Wire and SDKs
 
-New calls `processes.spawn|attach|list|signal|write`, notification `processes.output|exit`, `events.cancel`. All SDKs in the same change; conformance tests in `test/extension-conformance/`.
+New calls `processes.spawn|attach|list|signal|write`, notification `processes.output|exit`. Event-bus cancellation reuses the existing `MsgCancel` frame. All SDKs in the same change; conformance tests in `test/extension-conformance/`.
 
 ## Docs
 

@@ -65,6 +65,39 @@ func dispatchTo(t *testing.T, host *mockHost, id, handlerID, channel string, pay
 	}
 }
 
+func TestEventBusFactoryDispatchCancellation(t *testing.T) {
+	host := factoryHost(t)
+	ext := New("bus")
+	started := make(chan struct{})
+	cancelled := make(chan string, 1)
+	on, result := onInFactory(t, host, ext, "ch", func(ctx Context, _ any) error {
+		close(started)
+		<-ctx.Done()
+		cancelled <- ctx.CancellationReason()
+		return ctx.Err()
+	})
+	if err := awaitResult(t, result); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { ext.cancelAllRequests(); ext.stopFactoryPump() })
+	args, _ := json.Marshal(map[string]any{"handlerId": on.HandlerID, "channel": "ch", "json": 73})
+	host.writeEnvelope(t, envelope{Type: msgRequest, ID: "cancel-dispatch", Request: &requestMsg{Method: methodEventsDispatch, Args: args}})
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("factory listener did not start")
+	}
+	host.writeEnvelope(t, envelope{Type: msgCancel, Cancel: &cancelMsg{RequestID: "cancel-dispatch", Reason: "caller aborted"}})
+	select {
+	case reason := <-cancelled:
+		if reason != "caller aborted" {
+			t.Fatalf("cancellation reason = %q", reason)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("factory listener context did not end")
+	}
+}
+
 // A listener subscribed while the factory runs is registered with the host at once, hears the host's dispatch before Run, and Run reuses the connection without registering it again.
 func TestEventBusFactoryListenerRegistersAtOnAndHearsBeforeRun(t *testing.T) {
 	host := factoryHost(t)
