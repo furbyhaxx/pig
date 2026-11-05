@@ -968,6 +968,10 @@ func Extension() *sdk.Extension {
 		return ctx.SendMessage("notice", "no-turn", true, sdk.SendMessageOptions{TriggerTurn: &trigger})
 	})
 
+	ext.Command("send_message_bogus_deliver_as", "Send with a deliverAs value outside the contract", func(ctx sdk.Context, args string) error {
+		return ctx.SendMessage("notice", "bogus-deliver-as", true, sdk.SendMessageOptions{DeliverAs: "bogus"})
+	})
+
 	ext.Command("send_user_message", "Send a user message", func(ctx sdk.Context, args string) error {
 		var content any = "hello-user"
 		if args != "" {

@@ -2085,6 +2085,7 @@ def new_extension() -> pig_sdk.Extension:
     ext.command("send_message", "Send a custom message", lambda ctx, args: ctx.send_message("notice", "hello-custom", True, True, "steer"))
     ext.command("send_message_default", "Send a custom message with default options", lambda ctx, args: ctx.send_message("notice", "default"))
     ext.command("send_message_no_turn", "Send a custom message that never starts a turn", lambda ctx, args: ctx.send_message("notice", "no-turn", trigger_turn=False))
+    ext.command("send_message_bogus_deliver_as", "Send with a deliverAs value outside the contract", lambda ctx, args: ctx.send_message("notice", "bogus-deliver-as", deliver_as="bogus"))
     ext.command("send_user_message", "Send a user message", lambda ctx, args: ctx.send_user_message(json.loads(args) if args else "hello-user", "followUp"))
     ext.command("settings_probe", "Report the effective settings", lambda ctx, args: ctx.notify("settings_probe:" + json.dumps(ctx.get_settings(), separators=(",", ":")), "info"))
 

@@ -102,4 +102,21 @@ func TestInteractiveSessionStartReportsResumeAndInitial(t *testing.T) {
 		p.quit()
 		expect(t, p, "session_start reason=resume initial=true")
 	})
+
+	t.Run("picker", func(t *testing.T) {
+		p := &interactivePig{t: t, log: filepath.Join(t.TempDir(), "replace.log"), output: &ptyOutput{}, home: shortTempDir(t), dir: t.TempDir()}
+		seed := exec.Command(buildPigBinaryForSignalTest(t), "--model", "test-faux/faux-1", "--print", "--session-dir", filepath.Join(p.home, "sessions"), "What is 20+22?")
+		seed.Dir = p.dir
+		seed.Env = append(os.Environ(), "PIG_HOME="+p.home, "PIG_CODING_AGENT_DIR="+filepath.Join(p.home, "agent"), "PIG_TEST_FAUX=1")
+		if out, err := seed.CombinedOutput(); err != nil {
+			t.Fatalf("seed session: %v\n%s", err, out)
+		}
+		startInteractivePigIn(t, p, fixture)
+		p.command("/resume")
+		p.waitScreen("Resume Session", "the session picker")
+		p.send("\r")
+		waitReplaceLog(t, p.log, 2, "/resume")
+		p.quit()
+		expect(t, p, "session_start reason=startup initial=true", "session_start reason=resume initial=false")
+	})
 }

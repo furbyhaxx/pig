@@ -2365,6 +2365,14 @@ fn main() {
         },
     );
     ext.command(
+        "send_message_bogus_deliver_as",
+        "Send with a deliverAs value outside the contract",
+        |ctx, _args| match ctx.send_message("notice", "bogus-deliver-as", true, None, Some("bogus")) {
+            Ok(_) => CommandResult::Ok,
+            Err(err) => CommandResult::Error(err.to_string()),
+        },
+    );
+    ext.command(
         "send_user_message",
         "Send a user message",
         |ctx, args| {

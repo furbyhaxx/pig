@@ -2,10 +2,44 @@ package extensionconformance
 
 import (
 	"context"
+	"encoding/json"
 	"slices"
 	"testing"
 	"time"
 )
+
+func TestNativeEventBusToolCallerCancellationEndsListener(t *testing.T) {
+	for _, isolation := range []string{"isolated", "shared-ok"} {
+		t.Run(isolation, func(t *testing.T) {
+			rig := newBusRig(t,
+				busSpec("go", isolation, "emitter"),
+				busSpec("go", isolation, "listener", busListenerAt{"toolwait", "record+awaitcancel"}),
+			)
+			tool, ok := rig.exts["emitter"].Tools["emitwait"]
+			if !ok {
+				t.Fatal("emitter has no emitwait tool")
+			}
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			done := make(chan error, 1)
+			go func() {
+				_, err := tool.Definition.Execute(ctx, "tc-tool-cancel", json.RawMessage(`{}`), nil)
+				done <- err
+			}()
+			waitFor(t, func() bool { return slices.Contains(rig.lines(), `listener|toolwait:waiting|{"from":"emitter"}`) })
+			cancel()
+			select {
+			case err := <-done:
+				if err == nil {
+					t.Fatal("cancelled tool returned success")
+				}
+			case <-time.After(10 * time.Second):
+				t.Fatal("tool did not return after cancellation")
+			}
+			waitFor(t, func() bool { return slices.Contains(rig.lines(), `listener|toolwait:cancelled|"context canceled"`) })
+		})
+	}
+}
 
 func TestNativeEventBusCallerCancellationEndsListener(t *testing.T) {
 	for _, language := range busNativeLanguages {

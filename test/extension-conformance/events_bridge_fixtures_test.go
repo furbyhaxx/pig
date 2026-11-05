@@ -290,6 +290,9 @@ func Extension() *sdk.Extension {
 		}
 		return nil
 	})
+	e.Tool("emitwait", "Emit from a tool and wait for the listeners", sdk.Schema{"type": "object", "properties": map[string]any{}}, func(ctx sdk.Context, _ map[string]any) (any, error) {
+		return nil, ctx.Events().Emit("toolwait", map[string]any{"from": cfg.Name})
+	})
 	return e
 }
 `
