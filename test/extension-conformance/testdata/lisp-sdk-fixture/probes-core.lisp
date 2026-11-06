@@ -266,6 +266,8 @@
                (lambda (ctx args) (declare (ignore args)) (pig:ctx-send-message ctx "notice" "no-turn" :trigger-turn :false)))
   (pig:command ext "send_message_default" "Send a custom message with default options"
                (lambda (ctx args) (declare (ignore args)) (pig:ctx-send-message ctx "notice" "default")))
+  (pig:command ext "send_message_bogus_deliver_as" "Send with a deliverAs value outside the contract"
+               (lambda (ctx args) (declare (ignore args)) (pig:ctx-send-message ctx "notice" "bogus-deliver-as" :display t :trigger-turn t :deliver-as "bogus")))
   (pig:command ext "send_user_message" "Send a user message"
                (lambda (ctx args) (pig:ctx-send-user-message ctx (if (plusp (length args)) (pig:from-json args) "hello-user") :deliver-as "followUp")))
   (pig:command ext "status" "Set a status entry" (lambda (ctx args) (declare (ignore args)) (pig:ctx-set-status ctx "conformance" "ok")))
