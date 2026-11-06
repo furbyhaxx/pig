@@ -126,6 +126,8 @@ Shared provider/model/auth/tool regression matrix (explain an inapplicable row f
 
 ## Verification
 
+Verification is proportional to the change. A one-line or docs change needs the focused test of what it touches (or none) and nothing else; don't run suites, benchmarks, profiles, mutation runs or multi-hour gates for it. The rules below apply when the change is in their scope; when unsure, run the narrow check and say what was not run.
+
 - Bug fix → regression guard in the same change that fails on the bug, or name the existing failing test. Reproduce first; a test written after the fix is "not red-proven" — say so.
 - Core surfaces (agent loop, message normalization, provider payload conversion, session persistence, auth, tool execution, interactive rendering): red → green → refactor.
 - Cross-layer bug → unit test at the pure layer + regression at the nearest caller (e.g. `NormalizeMessages` + OpenAI converter; session loop + print/interactive error display).
@@ -134,7 +136,7 @@ Shared provider/model/auth/tool regression matrix (explain an inapplicable row f
 - A new production API used to fix behavior needs a production call site or a test that drives the production path.
 - Exact-count assertions derive the expectation from an independent denominator or a reviewed generated snapshot plus its regeneration command.
 - Mutation evidence must compile, unless compilation is the contract.
-- Critical paths (extension, TUI, model/provider, Session/RPC, Package/Resource, startup/reload): representative benchmark/profile + resource-lifetime check. Test empty, ordinary, boundary and stress inputs; verify ordering, cancellation, replacement, cleanup, retained state.
+- Changes to lifetime, concurrency or a hot path of critical areas (extension host, TUI render loop, provider streaming, Session/RPC, startup/reload): add the resource-lifetime or ordering test the change puts at risk. Benchmarks/profiles only for performance claims or when the owner asks.
 - Performance claims need a representative benchmark with allocations and a CPU/allocation profile. Interface dispatch is not a defect without evidence.
 - Known bug found in scope → fix with red/mutation evidence, or report it and file a backlog item.
 - Green is necessary, not sufficient. Stop and report when everything passed first try or a check passed before and after the supposed fix.
@@ -163,8 +165,9 @@ Shared provider/model/auth/tool regression matrix (explain an inapplicable row f
 
 ## Commands
 
-- Iterate: `go test ./<pkg> -run '<Tests>'`. `-race` on edited packages only. No `-count=1` unless the test reads inputs through a child process. Bound fuzzing with `-parallel` and `-fuzztime`. Shared host: build with `-trimpath`.
-- Before a commit and before reporting ready: `make fork-check` (`automation/make/fork.mk`: build, `lint-changed`, Windows vet of changed packages, `test-changed`, `go-fix-clean`, `divergence-guard`, `port-lint`, `perf-lint`, `any-trap`, `source-hygiene`, `docs-drift`, `changelog-check`). SDK source change → also that SDK's suite (`make test-sdk-go|test-sdk-py|test-sdk-rs|test-sdk-ts`) and `make sdk-bundles-check`.
+- Iterate: `go test ./<pkg> -run '<Tests>'`. `-race` on edited packages only, never whole-repo. No `-count=1` unless the test reads inputs through a child process. Bound fuzzing with `-parallel` and `-fuzztime`. Shared host: build with `-trimpath`.
+- Before a commit: focused tests of what you changed. Before pushing a non-trivial Go change: `make fork-check` (`automation/make/fork.mk`: build, `lint-changed`, `-race` tests of the directly edited packages only, `go-fix-clean`, `divergence-guard`, `port-lint`, `perf-lint`, `any-trap`, `source-hygiene`, `docs-drift`, `changelog-check`). Docs-only/config-only changes skip it. SDK source change → also that SDK's suite (`make test-sdk-go|test-sdk-py|test-sdk-rs|test-sdk-ts|test-sdk-lisp`) and `make sdk-bundles-check`.
+- `make test-changed` (every dependent package, all SDK conformance, hours) and `make test` only when the owner asks or after an upstream merge touching shared core. Run them with `nice` and a bounded `-p`; never in the background without telling the owner.
 - Don't run upstream's Pi-compatibility, porting-ledger or publication gates unless the owner asks: `make check`, `verify`, `ci-drift`, `ci-contracts`, `parity*`, `journeys*`, `portmap-check`, `port-map-drift`, `coverage-drift`, `divergence-consistency|quality`, `test-provenance`, `test-expectation-lint`, `sdk-surface-drift`, `sdk-apidiff`, `bug-ledger-check`, `compliance`, `module-publication`, `module-size`, `release-check`, `porter-*` (SPEC-0001 D10). Their failures are not fork defects.
 - `make test` requires Go, Node, Python, Rust; fixture build failures are fatal. Prereqs: `make doctor`; setup: skill `setup-pig`.
 - Lint config change: `go tool golangci-lint config verify`.
@@ -193,7 +196,7 @@ Applies to `README.md`, `docs/`, `changelog.d/`, user-visible Go strings; `autom
 
 ## Windows
 
-First-class target. Fix Windows-only failures on a Windows host, not by CI round trips.
+Halted release target (SPEC-0001 D4), like macOS: not built, verified or vetted by fork gates. Don't spend work on Windows- or macOS-only failures unless the owner asks. When asked: fix them on a Windows host, not by CI round trips.
 - Toolchain: `.go-version`, `.node-version`, Python 3.12, Rust per `RUST_VERSION` in `.github/workflows/ci.yml`, Git for Windows (run `make`/`automation/` from Git Bash), `fd`/`rg` via `automation/ci/install-windows-tools.ps1`. Mirror: `MSYS=winsymlinks:nativestrict ./automation/gen/mirror-upstream.sh`.
 - Reproduce with the `windows` job's command from `.github/workflows/ci.yml`, `go test -v` and a `-timeout` below the job limit.
 - Set `PIG_HOME` and `PIG_CODING_AGENT_DIR` to a path containing a space. Most Windows bugs are path bugs (separators, drive letters, 8.3 names).
