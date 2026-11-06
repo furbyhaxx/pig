@@ -4,6 +4,16 @@
 
 FORK_BASE ?= @{upstream}
 
+# Use the SBCL automation/ci/install-sbcl.sh installed when PIG_SBCL is unset and no sbcl is on PATH.
+ifeq ($(origin PIG_SBCL),undefined)
+ifeq ($(shell command -v sbcl),)
+PIG_SBCL := $(lastword $(sort $(wildcard $(or $(PIG_CACHE_HOME),$(XDG_CACHE_HOME),$(HOME)/.cache)/pig-sbcl/*/bin/sbcl)))
+endif
+endif
+ifneq ($(PIG_SBCL),)
+export PIG_SBCL
+endif
+
 ##@ Fork
 
 fork-check: build lint-changed fork-test go-fix-clean divergence-guard port-lint perf-lint any-trap source-hygiene docs-drift changelog-check ## Fork gate before a push: cheap static gates plus the tests of directly edited packages (SPEC-0001 D10)

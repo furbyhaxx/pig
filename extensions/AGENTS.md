@@ -7,6 +7,7 @@ Extension SDKs bridging Pi's extension API through PiG's subprocess host (D19).
 | `sdk/` | Go SDK (own module); `upgrade/` rewrite rules for `pig extension upgrade` | `make test-sdk-go`, `make sdk-apidiff` |
 | `sdk-rs/` | Rust SDK | `make test-sdk-rs` |
 | `sdk-py/` | Python SDK | `make test-sdk-py` |
+| `sdk-lisp/` | Common Lisp SDK (SBCL; `automation/ci/install-sbcl.sh`) | `make test-sdk-lisp` |
 | `sdk-ts/` | declaration-only adapter: re-exports pinned Pi declarations + PiG-only types; no runtime | `make test-sdk-ts` |
 | `RUBRIC.md` | Go vs Rust choice for new extensions | |
 

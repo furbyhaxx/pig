@@ -60,7 +60,7 @@ Own `AGENTS.md` in each dir marked ●. Read it before working there.
 | `tui/` ● | terminal rendering, editor, components (Pi `packages/tui`) |
 | `internal/` ● | shared helpers incl. JS/Node semantics; interactive app in `internal/codingagent/` |
 | `chord/` `durable/` `env/` `telemetry/` `codemode/` `mcp/` ● | ports of the other Pi monorepo packages |
-| `extensions/` ● | extension SDKs: Go, Rust, Python, TypeScript declarations |
+| `extensions/` ● | extension SDKs: Go, Rust, Python, Common Lisp (`sdk-lisp`, SBCL), TypeScript declarations |
 | `piglets/` ● | PiG Standard, Porter, aot Piglets |
 | `examples/` ● | example extensions and SDK programs (product surface) |
 | `test/` ● | cross-package suites; `test/parity/` ●, `test/extension-conformance/` ● |
@@ -77,7 +77,7 @@ Own `AGENTS.md` in each dir marked ●. Read it before working there.
 Cross-updates:
 - `go.mod`, `go.sum`, `go.work*` or a new module import in `cmd/pig` → `nix/vendor-hash.sh update` (or set the hash it prints).
 - New package/module/area → its `AGENTS.md` in the same change (skill `agents-md`).
-- Extension API change (host call, event, field, wire message) → every SDK (`extensions/sdk` Go, `sdk-rs`, `sdk-py`, `sdk-ts` declarations), `test/extension-conformance/`, `docs/site/docs/extensions.md` + `internal/pigdocs/content/extension-api.md` in the same change. An SDK left behind is drift: backlog item, never silent.
+- Extension API change (host call, event, field, wire message) → every SDK (`extensions/sdk` Go, `sdk-rs`, `sdk-py`, `sdk-lisp`, `sdk-ts` declarations), `test/extension-conformance/`, `docs/site/docs/extensions.md` + `internal/pigdocs/content/extension-api.md` in the same change. An SDK left behind is drift: backlog item, never silent.
 - Setting added or changed → settings type in `internal/codingagent/settings.go`, `make generate-schemas`, `docs/site/docs/settings.md` + `internal/pigdocs/content/settings.md`.
 
 ## Mechanism vs policy
@@ -169,7 +169,7 @@ Verification is proportional to the change. A one-line or docs change needs the 
 - Before a commit: focused tests of what you changed. Before pushing a non-trivial Go change: `make fork-check` (`automation/make/fork.mk`: build, `lint-changed`, `-race` tests of the directly edited packages only, `go-fix-clean`, `divergence-guard`, `port-lint`, `perf-lint`, `any-trap`, `source-hygiene`, `docs-drift`, `changelog-check`). Docs-only/config-only changes skip it. SDK source change → also that SDK's suite (`make test-sdk-go|test-sdk-py|test-sdk-rs|test-sdk-ts|test-sdk-lisp`) and `make sdk-bundles-check`.
 - `make test-changed` (every dependent package, all SDK conformance, hours) and `make test` only when the owner asks or after an upstream merge touching shared core. Run them with `nice` and a bounded `-p`; never in the background without telling the owner.
 - Don't run upstream's Pi-compatibility, porting-ledger or publication gates unless the owner asks: `make check`, `verify`, `ci-drift`, `ci-contracts`, `parity*`, `journeys*`, `portmap-check`, `port-map-drift`, `coverage-drift`, `divergence-consistency|quality`, `test-provenance`, `test-expectation-lint`, `sdk-surface-drift`, `sdk-apidiff`, `bug-ledger-check`, `compliance`, `module-publication`, `module-size`, `release-check`, `porter-*` (SPEC-0001 D10). Their failures are not fork defects.
-- `make test` requires Go, Node, Python, Rust; fixture build failures are fatal. Prereqs: `make doctor`; setup: skill `setup-pig`.
+- `make test` requires Go, Node, Python, Rust and SBCL (Lisp SDK); fixture build failures are fatal. SBCL: `automation/ci/install-sbcl.sh` (checksummed, user-local, no root); make finds it in `~/.cache/pig-sbcl` or uses `PIG_SBCL`. Prereqs: `make doctor`; setup: skill `setup-pig`.
 - Lint config change: `go tool golangci-lint config verify`.
 - All targets: `make help`, `make help-parity`; fork gates in `automation/make/fork.mk`. Don't `go install ./cmd/pig`; use `make pig` (→ `bin/pig`) or `make install`.
 
