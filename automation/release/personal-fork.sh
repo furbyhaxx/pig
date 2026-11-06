@@ -37,23 +37,18 @@ trust=$(base64 < "$work/update-trust.pem" | tr -d '\n')
 update_url="https://github.com/$REPOSITORY/releases/latest/download/update.json"
 flags="-s -w -X github.com/MichaelKinsy/PiG/coding/cli.Build=$sha -X github.com/MichaelKinsy/PiG/internal/codingagent.DefaultUpdateURL=$update_url -X github.com/MichaelKinsy/PiG/internal/codingagent.DefaultUpdateTrustRoot=$trust"
 mkdir -p "$work/out"
-for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
+# darwin and windows are halted release targets (SPEC-0001 D4): neither built nor published.
+for target in linux/amd64 linux/arm64; do
   os=${target%/*}
   arch=${target#*/}
   name="pig-$version-$os-$arch"
   mkdir "$work/$name"
-  binary=pig
-  if [[ "$os" = windows ]]; then binary=pig.exe; fi
-  CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath -ldflags "$flags" -o "$work/$name/$binary" ./cmd/pig
+  CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath -ldflags "$flags" -o "$work/$name/pig" ./cmd/pig
   if [[ "$target" = linux/amd64 ]]; then "$work/$name/pig" --version; fi
   cp LICENSE NOTICE THIRD_PARTY_NOTICES.md "$work/$name/"
   cp -R LICENSES "$work/$name/"
   cp "$work/update-trust.pem" "$work/$name/update-trust.pem"
-  if [[ "$os" = windows ]]; then
-    (cd "$work" && zip -qr "out/$name.zip" "$name")
-  else
-    tar -C "$work" -czf "$work/out/$name.tar.gz" "$name"
-  fi
+  tar -C "$work" -czf "$work/out/$name.tar.gz" "$name"
 done
 # Android requires the upstream NDK build path, never a Linux binary.
 name="pig-$version-android-arm64"
@@ -66,17 +61,18 @@ cp "$work/update-trust.pem" "$work/$name/update-trust.pem"
 tar -C "$work" -czf "$work/out/$name.tar.gz" "$name"
 cp docs/site/public/install.sh "$work/out/install.sh"
 cp "$work/update-trust.pem" "$work/out/update-trust.pem"
-(cd "$work/out" && sha256sum ./*.tar.gz ./*.zip install.sh update-trust.pem > SHA256SUMS)
+(cd "$work/out" && sha256sum ./*.tar.gz install.sh update-trust.pem > SHA256SUMS)
 python3 automation/release/gen-update-manifest.py --version "$version" \
   --base-url "https://github.com/$REPOSITORY/releases/download/v$version" \
-  --sha256sums "$work/out/SHA256SUMS" > "$work/out/update.json"
+  --sha256sums "$work/out/SHA256SUMS" --platform linux/amd64 --platform linux/arm64 --platform android/arm64 \
+  > "$work/out/update.json"
 bash automation/release/sign-update-manifest.sh "$work/out/update.json" "$work/signing.pem" \
   "$work/update-trust.pem" > "$work/out/update.json.sig"
 # Stage all assets on a draft so clients never observe a partial release.
 gh release create "v$version" --repo "$REPOSITORY" --target "$sha" --draft \
   --title "PiG $version" --notes "Personal PiG build. Upstream PiG: $base. Source: $sha
 
-Configuration and executable names are unchanged. Linux amd64 smoke-tested on the build host; Linux arm64, macOS arm64 and Windows amd64 are smoke-tested natively after upload; the remaining targets are cross-built, not natively tested. Android is ELF-checked."
+Configuration and executable names are unchanged. Linux amd64 is smoke-tested on the build host and Linux arm64 natively after upload; Android arm64 is ELF-checked. macOS and Windows builds are halted and not published."
 retry_release() {
   local attempt
   for attempt in 1 2 3; do

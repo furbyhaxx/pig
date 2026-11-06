@@ -5,9 +5,9 @@ document:
   title: "Personal PiG distribution"
   description: "Fork identity, upstream synchronization, versioning, release, update trust and agent-steering ownership of furbyhaxx/pig"
   status: "published"
-  revision: 6
+  revision: 7
   created_at: "2026-11-04T12:30:29+01:00"
-  updated_at: "2026-11-05T23:23:00+01:00"
+  updated_at: "2026-11-06T12:50:00+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -29,6 +29,9 @@ document:
     - revision: 6
       reason: "Owner: upstream Pi-compatibility and porting gates cost time and tokens without protecting the fork's goal"
       changes: ["D10 takes Pi-comparison, porting-ledger and upstream-publication gates off the required path", "D10 defines make fork-check as the fork gate", "D10 drops Porter"]
+    - revision: 7
+      reason: "Owner uses Linux only; halt macOS and Windows to speed up releases and development"
+      changes: ["D4 releases linux amd64/arm64 and android arm64 only", "D4 verify matrix is linux-arm64", "D10 verification proportional to the change"]
 ---
 
 # SPEC-0001 Personal PiG distribution
@@ -60,10 +63,11 @@ document:
 
 ### D4 Release and update trust
 
-- `automation/release/personal-fork.sh` builds linux/darwin/windows × amd64/arm64 and android/arm64 (NDK), signs `update.json` with Ed25519, and stages a draft GitHub release. A verify matrix runs the linux-arm64, darwin-arm64 and windows-amd64 archives natively (`pig --version` and `pig update`) before a separate job publishes the draft. Already-released source commits are skipped.
+- `automation/release/personal-fork.sh` builds linux amd64/arm64 and android/arm64 (NDK), signs `update.json` (listing exactly those platforms) with Ed25519, and stages a draft GitHub release. A verify job runs the linux-arm64 archive natively (`pig --version` and `pig update`) before a separate job publishes the draft. Already-released source commits are skipped.
+- Halted targets: darwin and windows are neither built, verified nor published, and the installer refuses macOS. Reason: the owner uses Linux only; halting them saves runner time and keeps unexecuted artifacts out of releases. Resuming a target restores its build, its native verify leg and its install docs together.
 - Signing key: Actions secret `PIG_UPDATE_SIGNING_KEY`; public key committed at `automation/release/personal-update-trust.pem`, embedded in binaries and shipped in archives. The installer writes it to `<config-root>/update-trust.pem` together with `update-url`.
 - GitHub marks `-c.N` releases as full releases so `/releases/latest` serves the fork channel.
-- linux/amd64 is executed on the build host; linux-arm64, darwin-arm64 and windows-amd64 run on their own runners in the verify matrix. darwin-amd64, windows-arm64 and android-arm64 are cross-built; Android is checked for an AArch64 PIE that links bionic. The pipeline does not reproduce upstream's SBOM, attestation and parity evidence.
+- linux/amd64 is executed on the build host, linux-arm64 on its own runner; Android is checked for an AArch64 PIE that links bionic. The pipeline does not reproduce upstream's SBOM, attestation and parity evidence.
 
 ### D5 Inherited workflows
 
@@ -96,7 +100,7 @@ document:
 
 ### D10 Inherited parity gates
 
-- Required gate for fork changes: `make fork-check` (`automation/make/fork.mk`): build, vet, `lint-changed`, `test-changed`, `go-fix-clean`, `divergence-guard`, `port-lint`, `perf-lint`, `any-trap`, `source-hygiene`, `docs-drift`, `changelog-check`. Inner loop: focused `go test` plus `-race` on edited packages.
+- Verification is proportional to the change. Gate before pushing a non-trivial Go change: `make fork-check` (`automation/make/fork.mk`): build, `lint-changed`, `-race` tests of directly edited packages (`fork-test`; no reverse-dependency fan-out), `go-fix-clean`, `divergence-guard`, `port-lint`, `perf-lint`, `any-trap`, `source-hygiene`, `docs-drift`, `changelog-check`. Inner loop and docs/config-only changes: focused `go test` or nothing. `make test-changed` (all dependents and SDK conformance, hours) runs only on owner request or after an upstream merge that touches shared core. Reason: the earlier gate fanned out to most of the repository for one-line edits.
 - Not required, not run by agents unless the owner asks: Pi-comparison gates (`parity*`, `journeys*`, `test-pipeline-fuzz`, `ci-node-runtime`), porting ledgers (`ci-contracts` and its members, `closure-check`, `port-map-drift`, `portmap-check`, `coverage-drift`, `lint-scenarios`, `known-gaps-drift`, `custom-factory-ledger-drift`, `divergence*` except `divergence-guard`, `test-provenance`, `test-expectation-lint`, `sdk-surface-drift`, `sdk-apidiff`, `bug-ledger-check`), upstream publication gates (`compliance`, `module-publication`, `module-size`, `npm-dist-*`, `release-check`), and the bundles that contain them (`make check`, `make verify`, `ci-drift`). Reason: they prove equivalence with Pi or keep upstream's port ledgers consistent; the fork's goal (D7) does not need either, and together they cost tens of CPU-minutes per change.
 - The targets, scenarios and ledgers stay in the tree so upstream merges stay clean (D8). They may go stale; a stale result there is not a fork defect.
 - Go tests in ordinary packages that compare with Pi or a Pi golden run under `test-changed`. When a fork change or a host difference breaks one, rewrite it to assert the fork's own contract or delete it in the same change, citing the spec. Never keep a Pi expectation the fork does not want.

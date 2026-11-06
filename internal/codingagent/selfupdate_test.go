@@ -15,6 +15,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -371,8 +372,9 @@ func TestUpdateManifestScriptNamesTheAndroidArchive(t *testing.T) {
 		}
 		return path
 	}
-	run := func(sums string) ([]byte, error) {
-		return exec.Command(python, script, "--version", "0.4.1", "--base-url", "https://updates.example/v0.4.1", "--sha256sums", sums).CombinedOutput()
+	run := func(sums string, extra ...string) ([]byte, error) {
+		args := append([]string{script, "--version", "0.4.1", "--base-url", "https://updates.example/v0.4.1", "--sha256sums", sums}, extra...)
+		return exec.Command(python, args...).CombinedOutput()
 	}
 
 	out, err := run(sumsFor("android-arm64", "linux-amd64", "linux-arm64", "darwin-amd64", "darwin-arm64"))
@@ -395,6 +397,23 @@ func TestUpdateManifestScriptNamesTheAndroidArchive(t *testing.T) {
 	// A release without the android archive must not publish a manifest that leaves Termux installs with "no binary for android/arm64".
 	if out, err := run(sumsFor("linux-amd64", "linux-arm64", "darwin-amd64", "darwin-arm64")); err == nil || !strings.Contains(string(out), "pig-0.4.1-android-arm64.tar.gz") {
 		t.Fatalf("manifest without the android archive: err=%v\n%s", err, out)
+	}
+
+	// The fork releases only the platforms it names (SPEC-0001 D4); a named platform without its archive still fails.
+	subset := []string{"--platform", "linux/amd64", "--platform", "linux/arm64", "--platform", "android/arm64"}
+	out, err = run(sumsFor("android-arm64", "linux-amd64", "linux-arm64"), subset...)
+	if err != nil {
+		t.Fatalf("generate subset manifest: %v\n%s", err, out)
+	}
+	manifest = UpdateManifest{}
+	if err := json.Unmarshal(out, &manifest); err != nil {
+		t.Fatal(err)
+	}
+	if got := slices.Sorted(maps.Keys(manifest.Binaries)); !slices.Equal(got, []string{"android/arm64", "linux/amd64", "linux/arm64"}) {
+		t.Fatalf("subset manifest platforms = %v", got)
+	}
+	if out, err := run(sumsFor("android-arm64", "linux-amd64"), subset...); err == nil || !strings.Contains(string(out), "pig-0.4.1-linux-arm64.tar.gz") {
+		t.Fatalf("subset manifest without a named archive: err=%v\n%s", err, out)
 	}
 }
 

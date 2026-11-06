@@ -135,6 +135,12 @@ def main() -> int:
         help="allow HTTP binary URLs only when the base host is loopback",
     )
     ap.add_argument("--notes", default="", help="optional release note shown in the update banner")
+    ap.add_argument(
+        "--platform",
+        action="append",
+        metavar="GOOS/GOARCH",
+        help="with --sha256sums, list only this archive platform; repeat for several (default: every archive platform)",
+    )
     args = ap.parse_args()
 
     if not _valid_version(args.version):
@@ -151,13 +157,25 @@ def main() -> int:
         return 2
     base = args.base_url.rstrip("/")
 
+    platforms = ARCHIVE_PLATFORMS
+    if args.platform:
+        if args.sha256sums is None:
+            print("--platform requires --sha256sums", file=sys.stderr)
+            return 2
+        requested = [tuple(value.split("/", 1)) for value in args.platform]
+        unknown = sorted("/".join(p) for p in requested if p not in ARCHIVE_PLATFORMS)
+        if unknown:
+            print(f"unknown archive platform: {', '.join(unknown)}", file=sys.stderr)
+            return 2
+        platforms = [p for p in ARCHIVE_PLATFORMS if p in requested]
+
     binaries: dict[str, dict[str, str]] = {}
     if args.sha256sums is not None:
         sums = _read_sha256sums(args.sha256sums)
         if sums is None:
             print(f"{args.sha256sums} is not a SHA256SUMS file with one entry per name", file=sys.stderr)
             return 1
-        for goos, goarch in ARCHIVE_PLATFORMS:
+        for goos, goarch in platforms:
             name = f"pig-{args.version}-{goos}-{goarch}.tar.gz"
             if name not in sums:
                 print(f"{args.sha256sums} has no entry for {name}", file=sys.stderr)

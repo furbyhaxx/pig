@@ -212,7 +212,7 @@ detect_platform() {
     Linux)
       if is_android; then os=android; else os=linux; fi
       ;;
-    Darwin) os=darwin ;;
+    Darwin) fail "this fork publishes no macOS releases (SPEC-0001 D4); build from source instead" ;;
     *) fail "unsupported operating system $(uname -s); download a release archive from GitHub instead" ;;
   esac
   case "$(uname -m)" in

@@ -34,13 +34,13 @@ This personal fork keeps Pi and upstream PiG compatibility while it does not lim
 
 ## Install
 
-On macOS, Linux, or Android with [Termux](docs/site/docs/termux.md) (arm64):
+On Linux, or Android with [Termux](docs/site/docs/termux.md) (arm64):
 
 ```bash
 curl -fsSL https://github.com/furbyhaxx/pig/releases/latest/download/install.sh | sh
 ```
 
-On Windows, download the matching ZIP from [this fork's GitHub Releases](https://github.com/furbyhaxx/pig/releases) and replace `pig.exe` while PiG is stopped. Windows in-place self-update remains unsupported, as upstream.
+This fork publishes no macOS or Windows releases (halted targets); build from source there.
 
 Run `pig update` after a script installation. To replace an existing installation, set `PIG_INSTALL_DIR` to the directory containing your current `pig`; configuration, sessions, and credentials remain in their existing locations. The installer replaces the update-source, trust-key, and installation-receipt sidecars to select this fork.
 

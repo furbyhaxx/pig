@@ -1,3 +1,7 @@
 ### Changed
 
-- Fork releases are published only after the Linux arm64, macOS arm64 and Windows amd64 archives run natively (`pig --version` and `pig update`). Linux amd64 still runs on the build host; the remaining targets are cross-built and the release notes say so.
+- Fork releases are published only after the Linux arm64 archive runs natively (`pig --version` and `pig update`); Linux amd64 runs on the build host and Android arm64 is ELF-checked.
+
+### Removed
+
+- macOS and Windows release archives. They are halted targets (SPEC-0001 D4); the installer refuses macOS and the update manifest lists only Linux and Android. Build from source on those systems.

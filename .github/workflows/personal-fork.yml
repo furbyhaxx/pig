@@ -76,13 +76,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # macOS (macos-15, darwin-arm64) and Windows (windows-latest, windows-amd64) are halted release targets (SPEC-0001 D4).
         include:
           - runner: ubuntu-24.04-arm
             suffix: linux-arm64.tar.gz
-          - runner: macos-15
-            suffix: darwin-arm64.tar.gz
-          - runner: windows-latest
-            suffix: windows-amd64.zip
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 15
     permissions:

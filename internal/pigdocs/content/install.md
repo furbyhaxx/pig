@@ -5,7 +5,7 @@ Use this page to get from a fresh binary to a working session. Return to the
 
 ## 1. Build or install the binary
 
-This is the `furbyhaxx/pig` personal distribution. On macOS, Linux, or Android with Termux arm64, install from this fork's GitHub Releases:
+This is the `furbyhaxx/pig` personal distribution. On Linux or Android with Termux arm64, install from this fork's GitHub Releases:
 
 ```sh
 curl -fsSL https://github.com/furbyhaxx/pig/releases/latest/download/install.sh | sh
@@ -14,7 +14,7 @@ pig update
 
 To replace an existing standalone installation, set `PIG_INSTALL_DIR` on the `sh` side of the pipe to the directory containing the current `pig`. The installer preserves settings, sessions, and credentials. It replaces the installation receipt, update URL, and public trust-key sidecars so subsequent updates use signed personal releases. Explicit update environment overrides still take precedence. Uninstall a package-manager installation through its manager before switching; do not overwrite package-owned files.
 
-On Windows, stop PiG and replace `pig.exe` with the matching ZIP from [this fork's releases](https://github.com/furbyhaxx/pig/releases), after checking `SHA256SUMS`. Windows standalone in-place updates remain unsupported.
+This fork publishes no macOS or Windows releases (halted targets); build from source there.
 
 The upstream npm package, upstream Go module installation, hosted website installer, and PowerShell installer install upstream, not this fork. This fork does not republish those packages. From this fork's checkout, build with the toolchain in `.go-version`:
 
