@@ -4,16 +4,19 @@ document:
   id: "SPEC-0003"
   title: "Model request pipeline: every model call hooked, fail-closed transforms, hook phases"
   description: "One request pipeline in the Model Runtime for agent turns, compaction, summaries and extension calls; security transforms fail closed; early/normal/late phases instead of priorities"
-  status: "draft"
-  revision: 1
+  status: "published"
+  revision: 2
   created_at: "2026-11-04T14:36:00+01:00"
-  updated_at: "2026-11-04T14:36:00+01:00"
+  updated_at: "2026-11-06T11:37:12+01:00"
   created_by: "orchestrator"
-  updated_by: "orchestrator"
+  updated_by: "coding-agent"
   changelog:
     - revision: 1
       reason: "Resolve U-02, U-04 and U-15 of the host-gap verification"
       changes: ["document creation"]
+    - revision: 2
+      reason: "Owner accepted the decisions as the fork contract"
+      changes: ["status draft -> published"]
 ---
 
 # SPEC-0003 Model request pipeline

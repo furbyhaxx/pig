@@ -4,16 +4,19 @@ document:
   id: "SPEC-0006"
   title: "Extension UI surfaces: view events for widgets, header and footer; nested tool-call renderers"
   description: "Routes kit view events to every extension view, not only overlays, and lets extension tool renderers draw the child calls that codemode and other tools make"
-  status: "draft"
-  revision: 1
+  status: "published"
+  revision: 2
   created_at: "2026-11-04T14:48:00+01:00"
-  updated_at: "2026-11-04T14:48:00+01:00"
+  updated_at: "2026-11-06T11:37:12+01:00"
   created_by: "orchestrator"
-  updated_by: "orchestrator"
+  updated_by: "coding-agent"
   changelog:
     - revision: 1
       reason: "Resolve U-10 and U-11 of the host-gap verification"
       changes: ["document creation"]
+    - revision: 2
+      reason: "Owner accepted the decisions as the fork contract"
+      changes: ["status draft -> published"]
 ---
 
 # SPEC-0006 Extension UI surfaces

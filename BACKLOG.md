@@ -1,3 +1,1 @@
 - B-0001 feature P3 — Native verification of fork release targets → .project/backlog/B-0001-native-release-verification.md
-- B-0004 bug P1 — Resolve remaining host-gap full-check failures → .project/backlog/B-0004-host-gap-full-gate-failures.md
-- B-0006 debt P2 — Extension API coverage gaps from PLAN-0001 S1 → .project/backlog/B-0006-extension-api-coverage-gaps.md

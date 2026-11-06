@@ -4,16 +4,19 @@ document:
   id: "SPEC-0008"
   title: "Tool and credential consistency: explicit tool cwd, one !command resolver"
   description: "Built-in tool factories honour an explicit cwd, and command-valued credentials resolve in one place for every provider registration kind"
-  status: "draft"
-  revision: 1
+  status: "published"
+  revision: 2
   created_at: "2026-11-04T14:55:00+01:00"
-  updated_at: "2026-11-04T14:55:00+01:00"
+  updated_at: "2026-11-06T11:37:12+01:00"
   created_by: "orchestrator"
-  updated_by: "orchestrator"
+  updated_by: "coding-agent"
   changelog:
     - revision: 1
       reason: "Resolve U-16 and U-19 of the host-gap verification"
       changes: ["document creation"]
+    - revision: 2
+      reason: "Owner accepted the decisions as the fork contract"
+      changes: ["status draft -> published"]
 ---
 
 # SPEC-0008 Tool and credential consistency

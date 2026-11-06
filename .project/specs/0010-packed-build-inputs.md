@@ -4,16 +4,19 @@ document:
   id: "SPEC-0010"
   title: "Packed build inputs: source snapshots and build tags"
   description: "Packed cells compile a snapshot of their source set, so concurrent edits never fail a build, and extensions declare Go build tags in their manifest"
-  status: "draft"
-  revision: 1
+  status: "published"
+  revision: 2
   created_at: "2026-11-04T15:01:00+01:00"
-  updated_at: "2026-11-04T15:01:00+01:00"
+  updated_at: "2026-11-06T11:37:12+01:00"
   created_by: "orchestrator"
-  updated_by: "orchestrator"
+  updated_by: "coding-agent"
   changelog:
     - revision: 1
       reason: "Resolve U-25 of the host-gap verification"
       changes: ["document creation"]
+    - revision: 2
+      reason: "Owner accepted the decisions as the fork contract"
+      changes: ["status draft -> published"]
 ---
 
 # SPEC-0010 Packed build inputs

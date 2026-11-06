@@ -4,10 +4,10 @@ document:
   id: "SPEC-0009"
   title: "Skill roots setting: skills.roots[]"
   description: "Configurable list of directories searched for skills, replacing the fixed auto-discovery roots; tokens keep the default roots addressable"
-  status: "draft"
-  revision: 2
+  status: "published"
+  revision: 3
   created_at: "2026-11-04T14:58:00+01:00"
-  updated_at: "2026-11-05T15:20:00+01:00"
+  updated_at: "2026-11-06T11:37:12+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -17,6 +17,9 @@ document:
     - revision: 2
       reason: "Implemented and accepted through the built CLI"
       changes: ["record the canonical object form and malformed-entry handling", "record configured-root precedence and the shared discovery mechanism", "record implementation evidence and test coverage"]
+    - revision: 3
+      reason: "Owner accepted the decisions as the fork contract"
+      changes: ["status draft -> published"]
 ---
 
 # SPEC-0009 Skill roots

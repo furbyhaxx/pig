@@ -4,16 +4,19 @@ document:
   id: "SPEC-0005"
   title: "Headless output and dialogs: extension output channel, typed dialog results, secret input"
   description: "Same stdio routing for every extension runtime, an explicit output API for print/JSON/RPC, dialog results with a status, and a masked secret input in every mode that has a UI"
-  status: "draft"
-  revision: 1
+  status: "published"
+  revision: 2
   created_at: "2026-11-04T14:44:00+01:00"
-  updated_at: "2026-11-04T14:44:00+01:00"
+  updated_at: "2026-11-06T11:37:12+01:00"
   created_by: "orchestrator"
-  updated_by: "orchestrator"
+  updated_by: "coding-agent"
   changelog:
     - revision: 1
       reason: "Resolve U-03, U-12 and U-13 of the host-gap verification"
       changes: ["document creation"]
+    - revision: 2
+      reason: "Owner accepted the decisions as the fork contract"
+      changes: ["status draft -> published"]
 ---
 
 # SPEC-0005 Headless output and dialogs

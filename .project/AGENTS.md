@@ -16,8 +16,8 @@ Development artifacts of the `furbyhaxx/pig` fork. Committed. Never in `docs/`. 
 
 - Existing: `specs/`, `plans/`, `analyses/`, `backlog/`. Missing type → copy its dir + `AGENTS.md` from the skill template.
 - One artifact = one file or one `<slug>/` dir. Evidence in `<slug>/evidence/`, credentials redacted.
-- Every Markdown artifact (except `user-uploaded-assets/`) starts with `document:` frontmatter: type, id, title, description, status (sketch|draft|published|archived), revision, created_at, updated_at, created_by, updated_by, changelog. Timestamps `date -Iseconds`.
+- Every Markdown artifact (except `user-uploaded-assets/`) starts with `document:` frontmatter: type, id, title, description, status (sketch|draft|published), revision, created_at, updated_at, created_by, updated_by, changelog. Timestamps `date -Iseconds`.
 - Revise: bump revision, update updated_*, append changelog entry.
-- Superseded → status `archived` + successor path. Never delete.
+- Same topic, new facts: overwrite the file. No longer needed: delete it. Git history is the archive.
 - New type → dir + AGENTS.md + row here.
 - Upstream PiG keeps its own artifacts in `docs/plan/`, `docs/specs/`, `docs/findings/`, `plans/`, `research/`, `handoffs/`. They are upstream-owned: read them, never add fork artifacts there, never move them here.

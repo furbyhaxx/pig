@@ -4,10 +4,10 @@ document:
   id: "SPEC-0007"
   title: "Session and delivery correctness"
   description: "Queued nextTurn messages bound to their branch, resume reason for continued sessions, strict deliverAs, deduplicated session listing, lighter listing payloads, custom data in branch projections and an explicit no-op compaction result"
-  status: "draft"
-  revision: 4
+  status: "published"
+  revision: 5
   created_at: "2026-11-04T14:52:00+01:00"
-  updated_at: "2026-11-05T12:32:01+01:00"
+  updated_at: "2026-11-06T11:37:12+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -23,6 +23,9 @@ document:
     - revision: 4
       reason: "Cover the interactive in-place fork path"
       changes: ["Record the direct slash fork boundary and its red-proven regression; share discard dispatch between modes"]
+    - revision: 5
+      reason: "Owner accepted the decisions as the fork contract"
+      changes: ["status draft -> published"]
 ---
 
 # SPEC-0007 Session and delivery correctness

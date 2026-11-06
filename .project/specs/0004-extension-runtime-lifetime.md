@@ -4,10 +4,10 @@ document:
   id: "SPEC-0004"
   title: "Extension runtime lifetime: bounded reloads, cancellable bus, live renderer resolution, retained processes"
   description: "Generation-unique sockets and bounded handshakes for reload, cancellation through event-bus listeners, renderer re-resolution without reload, and host-owned processes that survive extension reloads"
-  status: "draft"
-  revision: 7
+  status: "published"
+  revision: 8
   created_at: "2026-11-04T14:40:00+01:00"
-  updated_at: "2026-11-05T15:45:00+01:00"
+  updated_at: "2026-11-06T11:37:12+01:00"
   created_by: "orchestrator"
   updated_by: "coding-agent"
   changelog:
@@ -32,6 +32,9 @@ document:
     - revision: 7
       reason: "Close the D1 P29 reproduction obligation with tree navigation and real agent turns"
       changes: ["record the 12-round PTY reproduction", "state why it is reproduction coverage rather than a red-proven fix"]
+    - revision: 8
+      reason: "Owner accepted the decisions as the fork contract"
+      changes: ["status draft -> published"]
 ---
 
 # SPEC-0004 Extension runtime lifetime

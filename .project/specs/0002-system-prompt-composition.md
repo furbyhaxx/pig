@@ -4,16 +4,19 @@ document:
   id: "SPEC-0002"
   title: "System prompt composition: Jinja layouts, section catalog, extension sections"
   description: "Replaces last-writer-wins prompt mutation with a section catalog, declarative extension sections and one Jinja layout render per run whose output is recorded exactly as sent"
-  status: "draft"
-  revision: 1
+  status: "published"
+  revision: 2
   created_at: "2026-11-04T14:30:00+01:00"
-  updated_at: "2026-11-04T14:30:00+01:00"
+  updated_at: "2026-11-06T11:37:12+01:00"
   created_by: "orchestrator"
-  updated_by: "orchestrator"
+  updated_by: "coding-agent"
   changelog:
     - revision: 1
       reason: "Owner asked for a Jinja system prompt with sections that extensions can contribute to and take over"
       changes: ["document creation"]
+    - revision: 2
+      reason: "Owner accepted the decisions as the fork contract"
+      changes: ["status draft -> published"]
 ---
 
 # SPEC-0002 System prompt composition
