@@ -34,6 +34,40 @@ Raw PORT_MAP rows: 1032. Breakdown: 103 n/a (designed out) · 19 🟡 partial. S
 
 Behavioral evidence includes paired scenarios and reviewed mutation-proven Go unit tests. Unit tests are listed separately; last run refers only to paired scenarios, not unit execution or exhaustive parity.
 
+## Families
+
+| family | scenarios | behavioral | boot-only | weak | deferred | upstream behavioral covered | last run |
+|---|---:|---:|---:|---:|---:|---:|---|
+| `_top` | 1 | 1 | 0 | 0 | 0 | 1 | not run |
+| `ai-sdk` | 3 | 3 | 0 | 0 | 0 | 90 | not run |
+| `autocomplete` | 14 | 14 | 0 | 0 | 0 | 5 | not run |
+| `cli-utils` | 38 | 38 | 0 | 0 | 0 | 17 | not run |
+| `clipboard-images` | 7 | 7 | 0 | 0 | 2 | 11 | not run |
+| `compaction` | 15 | 15 | 0 | 0 | 0 | 10 | not run |
+| `export-html` | 7 | 7 | 0 | 0 | 0 | 2 | not run |
+| `extension-host` | 1 | 1 | 0 | 0 | 0 | 2 | not run |
+| `extensions-runtime` | 143 | 142 | 0 | 1 | 0 | 63 | not run |
+| `footer` | 12 | 12 | 0 | 0 | 0 | 9 | not run |
+| `fullscreen` | 14 | 14 | 0 | 0 | 0 | 11 | not run |
+| `interactive-rendering` | 73 | 72 | 1 | 0 | 0 | 37 | not run |
+| `json` | 14 | 14 | 0 | 0 | 0 | 10 | not run |
+| `model-resolver-selector` | 28 | 28 | 0 | 0 | 0 | 16 | not run |
+| `model-runtime-store-catalog` | 25 | 25 | 0 | 0 | 0 | 24 | not run |
+| `oauth` | 32 | 32 | 0 | 0 | 0 | 19 | not run |
+| `print` | 13 | 13 | 0 | 0 | 0 | 9 | not run |
+| `project-trust` | 26 | 26 | 0 | 0 | 0 | 19 | not run |
+| `providers-faux-streaming` | 66 | 65 | 0 | 1 | 0 | 49 | not run |
+| `providers-registry` | 9 | 6 | 0 | 3 | 0 | 27 | not run |
+| `rpc` | 93 | 93 | 0 | 0 | 0 | 32 | not run |
+| `selectors` | 14 | 14 | 0 | 0 | 1 | 15 | not run |
+| `session` | 43 | 43 | 0 | 0 | 0 | 19 | not run |
+| `settings` | 16 | 16 | 0 | 0 | 0 | 21 | not run |
+| `slash-commands` | 29 | 28 | 1 | 0 | 0 | 21 | not run |
+| `startup` | 19 | 18 | 1 | 0 | 0 | 10 | not run |
+| `tools` | 32 | 32 | 0 | 0 | 0 | 35 | not run |
+| `tree` | 9 | 8 | 1 | 0 | 0 | 9 | not run |
+| `tui-components` | 39 | 39 | 0 | 0 | 0 | 36 | not run |
+
 | upstream | port | scenarios | behavioral | last run | unit tests |
 |---|---|---|---|---|---|
 | `packages/ai/scripts/check-model-data.ts` | ✅ | 1 (17-model-data-validation) | 1 (17-model-data-validation) | not run |  |
