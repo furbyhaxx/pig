@@ -9,7 +9,8 @@ pinned="$root/extensions/sdk-ts/node_modules/@earendil-works/pi-coding-agent"
 node_bin=$(node -p 'process.execPath')
 work=$(mktemp -d "${TMPDIR:-/tmp}/pig.XXXXXXXX")
 output=""
-trap 'rm -rf "$work"; if [ -n "$output" ]; then rm -f "$output"; fi' EXIT
+# The pinned build tree is read-only; the copy keeps those modes, so restore write access before removing it.
+trap 'chmod -R u+w "$work" 2>/dev/null; rm -rf "$work"; if [ -n "$output" ]; then rm -f "$output"; fi' EXIT
 output=$(mktemp "$root/coding/cli/.help_upstream.XXXXXXXX")
 mkdir -p "$work/node_modules/@earendil-works"
 cp -R "$pinned" "$work/node_modules/@earendil-works/pi-coding-agent"
