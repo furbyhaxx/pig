@@ -859,6 +859,8 @@ func (h *Host) acceptPackedExt(ctx context.Context, me *managedExt, ln net.Liste
 
 	h.markExtension(me.config.Name, "handshake-start")
 	conn := NewConn(me.config.Name, rawConn)
+	// Every member of a packed process has its own socket, and the process's exit ends them all (peer_exit.go).
+	conn.watchPeerExit(me.packedProcess.startWait())
 	if turns := me.processFileMutations(); turns != nil {
 		conn.shareFileMutations(turns)
 	}
@@ -933,7 +935,7 @@ func (h *Host) acceptPackedExt(ctx context.Context, me *managedExt, ln net.Liste
 		loadErr.StderrLog = me.stderrLogPath
 		return nil, loadErr
 	}
-	go h.handleIncoming(me, conn)
+	h.goHandleIncoming(me, conn)
 	if err := h.loadProviderDeclarations(ctx, me, conn, reg.Providers, false); err != nil {
 		loadErr := newLoadError(me.config.Name, "register", "provider_config_invalid", err)
 		loadErr.StderrLog = me.stderrLogPath

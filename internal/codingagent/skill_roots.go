@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/MichaelKinsy/PiG/coding/packagecontent"
+	"github.com/MichaelKinsy/PiG/internal/resolvepath"
 )
 
 type configuredSkillRoot struct {
@@ -45,7 +46,7 @@ func resolveConfiguredSkillRoots(scan *AgentsSkillScan, cwd, agentDir string, sm
 			key = real
 		}
 		for _, prior := range seen {
-			if samePath(prior, key) {
+			if resolvepath.PathsEqual(prior, key) {
 				return
 			}
 		}

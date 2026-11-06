@@ -23,6 +23,7 @@ func goAPIType() reflect.Type {
 // divergence visible in the API source, not an extra method here.
 var allowedDivergences = map[string]string{
 	"OnQueuedMessageDiscarded": "fork SPEC-0007 D1",
+	"OwnThinkingRuns":          "additive feature D214 (docs/additive-features.md): pi.ownThinkingRuns(enabled) lets a separate-process extension drop the blank rows around a thinking run it draws itself; Pi's extensions patch AssistantMessageComponent.updateContent in the host process instead (assistant-message.ts updateContent). The same method exists in every SDK and TestConformance_OwnThinkingRunsAcrossSDKs guards it",
 }
 
 // goOverloads names the Go methods that split one upstream method with several call signatures: Go has no overloads.

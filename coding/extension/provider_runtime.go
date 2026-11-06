@@ -35,8 +35,9 @@ type ExtensionRuntime struct {
 	FlagValues map[string]any
 
 	*providerRuntimeState
-	staleMessage          string
-	eventBusUnsubscribers []*eventBusSubscription
+	staleMessage               string
+	eventBusHead, eventBusTail *eventBusSubscription
+	eventBusRetained           int
 }
 
 type providerRuntimeState struct {

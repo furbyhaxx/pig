@@ -14,6 +14,7 @@ import (
 	"github.com/MichaelKinsy/PiG/coding/extension"
 	"github.com/MichaelKinsy/PiG/coding/extension/host/inproc"
 	"github.com/MichaelKinsy/PiG/coding/extension/host/invocation"
+	"github.com/MichaelKinsy/PiG/internal/resolvepath"
 	"github.com/MichaelKinsy/PiG/tui"
 )
 
@@ -39,15 +40,7 @@ func shortenPath(p string) string {
 	if err != nil || home == "" {
 		return p
 	}
-	if p == home {
-		return "~"
-	}
-	// Upstream formatDisplayPath shortens any path that starts with home, so
-	// on Windows a / after the home prefix counts as well as \.
-	if strings.HasPrefix(p, home) && len(p) > len(home) && os.IsPathSeparator(p[len(home)]) {
-		return "~" + p[len(home):]
-	}
-	return p
+	return resolvepath.ShortenHomePath(p, home)
 }
 
 // debugLog writes to pig-debug.log in the temporary directory when PIG_DEBUG is set. Used for

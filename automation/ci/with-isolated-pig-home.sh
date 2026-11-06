@@ -11,20 +11,22 @@ export PATH="$go_root/bin:$PATH"
 # Keep compiler caches separate from the validated program's runtime state.
 export GOCACHE="${GOCACHE:-$(go env GOCACHE)}"
 export GOMODCACHE="${GOMODCACHE:-$(go env GOMODCACHE)}"
-# rustup and cargo find their toolchains and registry under HOME by default; pin them to the caller's before HOME moves, as for Go above. A missing directory leaves the variable unset.
-for rust_dir in RUSTUP_HOME:.rustup CARGO_HOME:.cargo; do
-  name=${rust_dir%%:*}
-  if [ -z "${!name:-}" ] && [ -d "$HOME/${rust_dir#*:}" ]; then
-    export "$name=$HOME/${rust_dir#*:}"
-  fi
-done
+# rustup and cargo locate the installed toolchain, its default and the registry cache through these two directories, which default to the caller's home. Pin them
+# to the caller's directories before HOME moves, so a validated program that builds Rust finds the toolchain the caller installed; an explicit value is kept.
+rust_base="$HOME"
+case "$OSTYPE" in
+  msys*|cygwin*) rust_base=$(cygpath -m "${USERPROFILE:-$HOME}") ;;
+esac
+export RUSTUP_HOME="${RUSTUP_HOME:-$rust_base/.rustup}"
+export CARGO_HOME="${CARGO_HOME:-$rust_base/.cargo}"
 # pin install-oracle links the repo's node_modules at this cache; a cache under the temporary HOME would leave a dangling link after cleanup.
 if [ -z "${PIG_DEV_HOME:-}" ]; then
   export PIG_DEV_HOME="${PIG_CACHE_HOME:-${XDG_CACHE_HOME:-$HOME/.cache}}/pig-dev"
 fi
 
 directory=$(mktemp -d "${TMPDIR:-${TMP:-/tmp}}/pig-validation.XXXXXXXX")
-trap 'rm -rf -- "$directory"' EXIT
+# The pinned Pi build the program installs under this home is made read-only on purpose (automation/pin/oracle.py protect, so an npm ci through a link cannot empty it), and rm cannot remove an entry of a directory without its write bit, as with Go's module cache. oracle.py thaw is the inverse; this is the same step for the whole home.
+trap 'chmod -R u+w -- "$directory" 2>/dev/null || true; rm -rf -- "$directory"' EXIT
 home=$directory
 # Native Windows programs need drive-qualified paths, not MSYS mount paths.
 case "$OSTYPE" in
