@@ -498,13 +498,21 @@ func TestInstallShRefusesAndroidCPUsWithoutARelease(t *testing.T) {
 	}
 }
 
-// A GNU/Linux or macOS uname -o is not Android: with PREFIX set, pig still installs the linux or darwin release into ~/.local/bin, and macOS has no uname -o.
+// macOS is a halted release target (SPEC-0001 D4): the installer refuses it before downloading anything.
+func TestInstallShRefusesMacOS(t *testing.T) {
+	f := newInstallFixture(t)
+	assertFailure(t, f.runOn(t, "Darwin", "arm64", "", "PREFIX="+filepath.Join(f.root, "usr")), "publishes no macOS releases")
+	if _, err := os.Stat(filepath.Join(f.root, "fixtures", ".requests")); !os.IsNotExist(err) {
+		t.Fatalf("refused install made a request: %v", err)
+	}
+}
+
+// A GNU/Linux uname -o is not Android: with PREFIX set, pig still installs the linux release into ~/.local/bin.
 func TestInstallShKeepsNonAndroidPlatformNames(t *testing.T) {
 	for _, tc := range []struct{ unameS, unameM, unameO, platform string }{
 		{"Linux", "aarch64", "GNU/Linux", "linux-arm64"},
 		{"Linux", "x86_64", "GNU/Linux", "linux-amd64"},
 		{"Linux", "aarch64", "", "linux-arm64"},
-		{"Darwin", "arm64", "", "darwin-arm64"},
 	} {
 		t.Run(tc.platform+"/"+tc.unameO, func(t *testing.T) {
 			name, archive := archiveNameFor(tc.platform)
