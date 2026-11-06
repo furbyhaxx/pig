@@ -385,6 +385,17 @@ func TestSetVersionWritesTheREADMEVersionExample(t *testing.T) {
 	if got := get(t, root, "README.md"); got != want {
 		t.Errorf("README.md = %q, want %q", got, want)
 	}
+
+	// A fork release writes a prerelease (SPEC-0001 D3) and later runs on that tree must still find the example.
+	for _, version := range []string{"0.3.0-c.1", "0.3.0-c.2"} {
+		if err := run(root, options{version: version, date: "2026-10-11"}, io.Discard, func(string, io.Writer) error { return nil }); err != nil {
+			t.Fatalf("set-version %s: %v", version, err)
+		}
+	}
+	want = strings.Replace(page, "for example `0.2.1+", "for example `0.3.0-c.2+", 1)
+	if got := get(t, root, "README.md"); got != want {
+		t.Errorf("README.md after prereleases = %q, want %q", got, want)
+	}
 }
 
 // A README without the example fails the whole run before any file changes.

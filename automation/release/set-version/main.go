@@ -188,7 +188,7 @@ func prepare(root string, opt options) (*plan, error) {
 // readmeVersionExample is the README sentence that shows the composite `pig --version` value. Its Pi half is the pin's, which
 // automation/pin/pin.py rewrites (readme in pin.py matches the same sentence); its PiG half is the release, which this command writes.
 // test/docs-drift TestProseNamesTheCurrentPin fails the sentence when either half disagrees with internal/coding/pigversion.
-var readmeVersionExample = regexp.MustCompile("(prints PiG's version as `<PiG release>\\+<Pi release>`, for example `)\\d+\\.\\d+\\.\\d+(\\+[^`]+`)")
+var readmeVersionExample = regexp.MustCompile("(prints PiG's version as `<PiG release>\\+<Pi release>`, for example `)\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(\\+[^`]+`)")
 
 // updateReadmeExample writes version into the README's `pig --version` example. An absent README is skipped, so a checkout that does not
 // carry one is unaffected; a README without the sentence is an error, because the drift check would then fail the release.
